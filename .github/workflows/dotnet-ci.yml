@@ -1,0 +1,39 @@
+name: .NET CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build_test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore UserManagementSystem.sln
+
+      - name: Build solution
+        run: dotnet build UserManagementSystem.sln --no-restore --configuration Release
+
+      # - name: Run tests
+      #   run: dotnet test tests/ --no-build --verbosity normal
+
+
+      - name: Publish
+        if: github.ref == 'refs/heads/main'
+        run: dotnet publish src/Presentation/Presentation.csproj --configuration Release --output ./artifacts/presentation
+
+        # luego podrías subir ./artifacts con actions/upload-artifact
