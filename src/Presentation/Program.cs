@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using BusinessLogic;
 using BusinessLogic.Exceptions;
+using Presentation.ApiClient;
 using Presentation.Exceptions;
 
 namespace Presentation
@@ -43,6 +44,9 @@ namespace Presentation
                 {
                     // Register services from BusinessLogic layer
                     services.AddInfrastructure(context.Configuration);
+
+                    // Register ApiClient
+                    services.AddSingleton<ApiClient.ApiClient>();
 
                     // Register Forms
                     services.AddTransient<LoginForm>();

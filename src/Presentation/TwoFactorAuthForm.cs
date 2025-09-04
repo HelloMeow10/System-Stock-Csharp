@@ -1,21 +1,21 @@
 using System;
 using System.Windows.Forms;
-using BusinessLogic.Services;
 using BusinessLogic.Models;
+using Presentation.ApiClient;
 
 namespace Presentation
 {
     public partial class TwoFactorAuthForm : Form
     {
-        private readonly IAuthenticationService _authService;
+        private readonly ApiClient.ApiClient _apiClient;
         private string _username = string.Empty;
 
-        public AuthenticationResult? AuthResult { get; private set; }
+        public LoginResponse? AuthResult { get; private set; }
 
-        public TwoFactorAuthForm(IAuthenticationService authService)
+        public TwoFactorAuthForm(ApiClient.ApiClient apiClient)
         {
             InitializeComponent();
-            _authService = authService;
+            _apiClient = apiClient;
             btnVerificar.Click += BtnVerificar_Click;
         }
 
@@ -32,16 +32,20 @@ namespace Presentation
                 return;
             }
 
-            AuthResult = await _authService.Validate2faAsync(_username, txtCodigo.Text.Trim());
-
-            if (AuthResult.Success)
+            try
             {
+                var request = new Validate2faRequest
+                {
+                    Username = _username,
+                    Code = txtCodigo.Text.Trim()
+                };
+                AuthResult = await _apiClient.Validate2faAsync(request);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show(AuthResult.ErrorMessage ?? "Error desconocido", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

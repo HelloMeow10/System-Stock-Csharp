@@ -3,43 +3,34 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using BusinessLogic.Services;
 using BusinessLogic.Exceptions;
 using BusinessLogic.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Presentation.Helpers;
+using Presentation.ApiClient;
 
 namespace Presentation
 {
     public partial class AdminForm : Form
     {
-        private readonly IUserService _userService;
-        private readonly IPersonaService _personaService;
-        private readonly ISecurityPolicyService _securityPolicyService;
-        private readonly IReferenceDataService _referenceService;
+        private readonly ApiClient.ApiClient _apiClient;
         private readonly IServiceProvider _serviceProvider;
-        private readonly DataGridViewManager _userGridManager;
-        private readonly ComboBoxLoader _comboBoxLoader;
+        private readonly ApiDataGridViewManager _userGridManager;
+        private readonly ApiComboBoxLoader _comboBoxLoader;
         private string _username = string.Empty;
         private PoliticaSeguridadDto? _politica;
         private List<PersonaDto> _allPersonas = new List<PersonaDto>();
         private readonly List<int> _dirtyPersonaIds = new List<int>();
 
         public AdminForm(
-            IUserService userService,
-            IPersonaService personaService,
-            ISecurityPolicyService securityPolicyService,
-            IReferenceDataService referenceService,
+            ApiClient.ApiClient apiClient,
             IServiceProvider serviceProvider)
         {
             InitializeComponent();
-            _userService = userService;
-            _personaService = personaService;
-            _securityPolicyService = securityPolicyService;
-            _referenceService = referenceService;
+            _apiClient = apiClient;
             _serviceProvider = serviceProvider;
-            _userGridManager = new DataGridViewManager(userService, dgvUsuarios);
-            _comboBoxLoader = new ComboBoxLoader(referenceService);
+            _userGridManager = new ApiDataGridViewManager(apiClient, dgvUsuarios);
+            _comboBoxLoader = new ApiComboBoxLoader(apiClient);
 
             SetupForm();
         }
@@ -50,7 +41,7 @@ namespace Presentation
             // Any other setup that depends on the username can go here.
         }
 
-        private void SetupForm()
+        private async void SetupForm()
         {
             DataGridViewStyler.ApplyTheme(dgvUsuarios);
             DataGridViewStyler.ApplyTheme(dgvPersonas);
@@ -65,10 +56,10 @@ namespace Presentation
             btnNavigateConfiguracion.Click += (s, e) => ShowPanel(panelConfiguracion);
             btnMiPerfil.Click += async (s, e) =>
             {
-                var user = await _userService.GetUserByUsernameAsync(_username);
+                var user = await _apiClient.GetUserByUsernameAsync(_username);
                 if (user != null)
                 {
-                    var persona = await _personaService.GetPersonaByIdAsync(user.IdPersona);
+                    var persona = await _apiClient.GetPersonaAsync(user.IdPersona);
                     if (persona != null)
                     {
                         using (var form = _serviceProvider.GetRequiredService<ProfileForm>())
@@ -88,48 +79,47 @@ namespace Presentation
                 }
             };
 
-            _comboBoxLoader.LoadTiposDoc(cbxTipoDoc);
-            _comboBoxLoader.LoadProvincias(cbxProvincia);
-            _comboBoxLoader.LoadGeneros(cbxGenero);
-            LoadPersonas();
-            _comboBoxLoader.LoadRoles(cbxRolUsuario);
+            await _comboBoxLoader.LoadTiposDoc(cbxTipoDoc);
+            await _comboBoxLoader.LoadProvincias(cbxProvincia);
+            await _comboBoxLoader.LoadGeneros(cbxGenero);
+            await LoadPersonas();
+            await _comboBoxLoader.LoadRoles(cbxRolUsuario);
 
             cbxProvincia.SelectedIndexChanged += CbxProvincia_SelectedIndexChanged;
             cbxPartido.SelectedIndexChanged += CbxPartido_SelectedIndexChanged;
             cbxPartido.Enabled = false;
             cbxLocalidad.Enabled = false;
 
-            LoadPoliticaSeguridad();
+            await LoadPoliticaSeguridad();
 
             btnGuardarPersona.Click += BtnGuardarPersona_Click;
             btnCrearUsuario.Click += BtnCrearUsuario_Click;
             btnGuardarConfig.Click += BtnGuardarConfig_Click;
 
             txtBuscarUsuario.TextChanged += TxtBuscarUsuario_TextChanged;
-            btnRefrescarUsuarios.Click += (s, e) =>
+            btnRefrescarUsuarios.Click += async (s, e) =>
             {
-                _userGridManager.LoadUsers();
+                await _userGridManager.LoadUsers();
                 txtBuscarUsuario.Clear();
             };
-            btnGuardarCambios.Click += (s, e) => _userGridManager.SaveChanges();
-            btnEliminarUsuario.Click += (s, e) => _userGridManager.DeleteSelectedUser();
-            //dgvUsuarios.CellEndEdit += DgvUsuarios_CellEndEdit; // This is now handled inside the manager
+            btnGuardarCambios.Click += async (s, e) => await _userGridManager.SaveChanges();
+            btnEliminarUsuario.Click += async (s, e) => await _userGridManager.DeleteSelectedUser();
             dgvUsuarios.SelectionChanged += dgvUsuarios_SelectionChanged;
             dtpFechaExpiracionGestion.ValueChanged += dtpFechaExpiracionGestion_ValueChanged;
             dgvUsuarios.CellFormatting += dgvUsuarios_CellFormatting;
 
             txtBuscarPersona.TextChanged += TxtBuscarPersona_TextChanged;
-            btnRefrescarPersonas.Click += (s, e) =>
+            btnRefrescarPersonas.Click += async (s, e) =>
             {
-                LoadPersonasGrid();
+                await LoadPersonasGrid();
                 txtBuscarPersona.Clear();
             };
             btnGuardarCambiosPersona.Click += BtnGuardarCambiosPersona_Click;
             btnEliminarPersona.Click += BtnEliminarPersona_Click;
             dgvPersonas.CellEndEdit += DgvPersonas_CellEndEdit;
 
-            _userGridManager.LoadUsers();
-            LoadPersonasGrid();
+            await _userGridManager.LoadUsers();
+            await LoadPersonasGrid();
 
             dtpFechaExpiracionGestion.ShowCheckBox = true;
             dtpFechaExpiracionGestion.Checked = false;
@@ -163,9 +153,9 @@ namespace Presentation
             dgvPersonas.DataSource = filteredPersonas;
         }
 
-        private void LoadPoliticaSeguridad()
+        private async Task LoadPoliticaSeguridad()
         {
-            _politica = _securityPolicyService.GetPoliticaSeguridad();
+            _politica = await _apiClient.GetSecurityPolicyAsync();
             if (_politica != null)
             {
                 chkMayusculasMinusculas.Checked = _politica.MayusYMinus;
@@ -191,7 +181,7 @@ namespace Presentation
             }
         }
 
-        private void BtnGuardarConfig_Click(object? sender, EventArgs e)
+        private async void BtnGuardarConfig_Click(object? sender, EventArgs e)
         {
             if (!int.TryParse(txtMinCaracteres.Text, out var minChars) || minChars <= 0)
             {
@@ -218,33 +208,33 @@ namespace Presentation
             _politica.MinCaracteres = minChars;
             _politica.CantPreguntas = cantPreg;
 
-            _securityPolicyService.UpdatePoliticaSeguridad(_politica);
+            await _apiClient.UpdateSecurityPolicyAsync(_politica);
             MessageBox.Show("Configuración guardada correctamente.", "Info");
         }
 
-        private void CbxProvincia_SelectedIndexChanged(object? sender, EventArgs e)
+        private async void CbxProvincia_SelectedIndexChanged(object? sender, EventArgs e)
         {
             if (cbxProvincia.SelectedValue is int provinciaId)
             {
-                _comboBoxLoader.LoadPartidos(cbxPartido, provinciaId);
+                await _comboBoxLoader.LoadPartidos(cbxPartido, provinciaId);
             }
             cbxLocalidad.DataSource = null;
             cbxLocalidad.Enabled = false;
         }
 
-        private void CbxPartido_SelectedIndexChanged(object? sender, EventArgs e)
+        private async void CbxPartido_SelectedIndexChanged(object? sender, EventArgs e)
         {
             if (cbxPartido.SelectedValue is int partidoId)
             {
-                _comboBoxLoader.LoadLocalidades(cbxLocalidad, partidoId);
+                await _comboBoxLoader.LoadLocalidades(cbxLocalidad, partidoId);
             }
         }
 
-        private async void LoadPersonas()
+        private async Task LoadPersonas()
         {
             try
             {
-                var personas = await _personaService.GetPersonasAsync();
+                var personas = await _apiClient.GetPersonasAsync();
                 if (personas == null || !personas.Any())
                 {
                     MessageBox.Show("No se encontraron personas en la base de datos.", "Advertencia");
@@ -300,9 +290,9 @@ namespace Presentation
                     Celular = txtCelular.Text,
                     FechaIngreso = dtpFechaIngreso.Value
                 };
-                await _personaService.CrearPersonaAsync(persona);
+                await _apiClient.CreatePersonaAsync(persona);
                 MessageBox.Show("Persona guardada correctamente", "Info");
-                LoadPersonas();
+                await LoadPersonas();
             }
             catch (ValidationException ex)
             {
@@ -332,7 +322,7 @@ namespace Presentation
                     Username = txtUsuario.Text,
                     Rol = cbxRolUsuario.Text
                 };
-                await _userService.CrearUsuarioAsync(usuario);
+                await _apiClient.CreateUserAsync(usuario);
                 MessageBox.Show("Usuario creado correctamente. La contraseña ha sido enviada al correo de la persona.", "Info");
             }
             catch (ValidationException ex)
@@ -423,7 +413,7 @@ namespace Presentation
                     var personasToUpdate = personas.Where(p => _dirtyPersonaIds.Contains(p.IdPersona)).ToList();
                     foreach (var persona in personasToUpdate)
                     {
-                        await _personaService.UpdatePersonaAsync(persona);
+                        await _apiClient.UpdatePersonaAsync(persona.IdPersona, persona);
                     }
 
                     if (personasToUpdate.Any())
@@ -436,7 +426,7 @@ namespace Presentation
                     }
 
                     _dirtyPersonaIds.Clear();
-                    LoadPersonasGrid();
+                    await LoadPersonasGrid();
                 }
             }
             catch (Exception ex)
@@ -463,9 +453,9 @@ namespace Presentation
             {
                 try
                 {
-                    await _personaService.DeletePersonaAsync(persona.IdPersona);
+                    await _apiClient.DeletePersonaAsync(persona.IdPersona);
                     MessageBox.Show("Persona eliminada exitosamente.", "Éxito");
-                    LoadPersonasGrid();
+                    await LoadPersonasGrid();
                 }
                 catch (Exception ex)
                 {
@@ -474,11 +464,11 @@ namespace Presentation
             }
         }
 
-        private async void LoadPersonasGrid()
+        private async Task LoadPersonasGrid()
         {
             try
             {
-                _allPersonas = await _personaService.GetPersonasAsync();
+                _allPersonas = await _apiClient.GetPersonasAsync();
                 dgvPersonas.DataSource = new List<PersonaDto>(_allPersonas);
 
                 dgvPersonas.Columns["IdPersona"].Visible = false;

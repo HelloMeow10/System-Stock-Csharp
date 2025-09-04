@@ -2,25 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using BusinessLogic.Services;
 using BusinessLogic.Models;
 using Presentation.Controles;
 using Presentation.Theme;
-using BusinessLogic.Exceptions;
+using Presentation.ApiClient;
 
 namespace Presentation
 {
     public partial class RecuperarContrasenaForm : Form
     {
-        private readonly IPasswordService _passwordService;
-        private readonly ISecurityQuestionService _securityQuestionService;
+        private readonly ApiClient.ApiClient _apiClient;
         private List<PreguntaSeguridadDto> _preguntasUsuario;
 
-        public RecuperarContrasenaForm(IPasswordService passwordService, ISecurityQuestionService securityQuestionService)
+        public RecuperarContrasenaForm(ApiClient.ApiClient apiClient)
         {
             InitializeComponent();
-            _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
-            _securityQuestionService = securityQuestionService ?? throw new ArgumentNullException(nameof(securityQuestionService));
+            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             _preguntasUsuario = new List<PreguntaSeguridadDto>();
 
             // Wire up events
@@ -39,7 +36,7 @@ namespace Presentation
                 }
 
                 var usuario = txtUsuario.Text.Trim();
-                _preguntasUsuario = await _securityQuestionService.GetPreguntasDeUsuarioAsync(usuario);
+                _preguntasUsuario = await _apiClient.GetUserSecurityQuestionsAsync(usuario);
 
                 if (_preguntasUsuario != null && _preguntasUsuario.Count > 0)
                 {
@@ -53,11 +50,6 @@ namespace Presentation
                     MessageBox.Show("El usuario no existe o no tiene preguntas de seguridad configuradas.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     LimpiarPreguntas();
                 }
-            }
-            catch (ValidationException ex)
-            {
-                MessageBox.Show(ex.Message, "Error de Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                LimpiarPreguntas();
             }
             catch (Exception ex)
             {
@@ -142,15 +134,16 @@ namespace Presentation
             try
             {
                 string usuario = txtUsuario.Text.Trim();
-                await _passwordService.RecuperarContrasena(usuario, respuestas);
+                var request = new RecoverPasswordRequest
+                {
+                    Username = usuario,
+                    Answers = respuestas
+                };
+                await _apiClient.RecoverPasswordAsync(request);
 
                 MessageBox.Show("Si las respuestas proporcionadas son correctas, se ha enviado una nueva contraseña a su dirección de correo electrónico.", "Recuperación Exitosa", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 DialogResult = DialogResult.OK;
                 Close();
-            }
-            catch (ValidationException ex)
-            {
-                MessageBox.Show(ex.Message, "Error de Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
