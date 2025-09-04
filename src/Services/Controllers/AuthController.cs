@@ -51,4 +51,31 @@ namespace Services.Controllers
         public string Username { get; set; } = null!;
         public string Password { get; set; } = null!;
     }
+
+    // src/Services/Controllers/AuthController.cs
+    [HttpPost("validate-2fa")]
+    public async Task<IActionResult> Validate2fa([FromBody] Validate2faRequest request)
+    {
+        var authResult = await _authService.Validate2faAsync(request.Username, request.Code);
+
+        if (!authResult.Success || authResult.User == null)
+            return Unauthorized("Invalid 2FA code");
+
+        var user = authResult.User;
+        var token = _tokenService.GenerateJwtToken(user.Username);
+
+        var response = new
+        {
+            Token = token,
+            Username = user.Username,
+            Rol = user.Rol ?? "Unknown",
+        };
+        return Ok(response);
+    }
+
+    public class Validate2faRequest
+    {
+        public string Username { get; set; } = null!;
+        public string Code { get; set; } = null!;
+    }
 }

@@ -1,24 +1,23 @@
 using System;
 using System.Windows.Forms;
-using BusinessLogic.Services;
 using BusinessLogic.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
+using Presentation.ApiClient;
+using BusinessLogic.Models;
 
 namespace Presentation
 {
     public partial class CambioContrasenaForm : Form
     {
-        private readonly IPasswordService _passwordService;
-        private readonly ISecurityQuestionService _securityQuestionService;
+        private readonly ApiClient.ApiClient _apiClient;
         private readonly IServiceProvider _serviceProvider;
         private string _username = string.Empty;
 
-        public CambioContrasenaForm(IPasswordService passwordService, ISecurityQuestionService securityQuestionService, IServiceProvider serviceProvider)
+        public CambioContrasenaForm(ApiClient.ApiClient apiClient, IServiceProvider serviceProvider)
         {
             InitializeComponent();
-            _passwordService = passwordService;
-            _securityQuestionService = securityQuestionService;
+            _apiClient = apiClient;
             _serviceProvider = serviceProvider;
             btnCambiar.Click += BtnCambiar_Click;
         }
@@ -50,10 +49,16 @@ namespace Presentation
                     return;
                 }
 
-                await _passwordService.CambiarContrasenaAsync(_username, nueva, actual);
+                var request = new ChangePasswordRequest
+                {
+                    Username = _username,
+                    OldPassword = actual,
+                    NewPassword = nueva
+                };
+                await _apiClient.ChangePasswordAsync(request);
                 MessageBox.Show("Contraseña cambiada correctamente.", "Info");
 
-                var userQuestions = await _securityQuestionService.GetPreguntasDeUsuarioAsync(_username);
+                var userQuestions = await _apiClient.GetUserSecurityQuestionsAsync(_username);
                 if (userQuestions == null || userQuestions.Count == 0)
                 {
                     using (var preguntasForm = _serviceProvider.GetRequiredService<PreguntasSeguridadForm>())
@@ -65,24 +70,6 @@ namespace Presentation
 
                 DialogResult = DialogResult.OK;
                 Close();
-            }
-            catch (ValidationException ex)
-            {
-                using (var errorForm = _serviceProvider.GetRequiredService<frmNotification>())
-                {
-                    errorForm.SetMessage(ex.Message);
-                    errorForm.ShowDialog();
-                }
-            }
-            catch (BusinessLogicException ex)
-            {
-                var errorMessage = new StringBuilder(ex.Message);
-                if (ex.InnerException != null)
-                {
-                    errorMessage.AppendLine();
-                    errorMessage.AppendLine($"Detalles: {ex.InnerException.Message}");
-                }
-                MessageBox.Show(errorMessage.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {

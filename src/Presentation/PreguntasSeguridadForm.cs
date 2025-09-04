@@ -2,25 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using BusinessLogic.Services;
 using BusinessLogic.Models;
 using Presentation.Controles;
 using Presentation.Theme;
+using Presentation.ApiClient;
 
 namespace Presentation
 {
     public partial class PreguntasSeguridadForm : Form
     {
-        private readonly ISecurityQuestionService _securityQuestionService;
+        private readonly ApiClient.ApiClient _apiClient;
         private string _username = string.Empty;
         private List<PreguntaSeguridadDto> _preguntas = new List<PreguntaSeguridadDto>();
         private List<ComboBox> _comboBoxes = new List<ComboBox>();
         private List<RoundedTextBox> _textBoxes = new List<RoundedTextBox>();
 
-        public PreguntasSeguridadForm(ISecurityQuestionService securityQuestionService)
+        public PreguntasSeguridadForm(ApiClient.ApiClient apiClient)
         {
             InitializeComponent();
-            _securityQuestionService = securityQuestionService;
+            _apiClient = apiClient;
             btnGuardar.Click += BtnGuardar_Click;
         }
 
@@ -29,12 +29,12 @@ namespace Presentation
             _username = username;
         }
 
-        private void PreguntasSeguridadForm_Load(object sender, EventArgs e)
+        private async void PreguntasSeguridadForm_Load(object sender, EventArgs e)
         {
             try
             {
-                _preguntas = _securityQuestionService.GetPreguntasSeguridad();
-                var politica = _securityQuestionService.GetPoliticaSeguridad();
+                _preguntas = await _apiClient.GetSecurityQuestionsAsync();
+                var politica = await _apiClient.GetSecurityPolicyAsync();
                 int cantidadPreguntas = politica?.CantPreguntas ?? 3; // Default a 3
 
                 for (int i = 0; i < cantidadPreguntas; i++)
@@ -135,7 +135,7 @@ namespace Presentation
 
             try
             {
-                await _securityQuestionService.GuardarRespuestasSeguridadAsync(_username, respuestas);
+                await _apiClient.SaveUserSecurityAnswersAsync(_username, respuestas);
                 MessageBox.Show("Respuestas de seguridad guardadas exitosamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 DialogResult = DialogResult.OK;
                 Close();
