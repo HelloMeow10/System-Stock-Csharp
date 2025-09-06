@@ -5,7 +5,7 @@ namespace BusinessLogic.Services
 {
     public interface IPasswordService
     {
-        Task RecuperarContrasena(string username, Dictionary<int, string> respuestas);
-        Task CambiarContrasenaAsync(string username, string newPassword, string oldPassword);
+        Task RecoverPasswordAsync(string username, Dictionary<int, string> anwers);
+        Task ChangePasswordAsync(string username, string newPassword, string oldPassword);
     }
 }

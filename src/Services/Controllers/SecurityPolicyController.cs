@@ -16,14 +16,14 @@ namespace Services.Controllers
         }
 
         [HttpGet]
-        public ActionResult<PoliticaSeguridadDto> GetPoliticaSeguridad()
+        public ActionResult<PoliticaSeguridadDto> Get()
         {
             var politica = _securityPolicyService.GetPoliticaSeguridad();
             return Ok(politica);
         }
 
         [HttpPut]
-        public IActionResult UpdatePoliticaSeguridad([FromBody] PoliticaSeguridadDto politica)
+        public IActionResult Put([FromBody] PoliticaSeguridadDto politica)
         {
             _securityPolicyService.UpdatePoliticaSeguridad(politica);
             return NoContent();

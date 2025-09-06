@@ -55,14 +55,14 @@ namespace BusinessLogic.Tests
             _usuarioFactoryMock.Setup(f => f.Create(userRequest)).Returns((usuario, plainPassword));
             _personaRepositoryMock.Setup(r => r.GetPersonaById(1)).Returns(persona);
             _userRepositoryMock.Setup(r => r.AddUsuarioAsync(usuario)).Returns(Task.CompletedTask);
-            _emailServiceMock.Setup(s => s.SendPasswordResetEmailAsync(persona.Correo!, plainPassword)).Returns(Task.CompletedTask);
+            _emailServiceMock.Setup(s => s.SendWelcomeEmailAsync(persona.Correo!, usuario.UsuarioNombre, plainPassword)).Returns(Task.CompletedTask);
 
             // Act
-            await _sut.CrearUsuarioAsync(userRequest);
+            await _sut.CreateUserAsync(userRequest);
 
             // Assert
             _userRepositoryMock.Verify(r => r.AddUsuarioAsync(usuario), Times.Once);
-            _emailServiceMock.Verify(s => s.SendPasswordResetEmailAsync(persona.Correo!, plainPassword), Times.Once);
+            _emailServiceMock.Verify(s => s.SendWelcomeEmailAsync(persona.Correo!, usuario.UsuarioNombre, plainPassword), Times.Once);
         }
 
         [Fact]

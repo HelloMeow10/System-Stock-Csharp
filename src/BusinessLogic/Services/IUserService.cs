@@ -6,7 +6,7 @@ namespace BusinessLogic.Services
 {
     public interface IUserService
     {
-        Task CrearUsuarioAsync(UserRequest request);
+        Task<UserDto> CreateUserAsync(UserRequest request);
         Task UpdateUserAsync(UserDto user);
         Task DeleteUserAsync(int userId);
         Task<List<UserDto>> GetAllUsersAsync();

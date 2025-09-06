@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Services.Controllers
 {
@@ -19,28 +20,15 @@ namespace Services.Controllers
         [HttpPost("change")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
-            await _passwordService.CambiarContrasenaAsync(request.Username, request.NewPassword, request.OldPassword);
-            return Ok();
+            await _passwordService.ChangePasswordAsync(request.Username, request.NewPassword, request.OldPassword);
+            return NoContent();
         }
 
         [HttpPost("recover")]
         public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request)
         {
-            await _passwordService.RecuperarContrasena(request.Username, request.Answers);
+            await _passwordService.RecoverPasswordAsync(request.Username, request.Answers);
             return Ok();
         }
-    }
-
-    public class ChangePasswordRequest
-    {
-        public string Username { get; set; }
-        public string OldPassword { get; set; }
-        public string NewPassword { get; set; }
-    }
-
-    public class RecoverPasswordRequest
-    {
-        public string Username { get; set; }
-        public Dictionary<int, string> Answers { get; set; }
     }
 }

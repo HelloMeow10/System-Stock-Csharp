@@ -18,24 +18,24 @@ namespace Services.Controllers
         }
 
         [HttpGet("{username}")]
-        public async Task<ActionResult<List<PreguntaSeguridadDto>>> GetUserSecurityQuestions(string username)
+        public async Task<ActionResult<List<PreguntaSeguridadDto>>> Get(string username)
         {
-            var questions = await _securityQuestionService.GetPreguntasDeUsuarioAsync(username);
+            var questions = await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
             return Ok(questions);
         }
 
         [HttpGet]
-        public ActionResult<List<PreguntaSeguridadDto>> GetSecurityQuestions()
+        public ActionResult<List<PreguntaSeguridadDto>> Get()
         {
-            var questions = _securityQuestionService.GetPreguntasSeguridad();
+            var questions = _securityQuestionService.GetSecurityQuestions();
             return Ok(questions);
         }
 
         [HttpPost("{username}/answers")]
-        public async Task<IActionResult> SaveUserSecurityAnswers(string username, [FromBody] Dictionary<int, string> answers)
+        public async Task<IActionResult> Post(string username, [FromBody] Dictionary<int, string> answers)
         {
-            await _securityQuestionService.GuardarRespuestasSeguridadAsync(username, answers);
-            return Ok();
+            await _securityQuestionService.SaveSecurityAnswersAsync(username, answers);
+            return NoContent();
         }
     }
 }

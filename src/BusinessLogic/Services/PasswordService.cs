@@ -40,13 +40,13 @@ namespace BusinessLogic.Services
             _passwordPolicyValidator = passwordPolicyValidator ?? throw new ArgumentNullException(nameof(passwordPolicyValidator));
         }
 
-        public async Task RecuperarContrasena(string username, Dictionary<int, string> respuestas) => await ExecuteServiceOperationAsync(async () =>
+        public async Task RecoverPasswordAsync(string username, Dictionary<int, string> answers) => await ExecuteServiceOperationAsync(async () =>
         {
             if (string.IsNullOrWhiteSpace(username))
                 throw new ValidationException("Username is required");
 
             var politica = _securityRepository.GetPoliticaSeguridad() ?? throw new BusinessLogicException("Security policy not configured.");
-            if (respuestas == null || respuestas.Count != politica.CantPreguntas || respuestas.Any(r => string.IsNullOrWhiteSpace(r.Value)))
+            if (answers == null || answers.Count != politica.CantPreguntas || answers.Any(r => string.IsNullOrWhiteSpace(r.Value)))
                 throw new ValidationException($"Se requieren {politica.CantPreguntas} respuestas de seguridad.");
 
             var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username)
@@ -63,9 +63,9 @@ namespace BusinessLogic.Services
 
             var respuestasGuardadasDict = respuestasGuardadas.ToDictionary(r => r.IdPregunta, r => r.Respuesta);
 
-            foreach (var respuesta in respuestas)
+            foreach (var answer in answers)
             {
-                if (!respuestasGuardadasDict.TryGetValue(respuesta.Key, out var respuestaGuardada) || respuestaGuardada != respuesta.Value)
+                if (!respuestasGuardadasDict.TryGetValue(answer.Key, out var respuestaGuardada) || respuestaGuardada != answer.Value)
                 {
                     throw new ValidationException("Una o más respuestas de seguridad son incorrectas.");
                 }
@@ -86,7 +86,7 @@ namespace BusinessLogic.Services
             await _emailService.SendPasswordResetEmailAsync(persona.Correo, newPassword);
         }, "recovering password");
 
-        public async Task CambiarContrasenaAsync(string username, string newPassword, string oldPassword) => await ExecuteServiceOperationAsync(async () =>
+        public async Task ChangePasswordAsync(string username, string newPassword, string oldPassword) => await ExecuteServiceOperationAsync(async () =>
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(oldPassword))
                 throw new ValidationException("Todos los campos son requeridos.");

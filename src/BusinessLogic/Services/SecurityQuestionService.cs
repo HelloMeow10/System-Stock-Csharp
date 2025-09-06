@@ -29,40 +29,40 @@ namespace BusinessLogic.Services
             _securityPolicyService = securityPolicyService ?? throw new ArgumentNullException(nameof(securityPolicyService));
         }
 
-        public PoliticaSeguridadDto? GetPoliticaSeguridad()
+        public PoliticaSeguridadDto? GetSecurityPolicy()
         {
             return _securityPolicyService.GetPoliticaSeguridad();
         }
 
-        public async Task GuardarRespuestasSeguridadAsync(string username, Dictionary<int, string> respuestas) => await ExecuteServiceOperationAsync(async () =>
+        public async Task SaveSecurityAnswersAsync(string username, Dictionary<int, string> answers) => await ExecuteServiceOperationAsync(async () =>
         {
             var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username)
                 ?? throw new ValidationException($"Usuario '{username}' not found");
 
             var politica = _securityRepository.GetPoliticaSeguridad() ?? throw new BusinessLogicException("Security policy not configured.");
-            if (respuestas.Count != politica.CantPreguntas)
+            if (answers.Count != politica.CantPreguntas)
                 throw new ValidationException($"Se requieren exactamente {politica.CantPreguntas} respuestas de seguridad.");
 
             // Assuming ISecurityRepository will also be made async. For now, keeping it sync.
             _securityRepository.DeleteRespuestasSeguridadByUsuarioId(usuario.IdUsuario);
 
-            foreach (var par in respuestas)
+            foreach (var pair in answers)
             {
                 var respuesta = new RespuestaSeguridad
                 {
                     IdUsuario = usuario.IdUsuario,
-                    IdPregunta = par.Key,
-                    Respuesta = par.Value
+                    IdPregunta = pair.Key,
+                    Respuesta = pair.Value
                 };
                 _securityRepository.AddRespuestaSeguridad(respuesta);
             }
         }, "saving security answers");
 
-        public List<PreguntaSeguridadDto> GetPreguntasSeguridad() => ExecuteServiceOperation(() =>
+        public List<PreguntaSeguridadDto> GetSecurityQuestions() => ExecuteServiceOperation(() =>
             _securityRepository.GetPreguntasSeguridad().Select(p => new PreguntaSeguridadDto { IdPregunta = p.IdPregunta, Pregunta = p.Pregunta }).ToList(),
             "getting security questions");
 
-        public async Task<List<PreguntaSeguridadDto>> GetPreguntasDeUsuarioAsync(string username) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<List<PreguntaSeguridadDto>> GetUserSecurityQuestionsAsync(string username) => await ExecuteServiceOperationAsync(async () =>
         {
             var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username)
                 ?? throw new ValidationException($"Usuario '{username}' not found");
