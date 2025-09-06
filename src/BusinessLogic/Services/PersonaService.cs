@@ -51,17 +51,17 @@ namespace BusinessLogic.Services
             }
         }
 
-        public Task CrearPersonaAsync(PersonaRequest request)
+        public Task<PersonaDto> CreatePersonaAsync(PersonaRequest request)
         {
-            ExecuteServiceOperation(() =>
+            return Task.FromResult(ExecuteServiceOperation(() =>
             {
                 _logger.LogInformation("Iniciando la creación de la persona con legajo: {Legajo}", request.Legajo);
                 var persona = _personaFactory.Create(request);
                 _logger.LogInformation("Llamando a AddPersona en el repositorio.");
                 _personaRepository.AddPersona(persona);
                 _logger.LogInformation("Persona creada con éxito en el repositorio.");
-            }, "creating a person");
-            return Task.CompletedTask;
+                return PersonaMapper.MapToPersonaDto(persona)!;
+            }, "creating a person"));
         }
 
         public Task UpdatePersonaAsync(PersonaDto personaDto)

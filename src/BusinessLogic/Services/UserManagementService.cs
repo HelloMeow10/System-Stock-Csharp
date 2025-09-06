@@ -91,7 +91,7 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task CrearUsuarioAsync(UserRequest request) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<UserDto> CreateUserAsync(UserRequest request) => await ExecuteServiceOperationAsync(async () =>
         {
             var (usuario, plainPassword) = _usuarioFactory.Create(request);
 
@@ -100,6 +100,8 @@ namespace BusinessLogic.Services
             var persona = _personaRepository.GetPersonaById(usuario.IdPersona)!;
 
             await _emailService.SendWelcomeEmailAsync(persona.Correo!, usuario.UsuarioNombre, plainPassword);
+
+            return UserMapper.MapToUserDto(usuario)!;
         }, "creating a user");
 
         public async Task<List<UserDto>> GetAllUsersAsync() => await ExecuteServiceOperationAsync(async () =>

@@ -39,7 +39,7 @@ namespace BusinessLogic.Tests
             _personaRepositoryMock.Setup(r => r.AddPersona(persona));
 
             // Act
-            await _sut.CrearPersonaAsync(personaRequest);
+            await _sut.CreatePersonaAsync(personaRequest);
 
             // Assert
             _personaFactoryMock.Verify(f => f.Create(personaRequest), Times.Once);

@@ -19,14 +19,14 @@ namespace Services.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<UserDto>>> GetAllUsers()
+        public async Task<ActionResult<List<UserDto>>> Get()
         {
             var users = await _userService.GetAllUsersAsync();
             return Ok(users);
         }
 
         [HttpGet("{username}")]
-        public async Task<ActionResult<UserDto>> GetUserByUsername(string username)
+        public async Task<ActionResult<UserDto>> GetByUsername(string username)
         {
             var user = await _userService.GetUserByUsernameAsync(username);
             if (user == null)
@@ -37,14 +37,14 @@ namespace Services.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> CreateUser([FromBody] UserRequest userRequest)
+        public async Task<ActionResult<UserDto>> Post([FromBody] UserRequest userRequest)
         {
-            await _userService.CrearUsuarioAsync(userRequest);
-            return Ok();
+            var newUser = await _userService.CreateUserAsync(userRequest);
+            return CreatedAtAction(nameof(GetByUsername), new { username = newUser.Username }, newUser);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserDto userDto)
+        public async Task<IActionResult> Put(int id, [FromBody] UserDto userDto)
         {
             if (id != userDto.IdUsuario)
             {
@@ -55,7 +55,7 @@ namespace Services.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             await _userService.DeleteUserAsync(id);
             return NoContent();

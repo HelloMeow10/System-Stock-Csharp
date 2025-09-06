@@ -18,14 +18,14 @@ namespace Services.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<PersonaDto>>> GetPersonas()
+        public async Task<ActionResult<List<PersonaDto>>> Get()
         {
             var personas = await _personaService.GetPersonasAsync();
             return Ok(personas);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<PersonaDto>> GetPersona(int id)
+        public async Task<ActionResult<PersonaDto>> Get(int id)
         {
             var persona = await _personaService.GetPersonaByIdAsync(id);
             if (persona == null)
@@ -36,14 +36,14 @@ namespace Services.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> CreatePersona([FromBody] PersonaRequest personaRequest)
+        public async Task<ActionResult<PersonaDto>> Post([FromBody] PersonaRequest personaRequest)
         {
-            await _personaService.CrearPersonaAsync(personaRequest);
-            return Ok();
+            var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
+            return CreatedAtAction(nameof(Get), new { id = newPersona.IdPersona }, newPersona);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePersona(int id, [FromBody] PersonaDto personaDto)
+        public async Task<IActionResult> Put(int id, [FromBody] PersonaDto personaDto)
         {
             if (id != personaDto.IdPersona)
             {
@@ -54,7 +54,7 @@ namespace Services.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePersona(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             await _personaService.DeletePersonaAsync(id);
             return NoContent();
