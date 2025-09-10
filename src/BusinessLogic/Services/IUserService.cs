@@ -11,5 +11,6 @@ namespace BusinessLogic.Services
         Task DeleteUserAsync(int userId);
         Task<List<UserDto>> GetAllUsersAsync();
         Task<UserDto?> GetUserByUsernameAsync(string username);
+        Task<UserDto?> GetUserByIdAsync(int id);
     }
 }

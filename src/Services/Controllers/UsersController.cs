@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
-using Services.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -19,22 +18,22 @@ namespace Services.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Get()
+        public async Task<ActionResult<IEnumerable<UserDto>>> Get()
         {
             var users = await _userService.GetAllUsersAsync();
-            return Ok(ApiResponse<List<UserDto>>.CreateSuccess(users));
+            return Ok(users);
         }
 
-        [HttpGet("{username}")]
+        [HttpGet("{id}")]
         [Authorize]
-        public async Task<IActionResult> GetByUsername(string username)
+        public async Task<ActionResult<UserDto>> GetById(int id)
         {
-            var user = await _userService.GetUserByUsernameAsync(username);
+            var user = await _userService.GetUserByIdAsync(id);
             if (user == null)
             {
-                return NotFound(ApiResponse<object>.CreateFailure("UserNotFound", $"User with username '{username}' not found."));
+                return NotFound();
             }
-            return Ok(ApiResponse<UserDto>.CreateSuccess(user));
+            return Ok(user);
         }
 
         [HttpPost]
@@ -42,8 +41,7 @@ namespace Services.Controllers
         public async Task<IActionResult> Post([FromBody] UserRequest userRequest)
         {
             var newUser = await _userService.CreateUserAsync(userRequest);
-            var response = ApiResponse<UserDto>.CreateSuccess(newUser);
-            return CreatedAtAction(nameof(GetByUsername), new { username = newUser.Username }, response);
+            return CreatedAtAction(nameof(GetById), new { id = newUser.IdUsuario }, newUser);
         }
 
         [HttpPut("{id}")]
@@ -52,16 +50,16 @@ namespace Services.Controllers
         {
             if (id != userDto.IdUsuario)
             {
-                return BadRequest(ApiResponse<object>.CreateFailure("IdMismatch", "The ID in the URL must match the ID in the request body."));
+                return BadRequest("The ID in the URL must match the ID in the request body.");
             }
 
             var updatedUser = await _userService.UpdateUserAsync(userDto);
             if (updatedUser == null)
             {
-                return NotFound(ApiResponse<object>.CreateFailure("UserNotFound", $"User with ID {id} not found."));
+                return NotFound();
             }
 
-            return Ok(ApiResponse<UserDto>.CreateSuccess(updatedUser));
+            return Ok(updatedUser);
         }
 
         [HttpDelete("{id}")]
@@ -69,7 +67,7 @@ namespace Services.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             await _userService.DeleteUserAsync(id);
-            return Ok(ApiResponse<object>.CreateSuccess(new { message = $"User with ID {id} deleted successfully." }));
+            return NoContent();
         }
     }
 }

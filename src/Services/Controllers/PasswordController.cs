@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
 using System.Threading.Tasks;
-using Services.Models;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Services.Controllers
@@ -21,7 +20,7 @@ namespace Services.Controllers
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             await _passwordService.ChangePasswordAsync(request.Username, request.NewPassword, request.OldPassword);
-            return Ok(ApiResponse<object>.CreateSuccess(new { message = "Password changed successfully." }));
+            return Ok(new { message = "Password changed successfully." });
         }
 
         [HttpPost("recover")]
@@ -29,7 +28,7 @@ namespace Services.Controllers
         public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request)
         {
             await _passwordService.RecoverPasswordAsync(request.Username, request.Answers);
-            return Ok(ApiResponse<object>.CreateSuccess(new { message = "If the user exists, a password recovery email has been sent." }));
+            return Ok(new { message = "If the user exists, a password recovery email has been sent." });
         }
     }
 }
