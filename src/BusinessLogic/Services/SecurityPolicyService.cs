@@ -58,7 +58,7 @@ namespace BusinessLogic.Services
             return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica);
         }, "getting security policy");
 
-        public void UpdatePoliticaSeguridad(PoliticaSeguridadDto politicaDto) => ExecuteServiceOperation(() =>
+        public PoliticaSeguridadDto UpdatePoliticaSeguridad(PoliticaSeguridadDto politicaDto) => ExecuteServiceOperation(() =>
         {
             var politica = _securityRepository.GetPoliticaSeguridad()
                 ?? throw new ValidationException("No se encontró la política de seguridad para actualizar.");
@@ -66,6 +66,8 @@ namespace BusinessLogic.Services
             politica.Update(politicaDto.MayusYMinus, politicaDto.LetrasYNumeros, politicaDto.CaracterEspecial, politicaDto.Autenticacion2FA, politicaDto.NoRepetirAnteriores, politicaDto.SinDatosPersonales, politicaDto.MinCaracteres, politicaDto.CantPreguntas);
 
             _securityRepository.UpdatePoliticaSeguridad(politica);
+
+            return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica);
         }, "updating security policy");
     }
 }

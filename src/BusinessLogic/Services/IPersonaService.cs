@@ -7,7 +7,7 @@ namespace BusinessLogic.Services
     public interface IPersonaService
     {
         Task<PersonaDto> CreatePersonaAsync(PersonaRequest request);
-        Task UpdatePersonaAsync(PersonaDto persona);
+        Task<PersonaDto> UpdatePersonaAsync(PersonaDto persona);
         Task DeletePersonaAsync(int personaId);
         Task<List<PersonaDto>> GetPersonasAsync();
         Task<PersonaDto?> GetPersonaByIdAsync(int personaId);

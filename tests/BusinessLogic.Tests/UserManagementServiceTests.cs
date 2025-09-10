@@ -66,32 +66,39 @@ namespace BusinessLogic.Tests
         }
 
         [Fact]
-        public async Task UpdateUserAsync_WhenUserExists_ShouldUpdateAndCallRepository()
+        public async Task UpdateUserAsync_WhenUserExists_ShouldUpdateAndReturnDto()
         {
             // Arrange
             var userDto = new UserDto { Username = "testuser", IdRol = 1, FechaExpiracion = null, Habilitado = true };
-            var usuario = new Usuario("testuser", new byte[0], 1, 1, 1);
+            // Use the full constructor to be able to set the ID for the test
+            var rol = new Rol { IdRol = 1, Nombre = "User" };
+            var usuario = new Usuario(100, "testuser", new byte[0], 1, DateTime.MaxValue, null, DateTime.Now, 1, 1, false, null, null, null, rol);
+
             _userRepositoryMock.Setup(r => r.GetUsuarioByNombreUsuarioAsync("testuser")).ReturnsAsync(usuario);
             _userRepositoryMock.Setup(r => r.UpdateUsuarioAsync(It.IsAny<Usuario>())).Returns(Task.CompletedTask);
 
             // Act
-            await _sut.UpdateUserAsync(userDto);
+            var result = await _sut.UpdateUserAsync(userDto);
 
             // Assert
             _userRepositoryMock.Verify(r => r.UpdateUsuarioAsync(It.Is<Usuario>(u => u.UsuarioNombre == "testuser")), Times.Once);
+            Assert.NotNull(result);
+            Assert.Equal("testuser", result.Username);
             Assert.True(usuario.FechaBloqueo > DateTime.Now); // Habilitado
         }
 
         [Fact]
-        public async Task UpdateUserAsync_WhenUserDoesNotExist_ShouldThrowValidationException()
+        public async Task UpdateUserAsync_WhenUserDoesNotExist_ShouldReturnNull()
         {
             // Arrange
             var userDto = new UserDto { Username = "nonexistent", IdRol = 1 };
             _userRepositoryMock.Setup(r => r.GetUsuarioByNombreUsuarioAsync("nonexistent")).ReturnsAsync((Usuario?)null);
 
-            // Act & Assert
-            var ex = await Assert.ThrowsAsync<ValidationException>(() => _sut.UpdateUserAsync(userDto));
-            Assert.Contains("'nonexistent' not found", ex.Message);
+            // Act
+            var result = await _sut.UpdateUserAsync(userDto);
+
+            // Assert
+            Assert.Null(result);
         }
 
         [Fact]

@@ -1,13 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
+using Services.Models;
 using Session;
 
 namespace Services.Controllers
 {
-    [ApiController]
-    [Route("api/auth")]
-    public class AuthController : ControllerBase
+    [AllowAnonymous]
+    public class AuthController : BaseApiController
     {
         private readonly IAuthenticationService _authService;
         private readonly ITokenService _tokenService;
@@ -24,11 +25,14 @@ namespace Services.Controllers
             var authResult = await _authService.AuthenticateAsync(request.Username, request.Password);
 
             if (!authResult.Success || authResult.User == null)
-                return Unauthorized("Invalid credentials");
+            {
+                return Unauthorized(ApiResponse<object>.CreateFailure("InvalidCredentials", "Invalid username or password."));
+            }
 
             if (authResult.Requires2fa)
             {
-                return Ok(new LoginResponse { Requires2fa = true });
+                var twoFaResponse = new LoginResponse { Requires2fa = true };
+                return Ok(ApiResponse<LoginResponse>.CreateSuccess(twoFaResponse));
             }
 
             var user = authResult.User;
@@ -40,7 +44,7 @@ namespace Services.Controllers
                 Username = user.Username,
                 Rol = user.Rol ?? "Unknown",
             };
-            return Ok(response);
+            return Ok(ApiResponse<LoginResponse>.CreateSuccess(response));
         }
 
         [HttpPost("validate-2fa")]
@@ -49,7 +53,9 @@ namespace Services.Controllers
             var authResult = await _authService.Validate2faAsync(request.Username, request.Code);
 
             if (!authResult.Success || authResult.User == null)
-                return Unauthorized("Invalid 2FA code");
+            {
+                return Unauthorized(ApiResponse<object>.CreateFailure("Invalid2faCode", "Invalid 2FA code."));
+            }
 
             var user = authResult.User;
             var token = _tokenService.GenerateJwtToken(user.Username);
@@ -60,7 +66,7 @@ namespace Services.Controllers
                 Username = user.Username,
                 Rol = user.Rol ?? "Unknown",
             };
-            return Ok(response);
+            return Ok(ApiResponse<LoginResponse>.CreateSuccess(response));
         }
     }
 }

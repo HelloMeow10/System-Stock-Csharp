@@ -1,14 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
+using Services.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Services.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class PersonasController : ControllerBase
+    [Authorize]
+    public class PersonasController : BaseApiController
     {
         private readonly IPersonaService _personaService;
 
@@ -18,46 +19,56 @@ namespace Services.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<PersonaDto>>> Get()
+        public async Task<IActionResult> Get()
         {
             var personas = await _personaService.GetPersonasAsync();
-            return Ok(personas);
+            return Ok(ApiResponse<List<PersonaDto>>.CreateSuccess(personas));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<PersonaDto>> Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
             var persona = await _personaService.GetPersonaByIdAsync(id);
             if (persona == null)
             {
-                return NotFound();
+                return NotFound(ApiResponse<object>.CreateFailure("PersonaNotFound", $"Persona with ID {id} not found."));
             }
-            return Ok(persona);
+            return Ok(ApiResponse<PersonaDto>.CreateSuccess(persona));
         }
 
         [HttpPost]
-        public async Task<ActionResult<PersonaDto>> Post([FromBody] PersonaRequest personaRequest)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Post([FromBody] PersonaRequest personaRequest)
         {
             var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
-            return CreatedAtAction(nameof(Get), new { id = newPersona.IdPersona }, newPersona);
+            var response = ApiResponse<PersonaDto>.CreateSuccess(newPersona);
+            return CreatedAtAction(nameof(Get), new { id = newPersona.IdPersona }, response);
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Put(int id, [FromBody] PersonaDto personaDto)
         {
             if (id != personaDto.IdPersona)
             {
-                return BadRequest();
+                return BadRequest(ApiResponse<object>.CreateFailure("IdMismatch", "The ID in the URL must match the ID in the request body."));
             }
-            await _personaService.UpdatePersonaAsync(personaDto);
-            return NoContent();
+
+            var updatedPersona = await _personaService.UpdatePersonaAsync(personaDto);
+            if (updatedPersona == null)
+            {
+                return NotFound(ApiResponse<object>.CreateFailure("PersonaNotFound", $"Persona with ID {id} not found."));
+            }
+
+            return Ok(ApiResponse<PersonaDto>.CreateSuccess(updatedPersona));
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             await _personaService.DeletePersonaAsync(id);
-            return NoContent();
+            return Ok(ApiResponse<object>.CreateSuccess(new { message = $"Persona with ID {id} deleted successfully." }));
         }
     }
 }
