@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
-using Services.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -19,21 +18,21 @@ namespace Services.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<ActionResult<IEnumerable<PersonaDto>>> Get()
         {
             var personas = await _personaService.GetPersonasAsync();
-            return Ok(ApiResponse<List<PersonaDto>>.CreateSuccess(personas));
+            return Ok(personas);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<ActionResult<PersonaDto>> Get(int id)
         {
             var persona = await _personaService.GetPersonaByIdAsync(id);
             if (persona == null)
             {
-                return NotFound(ApiResponse<object>.CreateFailure("PersonaNotFound", $"Persona with ID {id} not found."));
+                return NotFound();
             }
-            return Ok(ApiResponse<PersonaDto>.CreateSuccess(persona));
+            return Ok(persona);
         }
 
         [HttpPost]
@@ -41,8 +40,7 @@ namespace Services.Controllers
         public async Task<IActionResult> Post([FromBody] PersonaRequest personaRequest)
         {
             var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
-            var response = ApiResponse<PersonaDto>.CreateSuccess(newPersona);
-            return CreatedAtAction(nameof(Get), new { id = newPersona.IdPersona }, response);
+            return CreatedAtAction(nameof(Get), new { id = newPersona.IdPersona }, newPersona);
         }
 
         [HttpPut("{id}")]
@@ -51,16 +49,16 @@ namespace Services.Controllers
         {
             if (id != personaDto.IdPersona)
             {
-                return BadRequest(ApiResponse<object>.CreateFailure("IdMismatch", "The ID in the URL must match the ID in the request body."));
+                return BadRequest("The ID in the URL must match the ID in the request body.");
             }
 
             var updatedPersona = await _personaService.UpdatePersonaAsync(personaDto);
             if (updatedPersona == null)
             {
-                return NotFound(ApiResponse<object>.CreateFailure("PersonaNotFound", $"Persona with ID {id} not found."));
+                return NotFound();
             }
 
-            return Ok(ApiResponse<PersonaDto>.CreateSuccess(updatedPersona));
+            return Ok(updatedPersona);
         }
 
         [HttpDelete("{id}")]
@@ -68,7 +66,7 @@ namespace Services.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             await _personaService.DeletePersonaAsync(id);
-            return Ok(ApiResponse<object>.CreateSuccess(new { message = $"Persona with ID {id} deleted successfully." }));
+            return NoContent();
         }
     }
 }

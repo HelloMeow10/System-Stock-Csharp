@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
-using System.Threading.Tasks;
-using Services.Models;
-using Microsoft.AspNetCore.Authorization;
 using BusinessLogic.Models;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Services.Controllers
 {
@@ -19,45 +17,45 @@ namespace Services.Controllers
         }
 
         [HttpGet("tiposdoc")]
-        public async Task<IActionResult> GetTiposDoc()
+        public ActionResult<IEnumerable<TipoDocDto>> GetTiposDoc()
         {
-            var data = await _referenceDataService.GetTiposDocAsync();
-            return Ok(ApiResponse<List<TipoDocDto>>.CreateSuccess(data));
+            var data = _referenceDataService.GetTiposDoc();
+            return Ok(data);
         }
 
         [HttpGet("provincias")]
-        public async Task<IActionResult> GetProvincias()
+        public ActionResult<IEnumerable<ProvinciaDto>> GetProvincias()
         {
-            var data = await _referenceDataService.GetProvinciasAsync();
-            return Ok(ApiResponse<List<ProvinciaDto>>.CreateSuccess(data));
+            var data = _referenceDataService.GetProvincias();
+            return Ok(data);
         }
 
         [HttpGet("partidos/{provinciaId}")]
-        public async Task<IActionResult> GetPartidos(int provinciaId)
+        public ActionResult<IEnumerable<PartidoDto>> GetPartidos(int provinciaId)
         {
-            var data = await _referenceDataService.GetPartidosByProvinciaAsync(provinciaId);
-            return Ok(ApiResponse<List<PartidoDto>>.CreateSuccess(data));
+            var data = _referenceDataService.GetPartidosByProvinciaId(provinciaId);
+            return Ok(data);
         }
 
         [HttpGet("localidades/{partidoId}")]
-        public async Task<IActionResult> GetLocalidades(int partidoId)
+        public ActionResult<IEnumerable<LocalidadDto>> GetLocalidades(int partidoId)
         {
-            var data = await _referenceDataService.GetLocalidadesByPartidoAsync(partidoId);
-            return Ok(ApiResponse<List<LocalidadDto>>.CreateSuccess(data));
+            var data = _referenceDataService.GetLocalidadesByPartidoId(partidoId);
+            return Ok(data);
         }
 
         [HttpGet("generos")]
-        public async Task<IActionResult> GetGeneros()
+        public ActionResult<IEnumerable<GeneroDto>> GetGeneros()
         {
-            var data = await _referenceDataService.GetGenerosAsync();
-            return Ok(ApiResponse<List<GeneroDto>>.CreateSuccess(data));
+            var data = _referenceDataService.GetGeneros();
+            return Ok(data);
         }
 
         [HttpGet("roles")]
-        public async Task<IActionResult> GetRoles()
+        public ActionResult<IEnumerable<RolDto>> GetRoles()
         {
-            var data = await _referenceDataService.GetRolesAsync();
-            return Ok(ApiResponse<List<RolDto>>.CreateSuccess(data));
+            var data = _referenceDataService.GetRoles();
+            return Ok(data);
         }
     }
 }

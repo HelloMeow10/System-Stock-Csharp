@@ -14,5 +14,6 @@ namespace DataAccess.Repositories
         Task<List<HistorialContrasena>> GetHistorialContrasenasByUsuarioIdAsync(int idUsuario);
         Task AddHistorialContrasenaAsync(HistorialContrasena historial);
         Task DeleteUsuarioAsync(int usuarioId);
+        Task<Usuario?> GetUsuarioByIdAsync(int id);
     }
 }

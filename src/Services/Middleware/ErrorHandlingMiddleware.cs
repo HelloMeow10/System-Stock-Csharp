@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using BusinessLogic.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Services.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 namespace Services.Middleware
 {
@@ -14,10 +16,13 @@ namespace Services.Middleware
         private readonly RequestDelegate _next;
         private readonly ILogger<ErrorHandlingMiddleware> _logger;
 
-        public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
+        private readonly IWebHostEnvironment _env;
+
+        public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IWebHostEnvironment env)
         {
             _next = next;
             _logger = logger;
+            _env = env;
         }
 
         public async Task Invoke(HttpContext context)
@@ -35,29 +40,59 @@ namespace Services.Middleware
         private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             HttpStatusCode code;
-            ApiResponse<object> response;
+            ProblemDetails problemDetails;
 
             switch (exception)
             {
                 case ValidationException validationException:
                     code = HttpStatusCode.BadRequest;
-                    // In a real app, you might serialize validationException.Errors into the message or a separate field.
-                    response = ApiResponse<object>.CreateFailure("ValidationFailure", string.Join(", ", validationException.Errors.Select(e => e.Value)));
+                    problemDetails = new ProblemDetails
+                    {
+                        Status = (int)code,
+                        Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                        Title = "Validation error",
+                        Detail = string.Join(", ", validationException.Errors)
+                    };
+                    break;
+                case BusinessLogicException businessLogicException when businessLogicException.Message.Contains("not found"):
+                    code = HttpStatusCode.NotFound;
+                    problemDetails = new ProblemDetails
+                    {
+                        Status = (int)code,
+                        Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+                        Title = "Resource not found",
+                        Detail = businessLogicException.Message
+                    };
                     break;
                 case BusinessLogicException businessLogicException:
                     code = HttpStatusCode.Conflict; // Using 409 Conflict for business rule violations
-                    response = ApiResponse<object>.CreateFailure("BusinessLogicError", businessLogicException.Message);
+                    problemDetails = new ProblemDetails
+                    {
+                        Status = (int)code,
+                        Type = "https://tools.ietf.org/html/rfc7231#section-6.5.8",
+                        Title = "Business logic error",
+                        Detail = businessLogicException.Message
+                    };
                     break;
                 default:
                     code = HttpStatusCode.InternalServerError;
-                    response = ApiResponse<object>.CreateFailure("InternalServerError", "An unexpected internal server error has occurred.");
+                    problemDetails = new ProblemDetails
+                    {
+                        Status = (int)code,
+                        Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
+                        Title = "An unexpected internal server error has occurred."
+                    };
+                    if (_env.IsDevelopment())
+                    {
+                        problemDetails.Detail = exception.ToString();
+                    }
                     break;
             }
 
             _logger.LogError(exception, "An exception was handled by the middleware: {Message}", exception.Message);
 
-            var result = JsonSerializer.Serialize(response);
-            context.Response.ContentType = "application/json";
+            var result = JsonSerializer.Serialize(problemDetails);
+            context.Response.ContentType = "application/problem+json";
             context.Response.StatusCode = (int)code;
             return context.Response.WriteAsync(result);
         }

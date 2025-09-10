@@ -162,5 +162,11 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username);
             return UserMapper.MapToUserDto(usuario);
         }, "getting user by username");
+
+        public async Task<UserDto?> GetUserByIdAsync(int id) => await ExecuteServiceOperationAsync(async () =>
+        {
+            var usuario = await _userRepository.GetUsuarioByIdAsync(id);
+            return UserMapper.MapToUserDto(usuario);
+        }, "getting user by id");
     }
 }

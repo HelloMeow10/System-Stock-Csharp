@@ -153,5 +153,11 @@ namespace DataAccess.Repositories
         {
             p.AddWithValue("@id_usuario", usuarioId);
         });
+
+        public async Task<Usuario?> GetUsuarioByIdAsync(int id) => await ExecuteReaderAsync("sp_get_usuario_by_id", async reader =>
+        {
+            if (!await reader.ReadAsync()) return null;
+            return MapToUsuario(reader);
+        }, p => p.AddWithValue("@id_usuario", id), CommandType.StoredProcedure);
     }
 }

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
-using Services.Models;
 using Session;
 
 namespace Services.Controllers
@@ -26,13 +25,13 @@ namespace Services.Controllers
 
             if (!authResult.Success || authResult.User == null)
             {
-                return Unauthorized(ApiResponse<object>.CreateFailure("InvalidCredentials", "Invalid username or password."));
+                return Unauthorized("Invalid username or password.");
             }
 
             if (authResult.Requires2fa)
             {
                 var twoFaResponse = new LoginResponse { Requires2fa = true };
-                return Ok(ApiResponse<LoginResponse>.CreateSuccess(twoFaResponse));
+                return Ok(twoFaResponse);
             }
 
             var user = authResult.User;
@@ -44,7 +43,7 @@ namespace Services.Controllers
                 Username = user.Username,
                 Rol = user.Rol ?? "Unknown",
             };
-            return Ok(ApiResponse<LoginResponse>.CreateSuccess(response));
+            return Ok(response);
         }
 
         [HttpPost("validate-2fa")]
@@ -54,7 +53,7 @@ namespace Services.Controllers
 
             if (!authResult.Success || authResult.User == null)
             {
-                return Unauthorized(ApiResponse<object>.CreateFailure("Invalid2faCode", "Invalid 2FA code."));
+                return Unauthorized("Invalid 2FA code.");
             }
 
             var user = authResult.User;
@@ -66,7 +65,7 @@ namespace Services.Controllers
                 Username = user.Username,
                 Rol = user.Rol ?? "Unknown",
             };
-            return Ok(ApiResponse<LoginResponse>.CreateSuccess(response));
+            return Ok(response);
         }
     }
 }
