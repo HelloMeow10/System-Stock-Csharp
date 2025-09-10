@@ -122,14 +122,18 @@ namespace BusinessLogic.Services
             }).ToList();
         }, "getting all users");
 
-        public async Task UpdateUserAsync(UserDto userDto) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<UserDto> UpdateUserAsync(UserDto userDto) => await ExecuteServiceOperationAsync(async () =>
         {
-            var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(userDto.Username)
-                ?? throw new ValidationException($"Usuario '{userDto.Username}' not found");
+            var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(userDto.Username);
+            if (usuario == null)
+            {
+                return null; // User not found
+            }
 
             // The admin username should come from the current session context in a real app
             const string adminUsername = "Admin";
 
+            // Apply updates to the entity
             usuario.ChangeRole(userDto.IdRol);
             usuario.SetExpiration(userDto.FechaExpiracion);
             usuario.ForcePasswordChange(userDto.CambioContrasenaObligatorio);
@@ -144,6 +148,9 @@ namespace BusinessLogic.Services
             }
 
             await _userRepository.UpdateUsuarioAsync(usuario);
+
+            // The in-memory entity is up-to-date, map it back to a DTO
+            return UserMapper.MapToUserDto(usuario);
         }, "updating user");
 
         public async Task DeleteUserAsync(int userId) => await ExecuteServiceOperationAsync(async () =>

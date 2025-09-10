@@ -64,18 +64,22 @@ namespace BusinessLogic.Services
             }, "creating a person"));
         }
 
-        public Task UpdatePersonaAsync(PersonaDto personaDto)
+        public Task<PersonaDto> UpdatePersonaAsync(PersonaDto personaDto)
         {
-            ExecuteServiceOperation(() =>
+            return Task.FromResult(ExecuteServiceOperation(() =>
             {
-                var persona = _personaRepository.GetPersonaById(personaDto.IdPersona)
-                    ?? throw new ValidationException($"Persona with id {personaDto.IdPersona} not found");
+                var persona = _personaRepository.GetPersonaById(personaDto.IdPersona);
+                if (persona == null)
+                {
+                    return null; // Persona not found
+                }
 
                 persona.Update(personaDto.Legajo, personaDto.Nombre, personaDto.Apellido, personaDto.IdTipoDoc, personaDto.NumDoc, personaDto.FechaNacimiento, personaDto.Cuil, personaDto.Calle, personaDto.Altura, personaDto.IdLocalidad, personaDto.IdGenero, personaDto.Correo, personaDto.Celular, personaDto.FechaIngreso);
 
                 _personaRepository.UpdatePersona(persona);
-            }, "updating persona");
-            return Task.CompletedTask;
+
+                return PersonaMapper.MapToPersonaDto(persona);
+            }, "updating persona"));
         }
 
         public Task DeletePersonaAsync(int personaId)

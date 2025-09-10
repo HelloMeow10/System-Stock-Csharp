@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
+using Services.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Services.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class SecurityPolicyController : ControllerBase
+    [Authorize(Roles = "Admin")]
+    public class SecurityPolicyController : BaseApiController
     {
         private readonly ISecurityPolicyService _securityPolicyService;
 
@@ -16,17 +17,21 @@ namespace Services.Controllers
         }
 
         [HttpGet]
-        public ActionResult<PoliticaSeguridadDto> Get()
+        public IActionResult Get()
         {
             var politica = _securityPolicyService.GetPoliticaSeguridad();
-            return Ok(politica);
+            if (politica == null)
+            {
+                return NotFound(ApiResponse<object>.CreateFailure("PolicyNotFound", "Security policy not found."));
+            }
+            return Ok(ApiResponse<PoliticaSeguridadDto>.CreateSuccess(politica));
         }
 
         [HttpPut]
         public IActionResult Put([FromBody] PoliticaSeguridadDto politica)
         {
-            _securityPolicyService.UpdatePoliticaSeguridad(politica);
-            return NoContent();
+            var updatedPolitica = _securityPolicyService.UpdatePoliticaSeguridad(politica);
+            return Ok(ApiResponse<PoliticaSeguridadDto>.CreateSuccess(updatedPolitica));
         }
     }
 }
