@@ -32,14 +32,14 @@ namespace BusinessLogic.Factories
             _passwordHasher = passwordHasher;
         }
 
-        public (Usuario Usuario, string PlainPassword) Create(UserRequest request)
+        public async Task<(Usuario Usuario, string PlainPassword)> Create(UserRequest request)
         {
             if (!int.TryParse(request.PersonaId, out int personaId))
             {
                 throw new ValidationException("El Id de la persona no es válido.");
             }
 
-            var persona = _personaRepository.GetPersonaById(personaId)
+            var persona = await _personaRepository.GetPersonaByIdAsync(personaId)
                 ?? throw new ValidationException("Persona no encontrada");
 
             if (string.IsNullOrWhiteSpace(persona.Correo))

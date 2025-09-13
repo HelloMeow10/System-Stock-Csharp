@@ -9,6 +9,7 @@
   <ItemGroup>
     <!-- Referencias a capas que BusinessLogic consume -->
     <ProjectReference Include="..\DataAccess\DataAccess.csproj" />
+    <ProjectReference Include="..\SharedKernel\SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>

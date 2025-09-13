@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using SharedKernel;
 using DataAccess.Entities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -103,7 +104,16 @@ namespace DataAccess.Repositories
             CommandType.StoredProcedure
         );
 
-        public async Task<List<Usuario>> GetAllUsersAsync() => await ExecuteReaderAsync("sp_get_all_users", async reader =>
+        public async Task<PagedList<Usuario>> GetUsersAsync(PaginationParams paginationParams)
+        {
+            // This is a temporary in-memory pagination implementation.
+            // For production, this should be replaced with a stored procedure
+            // that performs pagination at the database level for efficiency.
+            var allUsers = await GetAllUsersAsync();
+            return PagedList<Usuario>.ToPagedList(allUsers, paginationParams.PageNumber, paginationParams.PageSize);
+        }
+
+        private async Task<List<Usuario>> GetAllUsersAsync() => await ExecuteReaderAsync("sp_get_all_users", async reader =>
         {
             var list = new List<Usuario>();
             while (await reader.ReadAsync())

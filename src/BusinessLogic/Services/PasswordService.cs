@@ -52,7 +52,7 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username)
                 ?? throw new ValidationException($"Usuario '{username}' not found");
 
-            var persona = _personaRepository.GetPersonaById(usuario.IdPersona)
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona)
                 ?? throw new ValidationException("Persona no encontrada");
 
             var respuestasGuardadas = _securityRepository.GetRespuestasSeguridadByUsuarioId(usuario.IdUsuario)
@@ -100,7 +100,7 @@ namespace BusinessLogic.Services
                 throw new ValidationException("La contraseña actual es incorrecta. Por favor, intente de nuevo.");
             }
 
-            var persona = _personaRepository.GetPersonaById(usuario.IdPersona)
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona)
                 ?? throw new ValidationException("Persona no encontrada");
 
             ValidatePasswordPolicy(newPassword, username, persona);

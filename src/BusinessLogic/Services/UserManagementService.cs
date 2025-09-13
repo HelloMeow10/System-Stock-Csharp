@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BusinessLogic.Models;
+using SharedKernel;
 using DataAccess.Entities;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
@@ -93,23 +94,34 @@ namespace BusinessLogic.Services
 
         public async Task<UserDto> CreateUserAsync(UserRequest request) => await ExecuteServiceOperationAsync(async () =>
         {
-            var (usuario, plainPassword) = _usuarioFactory.Create(request);
+            var (usuario, plainPassword) = await _usuarioFactory.Create(request);
 
             await _userRepository.AddUsuarioAsync(usuario);
 
-            var persona = _personaRepository.GetPersonaById(usuario.IdPersona)!;
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona)!;
 
             await _emailService.SendWelcomeEmailAsync(persona.Correo!, usuario.UsuarioNombre, plainPassword);
 
             return UserMapper.MapToUserDto(usuario)!;
         }, "creating a user");
 
-        public async Task<List<UserDto>> GetAllUsersAsync() => await ExecuteServiceOperationAsync(async () =>
+        public async Task<PagedList<UserDto>> GetUsersAsync(PaginationParams paginationParams) => await ExecuteServiceOperationAsync(async () =>
         {
-            var usuarios = await _userRepository.GetAllUsersAsync();
-            var personas = (await _personaService.GetPersonasAsync()).ToDictionary(p => p.IdPersona);
+            var pagedUsers = await _userRepository.GetUsersAsync(paginationParams);
 
-            return usuarios.Select(u =>
+            // Get Personas only for the users in the current page for efficiency
+            var personaIds = pagedUsers.Items.Select(u => u.IdPersona).Distinct();
+            var personas = new Dictionary<int, PersonaDto>();
+            foreach (var id in personaIds)
+            {
+                var persona = await _personaService.GetPersonaByIdAsync(id);
+                if (persona != null)
+                {
+                    personas[id] = persona;
+                }
+            }
+
+            var userDtos = pagedUsers.Items.Select(u =>
             {
                 var userDto = UserMapper.MapToUserDto(u)!;
                 if (personas.TryGetValue(u.IdPersona, out var persona))
@@ -120,6 +132,8 @@ namespace BusinessLogic.Services
                 }
                 return userDto;
             }).ToList();
+
+            return new PagedList<UserDto>(userDtos, pagedUsers.TotalCount, pagedUsers.CurrentPage, pagedUsers.PageSize);
         }, "getting all users");
 
         public async Task<UserDto> UpdateUserAsync(UserDto userDto) => await ExecuteServiceOperationAsync(async () =>

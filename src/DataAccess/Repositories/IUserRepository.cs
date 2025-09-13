@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SharedKernel;
 using DataAccess.Entities;
 
 namespace DataAccess.Repositories
@@ -10,7 +11,7 @@ namespace DataAccess.Repositories
         Task<Usuario?> GetUsuarioByNombreUsuarioAsync(string nombre);
         Task UpdateUsuarioAsync(Usuario usuario);
         Task Set2faCodeAsync(string username, string? code, System.DateTime? expiry);
-        Task<List<Usuario>> GetAllUsersAsync();
+        Task<PagedList<Usuario>> GetUsersAsync(PaginationParams paginationParams);
         Task<List<HistorialContrasena>> GetHistorialContrasenasByUsuarioIdAsync(int idUsuario);
         Task AddHistorialContrasenaAsync(HistorialContrasena historial);
         Task DeleteUsuarioAsync(int usuarioId);

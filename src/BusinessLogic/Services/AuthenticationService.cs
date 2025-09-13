@@ -90,7 +90,7 @@ namespace BusinessLogic.Services
 
         private async Task<AuthenticationResult> HandleTwoFactorAuthentication(string username, int personaId)
         {
-            var persona = _personaRepository.GetPersonaById(personaId);
+            var persona = await _personaRepository.GetPersonaByIdAsync(personaId);
             if (persona == null || string.IsNullOrWhiteSpace(persona.Correo))
             {
                 return AuthenticationResult.Failed("No se puede usar 2FA sin un correo configurado.");
