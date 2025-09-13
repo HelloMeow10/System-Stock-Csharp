@@ -1,14 +1,16 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using SharedKernel;
 using DataAccess.Entities;
 
 namespace DataAccess.Repositories
 {
     public interface IPersonaRepository
     {
-        Persona? GetPersonaById(int id);
-        List<Persona> GetAllPersonas();
-        void AddPersona(Persona persona);
-        void UpdatePersona(Persona persona);
-        void DeletePersona(int personaId);
+        Task<Persona?> GetPersonaByIdAsync(int id);
+        Task<PagedList<Persona>> GetPersonasAsync(PaginationParams paginationParams);
+        Task AddPersonaAsync(Persona persona);
+        Task UpdatePersonaAsync(Persona persona);
+        Task DeletePersonaAsync(int personaId);
     }
 }

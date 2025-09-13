@@ -1,11 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BusinessLogic.Exceptions;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
 using BusinessLogic.Models;
+using SharedKernel;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -27,81 +26,48 @@ namespace BusinessLogic.Services
             _personaFactory = personaFactory ?? throw new ArgumentNullException(nameof(personaFactory));
         }
 
-        private T ExecuteServiceOperation<T>(Func<T> operation, string operationName)
+        public async Task<PersonaDto> CreatePersonaAsync(PersonaRequest request)
         {
-            try
+            _logger.LogInformation("Iniciando la creación de la persona con legajo: {Legajo}", request.Legajo);
+            var persona = _personaFactory.Create(request);
+            _logger.LogInformation("Llamando a AddPersonaAsync en el repositorio.");
+            await _personaRepository.AddPersonaAsync(persona);
+            _logger.LogInformation("Persona creada con éxito en el repositorio.");
+            return PersonaMapper.MapToPersonaDto(persona)!;
+        }
+
+        public async Task<PersonaDto?> UpdatePersonaAsync(PersonaDto personaDto)
+        {
+            var persona = await _personaRepository.GetPersonaByIdAsync(personaDto.IdPersona);
+            if (persona == null)
             {
-                return operation();
+                _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", personaDto.IdPersona);
+                return null; // Persona not found
             }
-            catch (ValidationException)
-            {
-                throw;
-            }
+
+            persona.Update(personaDto.Legajo, personaDto.Nombre, personaDto.Apellido, personaDto.IdTipoDoc, personaDto.NumDoc, personaDto.FechaNacimiento, personaDto.Cuil, personaDto.Calle, personaDto.Altura, personaDto.IdLocalidad, personaDto.IdGenero, personaDto.Correo, personaDto.Celular, personaDto.FechaIngreso);
+
+            await _personaRepository.UpdatePersonaAsync(persona);
+
+            return PersonaMapper.MapToPersonaDto(persona);
         }
 
-        private void ExecuteServiceOperation(Action operation, string operationName)
+        public async Task DeletePersonaAsync(int personaId)
         {
-            try
-            {
-                operation();
-            }
-            catch (ValidationException)
-            {
-                throw;
-            }
+            await _personaRepository.DeletePersonaAsync(personaId);
         }
 
-        public Task<PersonaDto> CreatePersonaAsync(PersonaRequest request)
+        public async Task<PagedList<PersonaDto>> GetPersonasAsync(PaginationParams paginationParams)
         {
-            return Task.FromResult(ExecuteServiceOperation(() =>
-            {
-                _logger.LogInformation("Iniciando la creación de la persona con legajo: {Legajo}", request.Legajo);
-                var persona = _personaFactory.Create(request);
-                _logger.LogInformation("Llamando a AddPersona en el repositorio.");
-                _personaRepository.AddPersona(persona);
-                _logger.LogInformation("Persona creada con éxito en el repositorio.");
-                return PersonaMapper.MapToPersonaDto(persona)!;
-            }, "creating a person"));
+            var pagedPersonas = await _personaRepository.GetPersonasAsync(paginationParams);
+            var personaDtos = pagedPersonas.Items.Select(p => PersonaMapper.MapToPersonaDto(p)!).ToList();
+            return new PagedList<PersonaDto>(personaDtos, pagedPersonas.TotalCount, pagedPersonas.CurrentPage, pagedPersonas.PageSize);
         }
 
-        public Task<PersonaDto> UpdatePersonaAsync(PersonaDto personaDto)
+        public async Task<PersonaDto?> GetPersonaByIdAsync(int personaId)
         {
-            return Task.FromResult(ExecuteServiceOperation(() =>
-            {
-                var persona = _personaRepository.GetPersonaById(personaDto.IdPersona);
-                if (persona == null)
-                {
-                    return null; // Persona not found
-                }
-
-                persona.Update(personaDto.Legajo, personaDto.Nombre, personaDto.Apellido, personaDto.IdTipoDoc, personaDto.NumDoc, personaDto.FechaNacimiento, personaDto.Cuil, personaDto.Calle, personaDto.Altura, personaDto.IdLocalidad, personaDto.IdGenero, personaDto.Correo, personaDto.Celular, personaDto.FechaIngreso);
-
-                _personaRepository.UpdatePersona(persona);
-
-                return PersonaMapper.MapToPersonaDto(persona);
-            }, "updating persona"));
-        }
-
-        public Task DeletePersonaAsync(int personaId)
-        {
-            ExecuteServiceOperation(() => _personaRepository.DeletePersona(personaId), "deleting persona");
-            return Task.CompletedTask;
-        }
-
-        public Task<List<PersonaDto>> GetPersonasAsync()
-        {
-            return Task.FromResult(ExecuteServiceOperation(() =>
-                _personaRepository.GetAllPersonas().Select(p => PersonaMapper.MapToPersonaDto(p)!).ToList(),
-                "getting all people"));
-        }
-
-        public Task<PersonaDto?> GetPersonaByIdAsync(int personaId)
-        {
-            return Task.FromResult(ExecuteServiceOperation(() =>
-            {
-                var persona = _personaRepository.GetPersonaById(personaId);
-                return PersonaMapper.MapToPersonaDto(persona);
-            }, "getting persona by id"));
+            var persona = await _personaRepository.GetPersonaByIdAsync(personaId);
+            return PersonaMapper.MapToPersonaDto(persona);
         }
     }
 }

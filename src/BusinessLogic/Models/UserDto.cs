@@ -1,6 +1,8 @@
+using SharedKernel;
+
 namespace BusinessLogic.Models
 {
-    public class UserDto
+    public class UserDto : ResourceDto
     {
         public int IdUsuario { get; set; }
         public string Username { get; set; } = null!;

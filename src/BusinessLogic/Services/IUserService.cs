@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using BusinessLogic.Models;
+using SharedKernel;
 
 namespace BusinessLogic.Services
 {
@@ -9,7 +10,7 @@ namespace BusinessLogic.Services
         Task<UserDto> CreateUserAsync(UserRequest request);
         Task<UserDto> UpdateUserAsync(UserDto user);
         Task DeleteUserAsync(int userId);
-        Task<List<UserDto>> GetAllUsersAsync();
+        Task<PagedList<UserDto>> GetUsersAsync(PaginationParams paginationParams);
         Task<UserDto?> GetUserByUsernameAsync(string username);
         Task<UserDto?> GetUserByIdAsync(int id);
     }

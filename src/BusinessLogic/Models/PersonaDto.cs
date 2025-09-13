@@ -1,8 +1,9 @@
 using System;
+using SharedKernel;
 
 namespace BusinessLogic.Models
 {
-    public class PersonaDto
+    public class PersonaDto : ResourceDto
     {
         public int IdPersona { get; set; }
         public int Legajo { get; set; }
