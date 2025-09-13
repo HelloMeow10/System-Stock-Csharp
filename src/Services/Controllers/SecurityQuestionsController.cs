@@ -17,7 +17,8 @@ namespace Services.Controllers
         }
 
         [HttpGet("{username}")]
-        [Authorize]
+        [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetUserQuestions(string username)
         {
             var questions = await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
@@ -26,6 +27,7 @@ namespace Services.Controllers
 
         [HttpGet]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<PreguntaSeguridadDto>> GetAllQuestions()
         {
             var questions = _securityQuestionService.GetSecurityQuestions();
@@ -33,7 +35,9 @@ namespace Services.Controllers
         }
 
         [HttpPost("{username}/answers")]
-        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> SaveAnswers(string username, [FromBody] Dictionary<int, string> answers)
         {
             await _securityQuestionService.SaveSecurityAnswersAsync(username, answers);

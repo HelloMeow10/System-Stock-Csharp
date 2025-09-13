@@ -19,13 +19,20 @@ namespace Services.Controllers
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var authResult = await _authService.AuthenticateAsync(request.Username, request.Password);
 
             if (!authResult.Success || authResult.User == null)
             {
-                return Unauthorized("Invalid username or password.");
+                return Unauthorized(new ProblemDetails
+                {
+                    Title = "Authentication Failed",
+                    Detail = "Invalid username or password.",
+                    Status = StatusCodes.Status401Unauthorized
+                });
             }
 
             if (authResult.Requires2fa)
@@ -47,13 +54,20 @@ namespace Services.Controllers
         }
 
         [HttpPost("validate-2fa")]
+        [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Validate2fa([FromBody] Validate2faRequest request)
         {
             var authResult = await _authService.Validate2faAsync(request.Username, request.Code);
 
             if (!authResult.Success || authResult.User == null)
             {
-                return Unauthorized("Invalid 2FA code.");
+                return Unauthorized(new ProblemDetails
+                {
+                    Title = "2FA Validation Failed",
+                    Detail = "Invalid 2FA code.",
+                    Status = StatusCodes.Status401Unauthorized
+                });
             }
 
             var user = authResult.User;
