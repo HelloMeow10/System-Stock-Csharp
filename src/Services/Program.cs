@@ -31,7 +31,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILinkService, LinkService>();
 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson();
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer(); // Required for API Explorer

@@ -17,6 +17,7 @@ namespace Services.Controllers
         }
 
         [HttpGet("tiposdoc")]
+        [ProducesResponseType(typeof(IEnumerable<TipoDocDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<TipoDocDto>> GetTiposDoc()
         {
             var data = _referenceDataService.GetTiposDoc();
@@ -24,6 +25,7 @@ namespace Services.Controllers
         }
 
         [HttpGet("provincias")]
+        [ProducesResponseType(typeof(IEnumerable<ProvinciaDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<ProvinciaDto>> GetProvincias()
         {
             var data = _referenceDataService.GetProvincias();
@@ -31,6 +33,7 @@ namespace Services.Controllers
         }
 
         [HttpGet("partidos/{provinciaId}")]
+        [ProducesResponseType(typeof(IEnumerable<PartidoDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<PartidoDto>> GetPartidos(int provinciaId)
         {
             var data = _referenceDataService.GetPartidosByProvinciaId(provinciaId);
@@ -38,6 +41,7 @@ namespace Services.Controllers
         }
 
         [HttpGet("localidades/{partidoId}")]
+        [ProducesResponseType(typeof(IEnumerable<LocalidadDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<LocalidadDto>> GetLocalidades(int partidoId)
         {
             var data = _referenceDataService.GetLocalidadesByPartidoId(partidoId);
@@ -45,6 +49,7 @@ namespace Services.Controllers
         }
 
         [HttpGet("generos")]
+        [ProducesResponseType(typeof(IEnumerable<GeneroDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<GeneroDto>> GetGeneros()
         {
             var data = _referenceDataService.GetGeneros();
@@ -52,6 +57,7 @@ namespace Services.Controllers
         }
 
         [HttpGet("roles")]
+        [ProducesResponseType(typeof(IEnumerable<RolDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<RolDto>> GetRoles()
         {
             var data = _referenceDataService.GetRoles();

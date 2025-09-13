@@ -16,6 +16,8 @@ namespace Services.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<PoliticaSeguridadDto> Get()
         {
             var politica = _securityPolicyService.GetPoliticaSeguridad();
@@ -27,6 +29,7 @@ namespace Services.Controllers
         }
 
         [HttpPut]
+        [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
         public IActionResult Put([FromBody] PoliticaSeguridadDto politica)
         {
             var updatedPolitica = _securityPolicyService.UpdatePoliticaSeguridad(politica);

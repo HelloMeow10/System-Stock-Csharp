@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using System.Text.Json;
 using Services.Hateoas;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace Services.Controllers
 {
@@ -19,6 +20,51 @@ namespace Services.Controllers
         {
             _userService = userService;
             _linkService = linkService;
+        }
+
+        /// <summary>
+        /// Partially updates an existing user.
+        /// </summary>
+        /// <param name="id">The ID of the user to update.</param>
+        /// <param name="patchDoc">The JSON patch document with the updates.</param>
+        /// <returns>The updated user.</returns>
+        /// <response code="200">Returns the updated user.</response>
+        /// <response code="400">If the patch document is invalid or the model state is invalid after patching.</response>
+        /// <response code="404">If the user to update is not found.</response>
+        /// <response code="401">If the user is not authenticated.</response>
+        /// <response code="403">If the user is not an administrator.</response>
+        [HttpPatch("{id}", Name = "PatchUser")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> Patch(int id, [FromBody] JsonPatchDocument<UserDto> patchDoc)
+        {
+            if (patchDoc == null)
+            {
+                return BadRequest("A patch document is required.");
+            }
+
+            var userToUpdate = await _userService.GetUserByIdAsync(id);
+            if (userToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            patchDoc.ApplyTo(userToUpdate, ModelState);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var updatedUser = await _userService.UpdateUserAsync(userToUpdate);
+
+            _linkService.AddLinksForUser(Url, updatedUser);
+
+            return Ok(updatedUser);
         }
 
         /// <summary>
