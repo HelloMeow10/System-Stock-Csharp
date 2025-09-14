@@ -1,7 +1,7 @@
 using System;
 using BusinessLogic.Exceptions;
 using BusinessLogic.Mappers;
-using BusinessLogic.Models;
+using Contracts;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
 

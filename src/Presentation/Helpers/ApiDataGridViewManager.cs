@@ -1,7 +1,7 @@
 using Presentation.ApiClient;
 using System.Windows.Forms;
 using System.Threading.Tasks;
-using BusinessLogic.Models;
+using Contracts;
 using System.Collections.Generic;
 using System.Linq;
 

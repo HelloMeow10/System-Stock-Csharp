@@ -2,7 +2,7 @@ using Xunit;
 using Moq;
 using System.Threading.Tasks;
 using BusinessLogic.Services;
-using BusinessLogic.Models;
+using Contracts;
 using BusinessLogic.Factories;
 using DataAccess.Repositories;
 using DataAccess.Entities;

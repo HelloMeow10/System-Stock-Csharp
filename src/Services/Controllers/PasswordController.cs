@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
-using BusinessLogic.Models;
+using Contracts;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 
@@ -17,22 +17,22 @@ namespace Services.Controllers
 
         [HttpPost("change")]
         [Authorize]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             await _passwordService.ChangePasswordAsync(request.Username, request.NewPassword, request.OldPassword);
-            return Ok(new { message = "Password changed successfully." });
+            return Ok(ApiResponse<object>.Success(new { message = "Password changed successfully." }));
         }
 
         [HttpPost("recover")]
         [AllowAnonymous]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request)
         {
             await _passwordService.RecoverPasswordAsync(request.Username, request.Answers);
-            return Ok(new { message = "If the user exists, a password recovery email has been sent." });
+            return Ok(ApiResponse<object>.Success(new { message = "If the user exists, a password recovery email has been sent." }));
         }
     }
 }

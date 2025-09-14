@@ -3,7 +3,7 @@ using BusinessLogic.Security;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
 using Moq;
-using BusinessLogic.Models;
+using Contracts;
 using SharedKernel;
 using DataAccess.Entities;
 using System.Threading.Tasks;

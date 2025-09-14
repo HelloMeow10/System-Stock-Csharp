@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using BusinessLogic.Models;
+using Contracts;
 using DataAccess.Entities;
 
 namespace BusinessLogic.Factories

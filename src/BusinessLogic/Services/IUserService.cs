@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using BusinessLogic.Models;
+using Contracts;
 using SharedKernel;
 
 namespace BusinessLogic.Services

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using BusinessLogic.Models;
+using Contracts;
 using Presentation.Controles;
 using Presentation.Theme;
 using Presentation.ApiClient;

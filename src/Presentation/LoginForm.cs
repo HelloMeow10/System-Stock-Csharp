@@ -1,6 +1,6 @@
 using System;
 using System.Windows.Forms;
-using BusinessLogic.Models;
+using Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Presentation.ApiClient;
 

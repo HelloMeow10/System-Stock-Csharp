@@ -5,6 +5,7 @@ using Session;
 using BusinessLogic; // Import the namespace for AddInfrastructure
 using Services.Hateoas;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // Add services specific to the API layer
+builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionContextAccessor, Microsoft.AspNetCore.Mvc.Infrastructure.ActionContextAccessor>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILinkService, LinkService>();
 
@@ -73,3 +75,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

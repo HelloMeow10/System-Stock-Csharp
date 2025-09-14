@@ -1,5 +1,5 @@
 // src/BusinessLogic/Models/PersonaRequest.cs
-namespace BusinessLogic.Models
+namespace Contracts
 {
     public class PersonaRequest
     {

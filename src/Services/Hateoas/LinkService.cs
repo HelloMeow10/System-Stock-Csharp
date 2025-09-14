@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using SharedKernel;
 using System;
 using System.Collections.Generic;
-using BusinessLogic.Models;
+using Contracts;
 
 namespace Services.Hateoas
 {
@@ -21,7 +21,8 @@ namespace Services.Hateoas
             _linkFactories = new Dictionary<Type, Func<ResourceDto, List<LinkSpec>>>
             {
                 { typeof(UserDto), resource => ResourceLinker.GetUserLinks(((UserDto)resource).IdUsuario) },
-                { typeof(PersonaDto), resource => ResourceLinker.GetPersonaLinks(((PersonaDto)resource).IdPersona) }
+                { typeof(PersonaDto), resource => ResourceLinker.GetPersonaLinks(((PersonaDto)resource).IdPersona) },
+                { typeof(PoliticaSeguridadDto), resource => ResourceLinker.GetSecurityPolicyLinks() }
             };
         }
 
@@ -52,39 +53,5 @@ namespace Services.Hateoas
             }
         }
 
-        public List<LinkDto> GetLinksForCollection<T>(PagedList<T> pagedList, string routeName, PaginationParams paginationParams)
-        {
-            var links = new List<LinkDto>();
-
-            if (_actionContextAccessor.ActionContext == null) return links;
-
-            var urlHelper = _urlHelperFactory.GetUrlHelper(_actionContextAccessor.ActionContext);
-
-            var selfLink = urlHelper.Link(routeName, new { pageNumber = paginationParams.PageNumber, pageSize = paginationParams.PageSize });
-            if (selfLink != null)
-            {
-                links.Add(new LinkDto(selfLink, "self", "GET"));
-            }
-
-            if (pagedList.HasNext)
-            {
-                var nextPageLink = urlHelper.Link(routeName, new { pageNumber = pagedList.CurrentPage + 1, pageSize = pagedList.PageSize });
-                if (nextPageLink != null)
-                {
-                    links.Add(new LinkDto(nextPageLink, "nextPage", "GET"));
-                }
-            }
-
-            if (pagedList.HasPrevious)
-            {
-                var prevPageLink = urlHelper.Link(routeName, new { pageNumber = pagedList.CurrentPage - 1, pageSize = pagedList.PageSize });
-                if (prevPageLink != null)
-                {
-                    links.Add(new LinkDto(prevPageLink, "previousPage", "GET"));
-                }
-            }
-
-            return links;
-        }
     }
 }

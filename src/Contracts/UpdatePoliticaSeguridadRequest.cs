@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BusinessLogic.Models
+namespace Contracts
 {
     /// <summary>
     /// Represents the data required to update the security policy.

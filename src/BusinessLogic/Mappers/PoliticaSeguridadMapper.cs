@@ -1,4 +1,4 @@
-using BusinessLogic.Models;
+using Contracts;
 using DataAccess.Entities;
 
 namespace BusinessLogic.Mappers

@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using BusinessLogic.Exceptions;
-using BusinessLogic.Models;
+using Contracts;
 using BusinessLogic.Security;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;

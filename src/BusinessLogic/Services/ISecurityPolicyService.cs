@@ -1,4 +1,4 @@
-using BusinessLogic.Models;
+using Contracts;
 using System.Threading.Tasks;
 
 namespace BusinessLogic.Services

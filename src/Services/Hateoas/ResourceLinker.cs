@@ -1,22 +1,10 @@
 using System.Collections.Generic;
-using BusinessLogic.Models;
+using Contracts;
 
 namespace Services.Hateoas
 {
     public static class ResourceLinker
     {
-        public static void AddLinksToUser(UserDto user)
-        {
-            user.Links.Clear();
-            user.Links.AddRange(GetUserLinks(user.IdUsuario));
-        }
-
-        public static void AddLinksToPersona(PersonaDto persona)
-        {
-            persona.Links.Clear();
-            persona.Links.AddRange(GetPersonaLinks(persona.IdPersona));
-        }
-
         public static List<LinkSpec> GetUserLinks(int id)
         {
             return new List<LinkSpec>
@@ -36,6 +24,15 @@ namespace Services.Hateoas
                 new LinkSpec("DeletePersona", new { id }, "delete_persona", "DELETE"),
                 new LinkSpec("UpdatePersona", new { id }, "update_persona", "PUT"),
                 new LinkSpec("PatchPersona", new { id }, "patch_persona", "PATCH")
+            };
+        }
+
+        public static List<LinkSpec> GetSecurityPolicyLinks()
+        {
+            return new List<LinkSpec>
+            {
+                new LinkSpec("GetSecurityPolicy", null, "self", "GET"),
+                new LinkSpec("UpdateSecurityPolicy", null, "update_policy", "PUT")
             };
         }
     }

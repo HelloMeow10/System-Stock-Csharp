@@ -1,56 +1,32 @@
 using System;
-using System.ComponentModel.DataAnnotations;
+using SharedKernel;
 
-namespace BusinessLogic.Models
+namespace Contracts
 {
-    /// <summary>
-    /// Represents the data required to update an existing persona.
-    /// </summary>
-    public class UpdatePersonaRequest
+    public class PersonaDto : ResourceDto
     {
-        [Required]
-        [StringLength(100)]
+        public int IdPersona { get; set; }
+        public int Legajo { get; set; }
         public string Nombre { get; set; } = null!;
-
-        [Required]
-        [StringLength(100)]
         public string Apellido { get; set; } = null!;
-
-        [Required]
+        public string NombreCompleto { get; set; } = null!;
         public int IdTipoDoc { get; set; }
-
-        [Required]
-        [StringLength(20)]
+        public string? TipoDocNombre { get; set; }
         public string NumDoc { get; set; } = null!;
-
         public DateTime? FechaNacimiento { get; set; }
-
-        [StringLength(11)]
         public string? Cuil { get; set; }
-
-        [StringLength(100)]
         public string? Calle { get; set; }
-
-        [StringLength(10)]
         public string? Altura { get; set; }
-
-        [Required]
         public int IdLocalidad { get; set; }
-
-        [Required]
+        public string? LocalidadNombre { get; set; }
         public int IdPartido { get; set; }
-
-        [Required]
+        public string? PartidoNombre { get; set; }
         public int IdProvincia { get; set; }
-
-        [Required]
+        public string? ProvinciaNombre { get; set; }
         public int IdGenero { get; set; }
-
-        [EmailAddress]
-        [StringLength(100)]
+        public string? GeneroNombre { get; set; }
         public string? Correo { get; set; }
-
-        [StringLength(20)]
         public string? Celular { get; set; }
+        public DateTime FechaIngreso { get; set; }
     }
 }

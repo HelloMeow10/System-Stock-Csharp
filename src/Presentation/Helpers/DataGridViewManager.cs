@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using BusinessLogic.Models;
+using Contracts;
 using BusinessLogic.Services;
+using SharedKernel;
 
 namespace Presentation.Helpers
 {
@@ -27,9 +28,9 @@ namespace Presentation.Helpers
         {
             try
             {
-                _allUsers = await _userService.GetAllUsersAsync();
+                var pagedUsers = await _userService.GetUsersAsync(new PaginationParams { PageSize = 1000 }); // Assuming max 1000 users for simplicity
+                _allUsers = pagedUsers.Items;
                 _dataGridView.DataSource = new List<UserDto>(_allUsers);
-                // Configure columns as needed, this might need to be passed in or handled more generically
             }
             catch (Exception ex)
             {
@@ -75,7 +76,17 @@ namespace Presentation.Helpers
                     var usersToUpdate = userDtos.Where(u => _dirtyUserIds.Contains(u.IdUsuario)).ToList();
                     foreach (var userDto in usersToUpdate)
                     {
-                        await _userService.UpdateUserAsync(userDto);
+                        var updateUserRequest = new UpdateUserRequest
+                        {
+                            Nombre = userDto.Nombre,
+                            Apellido = userDto.Apellido,
+                            Correo = userDto.Correo,
+                            IdRol = userDto.IdRol,
+                            CambioContrasenaObligatorio = userDto.CambioContrasenaObligatorio,
+                            FechaExpiracion = userDto.FechaExpiracion,
+                            Habilitado = userDto.Habilitado
+                        };
+                        await _userService.UpdateUserAsync(userDto.IdUsuario, updateUserRequest);
                     }
 
                     if (usersToUpdate.Any())
