@@ -29,7 +29,6 @@ namespace Services.Controllers
             {
                 return NotFound(ApiResponse<PoliticaSeguridadDto>.Fail("Security policy not found."));
             }
-            _linkService.AddLinks(politica);
             return Ok(ApiResponse<PoliticaSeguridadDto>.Success(politica));
         }
 

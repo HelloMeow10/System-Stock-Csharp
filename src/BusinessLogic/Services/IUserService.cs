@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Contracts;
+using Microsoft.AspNetCore.JsonPatch;
 using SharedKernel;
 
 namespace BusinessLogic.Services
@@ -8,11 +9,11 @@ namespace BusinessLogic.Services
     public interface IUserService
     {
         Task<UserDto> CreateUserAsync(UserRequest request);
-        Task<UserDto> UpdateUserAsync(int id, UpdateUserRequest request);
+        Task<UserDto> UpdateUserAsync(int id, UserDto userDto);
+        Task<UserDto> UpdateUserAsync(int id, JsonPatchDocument<UpdateUserRequest> patchDoc);
         Task DeleteUserAsync(int userId);
         Task<PagedList<UserDto>> GetUsersAsync(UserQueryParameters queryParameters);
         Task<UserDto?> GetUserByUsernameAsync(string username);
         Task<UserDto?> GetUserByIdAsync(int id);
-        Task<UpdateUserRequest?> GetUserForUpdateAsync(int id);
     }
 }

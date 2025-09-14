@@ -44,21 +44,11 @@ namespace Services.Controllers
                 return BadRequest(ApiResponse<UserDto>.Fail("A patch document is required."));
             }
 
-            var userToPatch = await _userService.GetUserForUpdateAsync(id);
-            if (userToPatch == null)
+            var updatedUser = await _userService.UpdateUserAsync(id, patchDoc);
+            if (updatedUser == null)
             {
                 return NotFound(ApiResponse<UserDto>.Fail("User not found."));
             }
-
-            patchDoc.ApplyTo(userToPatch, ModelState);
-
-            if (!TryValidateModel(userToPatch))
-            {
-                return BadRequest(ApiResponse<UserDto>.Fail(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()));
-            }
-
-            var updatedUser = await _userService.UpdateUserAsync(id, userToPatch);
-            _linkService.AddLinks(updatedUser);
 
             return Ok(ApiResponse<UserDto>.Success(updatedUser));
         }
@@ -74,7 +64,6 @@ namespace Services.Controllers
         public async Task<IActionResult> Get([FromQuery] UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userService.GetUsersAsync(queryParameters);
-            pagedUsers.Items.ForEach(user => _linkService.AddLinks(user));
 
             var response = new PagedApiResponse<IEnumerable<UserDto>>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
             _linkService.AddPaginationLinks(response, "GetUsers", queryParameters);
@@ -99,8 +88,6 @@ namespace Services.Controllers
                 return NotFound(ApiResponse<UserDto>.Fail("User not found."));
             }
 
-            _linkService.AddLinks(user);
-
             return Ok(ApiResponse<UserDto>.Success(user));
         }
 
@@ -116,7 +103,6 @@ namespace Services.Controllers
         public async Task<IActionResult> Post([FromBody] UserRequest userRequest)
         {
             var newUser = await _userService.CreateUserAsync(userRequest);
-            _linkService.AddLinks(newUser);
 
             var response = ApiResponse<UserDto>.Success(newUser);
 
@@ -134,14 +120,13 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
+        public async Task<IActionResult> Put(int id, [FromBody] UserDto userDto)
         {
-            var updatedUser = await _userService.UpdateUserAsync(id, updateUserRequest);
+            var updatedUser = await _userService.UpdateUserAsync(id, userDto);
             if (updatedUser == null)
             {
                 return NotFound(ApiResponse<UserDto>.Fail("User not found."));
             }
-            _linkService.AddLinks(updatedUser);
             return Ok(ApiResponse<UserDto>.Success(updatedUser));
         }
 

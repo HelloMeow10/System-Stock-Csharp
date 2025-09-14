@@ -72,7 +72,7 @@ namespace BusinessLogic.Tests
             // Arrange
             var userId = 100;
             var personaId = 1;
-            var request = new UpdateUserRequest
+            var request = new UserDto
             {
                 Nombre = "New",
                 Apellido = "Name",
@@ -119,7 +119,7 @@ namespace BusinessLogic.Tests
         {
             // Arrange
             var userId = 999;
-            var request = new UpdateUserRequest();
+            var request = new UserDto();
             _userRepositoryMock.Setup(r => r.GetUsuarioByIdAsync(userId)).ReturnsAsync((Usuario?)null);
 
             // Act & Assert

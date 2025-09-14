@@ -7,6 +7,7 @@ using Contracts;
 using SharedKernel;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace BusinessLogic.Services
 {
@@ -36,7 +37,7 @@ namespace BusinessLogic.Services
             return PersonaMapper.MapToPersonaDto(persona)!;
         }
 
-        public async Task<PersonaDto> UpdatePersonaAsync(int id, UpdatePersonaRequest request)
+        public async Task<PersonaDto> UpdatePersonaAsync(int id, PersonaDto personaDto)
         {
             var persona = await _personaRepository.GetPersonaByIdAsync(id);
             if (persona == null)
@@ -45,22 +46,55 @@ namespace BusinessLogic.Services
                 throw new KeyNotFoundException($"Persona with ID {id} not found.");
             }
 
-            // Use the entity's Update method
             persona.Update(
-                persona.Legajo, // Legajo is not updatable
-                request.Nombre,
-                request.Apellido,
-                request.IdTipoDoc,
-                request.NumDoc,
-                request.FechaNacimiento,
-                request.Cuil,
-                request.Calle,
-                request.Altura,
-                request.IdLocalidad,
-                request.IdGenero,
-                request.Correo,
-                request.Celular,
-                persona.FechaIngreso // FechaIngreso is not updatable
+                persona.Legajo,
+                personaDto.Nombre,
+                personaDto.Apellido,
+                personaDto.IdTipoDoc,
+                personaDto.NumDoc,
+                personaDto.FechaNacimiento,
+                personaDto.Cuil,
+                personaDto.Calle,
+                personaDto.Altura,
+                personaDto.IdLocalidad,
+                personaDto.IdGenero,
+                personaDto.Correo,
+                personaDto.Celular,
+                personaDto.FechaIngreso
+            );
+
+            await _personaRepository.UpdatePersonaAsync(persona);
+
+            return PersonaMapper.MapToPersonaDto(persona)!;
+        }
+
+        public async Task<PersonaDto> UpdatePersonaAsync(int id, Microsoft.AspNetCore.JsonPatch.JsonPatchDocument<UpdatePersonaRequest> patchDoc)
+        {
+            var persona = await _personaRepository.GetPersonaByIdAsync(id);
+            if (persona == null)
+            {
+                _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", id);
+                throw new KeyNotFoundException($"Persona with ID {id} not found.");
+            }
+
+            var personaToPatch = PersonaMapper.MapToUpdatePersonaRequest(persona);
+            patchDoc.ApplyTo(personaToPatch);
+
+            persona.Update(
+                persona.Legajo,
+                personaToPatch.Nombre,
+                personaToPatch.Apellido,
+                personaToPatch.IdTipoDoc,
+                personaToPatch.NumDoc,
+                persona.FechaNacimiento,
+                persona.Cuil,
+                personaToPatch.Calle,
+                personaToPatch.Altura,
+                personaToPatch.IdLocalidad,
+                personaToPatch.IdGenero,
+                personaToPatch.Correo,
+                personaToPatch.Celular,
+                persona.FechaIngreso
             );
 
             await _personaRepository.UpdatePersonaAsync(persona);
@@ -84,13 +118,6 @@ namespace BusinessLogic.Services
         {
             var persona = await _personaRepository.GetPersonaByIdAsync(personaId);
             return PersonaMapper.MapToPersonaDto(persona);
-        }
-
-        public async Task<UpdatePersonaRequest?> GetPersonaForUpdateAsync(int id)
-        {
-            var persona = await _personaRepository.GetPersonaByIdAsync(id);
-            if (persona == null) return null;
-            return PersonaMapper.MapToUpdatePersonaRequest(persona);
         }
     }
 }
