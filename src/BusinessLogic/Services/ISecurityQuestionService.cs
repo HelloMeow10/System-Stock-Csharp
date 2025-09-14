@@ -9,6 +9,6 @@ namespace BusinessLogic.Services
         Task SaveSecurityAnswersAsync(string username, Dictionary<int, string> answers);
         Task<List<PreguntaSeguridadDto>> GetUserSecurityQuestionsAsync(string username);
         List<PreguntaSeguridadDto> GetSecurityQuestions(); // This can remain sync as it likely reads from a cached/static list
-        PoliticaSeguridadDto? GetSecurityPolicy(); // This can also remain sync
+        Task<PoliticaSeguridadDto?> GetSecurityPolicyAsync();
     }
 }

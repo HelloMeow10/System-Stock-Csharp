@@ -21,6 +21,12 @@ namespace Services.Hateoas
             persona.Links.Add(new LinkDto(urlHelper.Link("UpdatePersona", new { id = persona.IdPersona })!, "update_persona", "PUT"));
         }
 
+        public void AddLinksForSecurityPolicy(IUrlHelper urlHelper, PoliticaSeguridadDto policy)
+        {
+            policy.Links.Add(new LinkDto(urlHelper.Link("GetSecurityPolicy", null)!, "self", "GET"));
+            policy.Links.Add(new LinkDto(urlHelper.Link("UpdateSecurityPolicy", null)!, "update_policy", "PUT"));
+        }
+
         public List<LinkDto> CreateLinksForCollection<T>(IUrlHelper urlHelper, PagedList<T> pagedList, string routeName, PaginationParams paginationParams)
         {
             var links = new List<LinkDto>();

@@ -5,8 +5,8 @@ namespace DataAccess.Repositories
 {
     public interface ISecurityRepository
     {
-        PoliticaSeguridad? GetPoliticaSeguridad();
-        void UpdatePoliticaSeguridad(PoliticaSeguridad politica);
+        Task<PoliticaSeguridad?> GetPoliticaSeguridadAsync();
+        Task UpdatePoliticaSeguridadAsync(PoliticaSeguridad politica);
         List<PreguntaSeguridad> GetPreguntasSeguridad();
         List<PreguntaSeguridad> GetPreguntasSeguridadByIds(List<int> ids);
         List<RespuestaSeguridad>? GetRespuestasSeguridadByUsuarioId(int idUsuario);

@@ -29,9 +29,9 @@ namespace BusinessLogic.Services
             _securityPolicyService = securityPolicyService ?? throw new ArgumentNullException(nameof(securityPolicyService));
         }
 
-        public PoliticaSeguridadDto? GetSecurityPolicy()
+        public async Task<PoliticaSeguridadDto?> GetSecurityPolicyAsync()
         {
-            return _securityPolicyService.GetPoliticaSeguridad();
+            return await _securityPolicyService.GetPoliticaSeguridadAsync();
         }
 
         public async Task SaveSecurityAnswersAsync(string username, Dictionary<int, string> answers) => await ExecuteServiceOperationAsync(async () =>
@@ -39,7 +39,7 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username)
                 ?? throw new ValidationException($"Usuario '{username}' not found");
 
-            var politica = _securityRepository.GetPoliticaSeguridad() ?? throw new BusinessLogicException("Security policy not configured.");
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync() ?? throw new BusinessLogicException("Security policy not configured.");
             if (answers.Count != politica.CantPreguntas)
                 throw new ValidationException($"Se requieren exactamente {politica.CantPreguntas} respuestas de seguridad.");
 
