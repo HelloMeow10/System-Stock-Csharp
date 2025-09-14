@@ -1,10 +1,10 @@
 using System;
 using System.Windows.Forms;
-using BusinessLogic.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using Presentation.ApiClient;
 using Contracts;
+using Presentation.Exceptions;
 
 namespace Presentation
 {
@@ -70,6 +70,10 @@ namespace Presentation
 
                 DialogResult = DialogResult.OK;
                 Close();
+            }
+            catch (ApiException ex)
+            {
+                MessageBox.Show("Error: " + ex.Message, "Error de API", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {

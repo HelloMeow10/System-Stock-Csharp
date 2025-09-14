@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using BusinessLogic.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using Contracts; // Add this using directive
 
 namespace Services.Middleware
 {
@@ -15,7 +15,6 @@ namespace Services.Middleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<ErrorHandlingMiddleware> _logger;
-
         private readonly IWebHostEnvironment _env;
 
         public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IWebHostEnvironment env)
@@ -40,59 +39,40 @@ namespace Services.Middleware
         private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             HttpStatusCode code;
-            ProblemDetails problemDetails;
+            ErrorResponse errorResponse;
 
             switch (exception)
             {
                 case ValidationException validationException:
                     code = HttpStatusCode.BadRequest;
-                    problemDetails = new ProblemDetails
+                    errorResponse = new ErrorResponse
                     {
-                        Status = (int)code,
-                        Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-                        Title = "Validation error",
-                        Detail = string.Join(", ", validationException.Errors)
+                        Message = "Se produjeron uno o más errores de validación.",
+                        Errors = validationException.Errors
                     };
                     break;
                 case BusinessLogicException businessLogicException when businessLogicException.Message.Contains("not found"):
                     code = HttpStatusCode.NotFound;
-                    problemDetails = new ProblemDetails
-                    {
-                        Status = (int)code,
-                        Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
-                        Title = "Resource not found",
-                        Detail = businessLogicException.Message
-                    };
+                    errorResponse = new ErrorResponse { Message = businessLogicException.Message };
                     break;
                 case BusinessLogicException businessLogicException:
                     code = HttpStatusCode.Conflict; // Using 409 Conflict for business rule violations
-                    problemDetails = new ProblemDetails
-                    {
-                        Status = (int)code,
-                        Type = "https://tools.ietf.org/html/rfc7231#section-6.5.8",
-                        Title = "Business logic error",
-                        Detail = businessLogicException.Message
-                    };
+                    errorResponse = new ErrorResponse { Message = businessLogicException.Message };
                     break;
                 default:
                     code = HttpStatusCode.InternalServerError;
-                    problemDetails = new ProblemDetails
-                    {
-                        Status = (int)code,
-                        Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
-                        Title = "An unexpected internal server error has occurred."
-                    };
+                    errorResponse = new ErrorResponse { Message = "Ocurrió un error interno inesperado en el servidor." };
                     if (_env.IsDevelopment())
                     {
-                        problemDetails.Detail = exception.ToString();
+                        errorResponse.Errors = new[] { exception.ToString() };
                     }
                     break;
             }
 
-            _logger.LogError(exception, "An exception was handled by the middleware: {Message}", exception.Message);
+            _logger.LogError(exception, "Una excepción fue manejada por el middleware: {Message}", exception.Message);
 
-            var result = JsonSerializer.Serialize(problemDetails);
-            context.Response.ContentType = "application/problem+json";
+            var result = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)code;
             return context.Response.WriteAsync(result);
         }

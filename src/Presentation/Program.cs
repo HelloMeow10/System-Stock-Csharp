@@ -4,8 +4,6 @@ using System.Windows.Forms;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using BusinessLogic;
-using BusinessLogic.Exceptions;
 using Presentation.ApiClient;
 using Presentation.Exceptions;
 
@@ -42,9 +40,6 @@ namespace Presentation
             Host.CreateDefaultBuilder()
                 .ConfigureServices((context, services) =>
                 {
-                    // Register services from BusinessLogic layer
-                    services.AddInfrastructure(context.Configuration);
-
                     // Register ApiClient
                     services.AddSingleton<ApiClient.ApiClient>();
 
@@ -81,16 +76,16 @@ namespace Presentation
             try
             {
                 string userMessage;
-                // For validation and business errors, we can show the actual exception message
-                // as it is considered safe and user-friendly.
-                if (ex is ValidationException || ex is BusinessLogicException)
+                // For API errors, we can show the actual exception message
+                // as it is curated by our API client.
+                if (ex is ApiException)
                 {
                     userMessage = ex.Message;
                 }
                 else
                 {
                     // For all other unexpected exceptions, show a generic message.
-                    userMessage = $"An unexpected error occurred. Please contact support and provide the following Error ID: {errorId}";
+                    userMessage = $"Ocurrió un error inesperado. Contacte a soporte y proporcione el siguiente ID de error: {errorId}";
                 }
 
                 var errorForm = ServiceProvider?.GetService<frmError>();
@@ -106,11 +101,11 @@ namespace Presentation
             }
             catch
             {
-                MessageBox.Show($"A critical error occurred and the application cannot continue. Error ID: {errorId}", "Critical Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                MessageBox.Show($"Ocurrió un error crítico y la aplicación no puede continuar. ID de error: {errorId}", "Error Crítico", MessageBoxButtons.OK, MessageBoxIcon.Stop);
             }
 
             // Only exit for truly unexpected, critical errors.
-            if (!(ex is ValidationException) && !(ex is BusinessLogicException) && !(ex is UILayerException))
+            if (!(ex is ApiException) && !(ex is UILayerException))
             {
                 Environment.Exit(1);
             }
