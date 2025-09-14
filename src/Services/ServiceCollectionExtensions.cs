@@ -19,6 +19,7 @@ namespace Services
             services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionContextAccessor, Microsoft.AspNetCore.Mvc.Infrastructure.ActionContextAccessor>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ILinkService, LinkService>();
+            services.AddScoped<UserLinksFilter>();
             return services;
         }
 

@@ -13,6 +13,7 @@ using BusinessLogic.Exceptions;
 using BusinessLogic.Security;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace BusinessLogic.Services
 {
@@ -136,7 +137,7 @@ namespace BusinessLogic.Services
             return new PagedList<UserDto>(userDtos, pagedUsers.TotalCount, pagedUsers.CurrentPage, pagedUsers.PageSize);
         }, "getting all users");
 
-        public async Task<UserDto> UpdateUserAsync(int id, UpdateUserRequest request) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<UserDto> UpdateUserAsync(int id, UserDto userDto) => await ExecuteServiceOperationAsync(async () =>
         {
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
@@ -150,11 +151,10 @@ namespace BusinessLogic.Services
                 throw new BusinessLogicException($"Persona not found for user ID: {id}.");
             }
 
-            // Update Persona entity
             persona.Update(
                 persona.Legajo,
-                request.Nombre ?? persona.Nombre,
-                request.Apellido ?? persona.Apellido,
+                userDto.Nombre ?? persona.Nombre,
+                userDto.Apellido ?? persona.Apellido,
                 persona.IdTipoDoc,
                 persona.NumDoc,
                 persona.FechaNacimiento,
@@ -163,21 +163,19 @@ namespace BusinessLogic.Services
                 persona.Altura,
                 persona.IdLocalidad,
                 persona.IdGenero,
-                request.Correo ?? persona.Correo,
+                userDto.Correo ?? persona.Correo,
                 persona.Celular,
                 persona.FechaIngreso
             );
             await _personaRepository.UpdatePersonaAsync(persona);
 
-            // The admin username should come from the current session context in a real app
             const string adminUsername = "Admin";
 
-            // Apply updates to the User entity
-            usuario.ChangeRole(request.IdRol);
-            usuario.SetExpiration(request.FechaExpiracion);
-            usuario.ForcePasswordChange(request.CambioContrasenaObligatorio);
+            usuario.ChangeRole(userDto.IdRol);
+            usuario.SetExpiration(userDto.FechaExpiracion);
+            usuario.ForcePasswordChange(userDto.CambioContrasenaObligatorio);
 
-            if (request.Habilitado)
+            if (userDto.Habilitado)
             {
                 usuario.Habilitar();
             }
@@ -197,6 +195,67 @@ namespace BusinessLogic.Services
             return updatedDto;
         }, "updating user");
 
+        public async Task<UserDto> UpdateUserAsync(int id, Microsoft.AspNetCore.JsonPatch.JsonPatchDocument<UpdateUserRequest> patchDoc) => await ExecuteServiceOperationAsync(async () =>
+        {
+            var usuario = await _userRepository.GetUsuarioByIdAsync(id);
+            if (usuario == null)
+            {
+                throw new BusinessLogicException($"User with ID {id} not found.");
+            }
+
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            if (persona == null)
+            {
+                throw new BusinessLogicException($"Persona not found for user ID: {id}.");
+            }
+
+            var userToPatch = UserMapper.MapToUpdateUserRequest(usuario, persona);
+            patchDoc.ApplyTo(userToPatch);
+
+            persona.Update(
+                persona.Legajo,
+                userToPatch.Nombre ?? persona.Nombre,
+                userToPatch.Apellido ?? persona.Apellido,
+                persona.IdTipoDoc,
+                persona.NumDoc,
+                persona.FechaNacimiento,
+                persona.Cuil,
+                persona.Calle,
+                persona.Altura,
+                persona.IdLocalidad,
+                persona.IdGenero,
+                userToPatch.Correo ?? persona.Correo,
+                persona.Celular,
+                persona.FechaIngreso
+            );
+            await _personaRepository.UpdatePersonaAsync(persona);
+
+            const string adminUsername = "Admin";
+
+            usuario.ChangeRole(userToPatch.IdRol);
+            usuario.SetExpiration(userToPatch.FechaExpiracion);
+            usuario.ForcePasswordChange(userToPatch.CambioContrasenaObligatorio);
+
+            if (userToPatch.Habilitado)
+            {
+                usuario.Habilitar();
+            }
+            else
+            {
+                usuario.Deshabilitar(adminUsername);
+            }
+
+            await _userRepository.UpdateUsuarioAsync(usuario);
+
+            var updatedDto = UserMapper.MapToUserDto(usuario);
+            var updatedPersona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            updatedDto.Nombre = updatedPersona.Nombre;
+            updatedDto.Apellido = updatedPersona.Apellido;
+            updatedDto.Correo = updatedPersona.Correo;
+
+            return updatedDto;
+        }, "patching user");
+
         public async Task DeleteUserAsync(int userId) => await ExecuteServiceOperationAsync(async () =>
             await _userRepository.DeleteUsuarioAsync(userId),
             "deleting user");
@@ -212,17 +271,5 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             return UserMapper.MapToUserDto(usuario);
         }, "getting user by id");
-
-        public async Task<UpdateUserRequest?> GetUserForUpdateAsync(int id) => await ExecuteServiceOperationAsync(async () =>
-        {
-            var usuario = await _userRepository.GetUsuarioByIdAsync(id);
-            if (usuario == null) return null;
-
-            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
-            if (persona == null) return null;
-
-            return UserMapper.MapToUpdateUserRequest(usuario, persona);
-
-        }, "getting user for update");
     }
 }

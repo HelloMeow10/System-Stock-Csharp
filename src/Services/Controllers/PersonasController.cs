@@ -28,7 +28,6 @@ namespace Services.Controllers
         public async Task<IActionResult> Get([FromQuery] PaginationParams paginationParams)
         {
             var pagedPersonas = await _personaService.GetPersonasAsync(paginationParams);
-            pagedPersonas.Items.ForEach(persona => _linkService.AddLinks(persona));
 
             var response = new PagedApiResponse<IEnumerable<PersonaDto>>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
 
@@ -47,8 +46,6 @@ namespace Services.Controllers
                 return NotFound(ApiResponse<PersonaDto>.Fail("Persona not found."));
             }
 
-            _linkService.AddLinks(persona);
-
             return Ok(ApiResponse<PersonaDto>.Success(persona));
         }
 
@@ -59,7 +56,6 @@ namespace Services.Controllers
         public async Task<IActionResult> Post([FromBody] PersonaRequest personaRequest)
         {
             var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
-            _linkService.AddLinks(newPersona);
 
             var response = ApiResponse<PersonaDto>.Success(newPersona);
 
@@ -71,14 +67,13 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ApiResponse<PersonaDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<PersonaDto>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<PersonaDto>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdatePersonaRequest request)
+        public async Task<IActionResult> Put(int id, [FromBody] PersonaDto personaDto)
         {
-            var updatedPersona = await _personaService.UpdatePersonaAsync(id, request);
+            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaDto);
             if (updatedPersona == null)
             {
                 return NotFound(ApiResponse<PersonaDto>.Fail("Persona not found."));
             }
-            _linkService.AddLinks(updatedPersona);
             return Ok(ApiResponse<PersonaDto>.Success(updatedPersona));
         }
 
@@ -94,21 +89,11 @@ namespace Services.Controllers
                 return BadRequest(ApiResponse<PersonaDto>.Fail("A patch document is required."));
             }
 
-            var personaToPatch = await _personaService.GetPersonaForUpdateAsync(id);
-            if (personaToPatch == null)
+            var updatedPersona = await _personaService.UpdatePersonaAsync(id, patchDoc);
+            if (updatedPersona == null)
             {
                 return NotFound(ApiResponse<PersonaDto>.Fail("Persona not found."));
             }
-
-            patchDoc.ApplyTo(personaToPatch, ModelState);
-
-            if (!TryValidateModel(personaToPatch))
-            {
-                return BadRequest(ApiResponse<PersonaDto>.Fail(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()));
-            }
-
-            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaToPatch);
-            _linkService.AddLinks(updatedPersona);
 
             return Ok(ApiResponse<PersonaDto>.Success(updatedPersona));
         }
