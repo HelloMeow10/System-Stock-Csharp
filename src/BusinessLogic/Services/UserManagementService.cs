@@ -105,9 +105,9 @@ namespace BusinessLogic.Services
             return UserMapper.MapToUserDto(usuario)!;
         }, "creating a user");
 
-        public async Task<PagedList<UserDto>> GetUsersAsync(PaginationParams paginationParams) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<PagedList<UserDto>> GetUsersAsync(UserQueryParameters queryParameters) => await ExecuteServiceOperationAsync(async () =>
         {
-            var pagedUsers = await _userRepository.GetUsersAsync(paginationParams);
+            var pagedUsers = await _userRepository.GetUsersAsync(queryParameters);
 
             // Get Personas only for the users in the current page for efficiency
             var personaIds = pagedUsers.Items.Select(u => u.IdPersona).Distinct();

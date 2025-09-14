@@ -1024,3 +1024,94 @@ BEGIN
     WHERE usuario = @username;
 END
 GO
+
+DROP PROCEDURE IF EXISTS sp_get_users;
+GO
+CREATE PROCEDURE sp_get_users
+    @PageNumber INT = 1,
+    @PageSize INT = 10,
+    @Username NVARCHAR(30) = NULL,
+    @Email NVARCHAR(100) = NULL,
+    @SortBy NVARCHAR(100) = 'id_usuario',
+    @TotalRecords INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Base query
+    DECLARE @Query NVARCHAR(MAX);
+    DECLARE @CountQuery NVARCHAR(MAX);
+    DECLARE @WhereClause NVARCHAR(MAX) = N'';
+
+    -- Build WHERE clause
+    IF @Username IS NOT NULL AND @Username <> ''
+    BEGIN
+        SET @WhereClause = @WhereClause + ' AND u.usuario LIKE ''%'' + @Username + ''%''';
+    END
+
+    IF @Email IS NOT NULL AND @Email <> ''
+    BEGIN
+        -- We need to join with Personas table to filter by email
+        SET @WhereClause = @WhereClause + ' AND p.correo LIKE ''%'' + @Email + ''%''';
+    END
+
+    -- Remove leading ' AND '
+    IF LEN(@WhereClause) > 0
+    BEGIN
+        SET @WhereClause = SUBSTRING(@WhereClause, 6, LEN(@WhereClause));
+    END
+    ELSE
+    BEGIN
+        SET @WhereClause = '1=1'; -- No specific filter
+    END
+
+    -- Build the main query for fetching data
+    SET @Query = N'
+        SELECT
+            u.id_usuario,
+            u.usuario,
+            u.contrasena_script,
+            u.id_persona,
+            u.fecha_bloqueo,
+            u.nombre_usuario_bloqueo,
+            u.fecha_ultimo_cambio,
+            u.id_rol,
+            u.id_politica,
+            u.CambioContrasenaObligatorio,
+            u.Codigo2FA,
+            u.Codigo2FAExpiracion,
+            u.FechaExpiracion,
+            r.id_rol AS rol_id_rol,
+            r.rol
+        FROM
+            usuarios u
+        INNER JOIN
+            roles r ON u.id_rol = r.id_rol
+        INNER JOIN
+            personas p ON u.id_persona = p.id_persona
+        WHERE ' + @WhereClause + N'
+        ORDER BY ' + @SortBy + N'
+        OFFSET (@PageNumber - 1) * @PageSize ROWS
+        FETCH NEXT @PageSize ROWS ONLY;';
+
+    -- Build the count query
+    SET @CountQuery = N'
+        SELECT @TotalRecords = COUNT(*)
+        FROM
+            usuarios u
+        INNER JOIN
+            personas p ON u.id_persona = p.id_persona
+        WHERE ' + @WhereClause;
+
+    -- Execute count query
+    EXEC sp_executesql @CountQuery,
+        N'@Username NVARCHAR(30), @Email NVARCHAR(100), @TotalRecords INT OUTPUT',
+        @Username, @Email, @TotalRecords OUTPUT;
+
+    -- Execute main query
+    EXEC sp_executesql @Query,
+        N'@PageNumber INT, @PageSize INT, @Username NVARCHAR(30), @Email NVARCHAR(100)',
+        @PageNumber, @PageSize, @Username, @Email;
+
+END
+GO
