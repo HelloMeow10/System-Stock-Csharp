@@ -148,15 +148,17 @@ namespace Services.Controllers
         /// Deletes a user.
         /// </summary>
         /// <param name="id">The ID of the user to delete.</param>
-        /// <returns>No content.</returns>
+        /// <returns>No content if the deletion is successful.</returns>
+        /// <response code="204">The user was successfully deleted.</response>
+        /// <response code="404">If the user is not found.</response>
         [HttpDelete("{id}", Name = "DeleteUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
             await _userService.DeleteUserAsync(id);
-            return Ok(ApiResponse<object>.Success(new { message = "User deleted successfully." }));
+            return NoContent();
         }
 
     }
