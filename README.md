@@ -15,7 +15,7 @@ Sistema de escritorio (.NET 8, Windows Forms) con arquitectura N-Capas para ABM 
 - `src/Presentation`: Interfaz de usuario (Windows Forms)
 - `src/BusinessLogic`: Lógica de negocio
 - `src/DataAccess`: Acceso a datos (ADO.NET) y entidades
-- `src/Services`: Controladores de API (actualmente no utilizados por el cliente de escritorio)
+- `src/Services`: API REST que expone la lógica de negocio. Es el backend para todos los clientes.
 - `src/Session`: Gestión de sesión y tokens JWT
 
 ## 4. Cómo ejecutar localmente  

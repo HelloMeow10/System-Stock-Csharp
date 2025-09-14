@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using BusinessLogic.Exceptions;
 using Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Presentation.Helpers;
 using Presentation.ApiClient;
+using Presentation.Exceptions;
 
 namespace Presentation
 {
@@ -295,9 +295,9 @@ namespace Presentation
                 MessageBox.Show("Persona guardada correctamente", "Info");
                 await LoadPersonas();
             }
-            catch (ValidationException ex)
+            catch (ApiException ex)
             {
-                MessageBox.Show(ex.Message, "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(ex.Message, "Error de API", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
@@ -326,9 +326,9 @@ namespace Presentation
                 await _apiClient.CreateUserAsync(usuario);
                 MessageBox.Show("Usuario creado correctamente. La contraseña ha sido enviada al correo de la persona.", "Info");
             }
-            catch (ValidationException ex)
+            catch (ApiException ex)
             {
-                MessageBox.Show(ex.Message, "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(ex.Message, "Error de API", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {

@@ -6,6 +6,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Contracts;
 using System.Collections.Generic;
+using Presentation.Exceptions; // Add this using directive
+using System.Linq;
 
 namespace Presentation.ApiClient
 {
@@ -27,14 +29,44 @@ namespace Presentation.ApiClient
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        // Métodos para interactuar con la API
+        private async Task HandleFailedResponse(HttpResponseMessage response)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            string message = errorResponse?.Message ?? "An unknown error occurred.";
+            if (errorResponse?.Errors != null && errorResponse.Errors.Any())
+            {
+                message = string.Join(Environment.NewLine, errorResponse.Errors);
+            }
+
+            throw new ApiException(message, response.StatusCode, errorResponse?.Errors);
+        }
 
         private async Task<T> GetAsync<T>(string requestUri)
         {
             var response = await _httpClient.GetAsync(requestUri);
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                await HandleFailedResponse(response);
+            }
             var content = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+
+        private async Task<T> PostAsync<T>(string requestUri, object data)
+        {
+            var json = JsonSerializer.Serialize(data);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(requestUri, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await HandleFailedResponse(response);
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<T>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
 
         private async Task PostAsync(string requestUri, object data)
@@ -42,7 +74,11 @@ namespace Presentation.ApiClient
             var json = JsonSerializer.Serialize(data);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync(requestUri, content);
-            response.EnsureSuccessStatusCode();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await HandleFailedResponse(response);
+            }
         }
 
         private async Task PutAsync(string requestUri, object data)
@@ -50,34 +86,30 @@ namespace Presentation.ApiClient
             var json = JsonSerializer.Serialize(data);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var response = await _httpClient.PutAsync(requestUri, content);
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                await HandleFailedResponse(response);
+            }
         }
 
         private async Task DeleteAsync(string requestUri)
         {
             var response = await _httpClient.DeleteAsync(requestUri);
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                await HandleFailedResponse(response);
+            }
         }
 
         // Auth
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var json = JsonSerializer.Serialize(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("api/auth/login", content);
-            response.EnsureSuccessStatusCode();
-            var responseContent = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<LoginResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            return await PostAsync<LoginResponse>("api/auth/login", request);
         }
 
         public async Task<LoginResponse> Validate2faAsync(Validate2faRequest request)
         {
-            var json = JsonSerializer.Serialize(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("api/auth/validate-2fa", content);
-            response.EnsureSuccessStatusCode();
-            var responseContent = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<LoginResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            return await PostAsync<LoginResponse>("api/auth/validate-2fa", request);
         }
 
         // Users
