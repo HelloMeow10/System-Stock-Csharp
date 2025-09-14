@@ -144,24 +144,24 @@ namespace BusinessLogic.Tests
         public async Task GetUsersAsync_WhenUsersAndPersonasExist_ReturnsCorrectlyMappedAndPagedDtos()
         {
             // Arrange
-            var paginationParams = new PaginationParams { PageNumber = 1, PageSize = 10 };
+            var queryParameters = new UserQueryParameters { PageNumber = 1, PageSize = 10 };
             var rol = new Rol { IdRol = 1, Nombre = "User" };
             var users = new List<Usuario>
             {
                 new Usuario(1, "user1", new byte[0], 1, DateTime.Now.AddDays(1), null, DateTime.Now, 1, 1, false, null, null, null, rol),
                 new Usuario(2, "user2", new byte[0], 2, DateTime.Now.AddDays(1), null, DateTime.Now, 1, 1, false, null, null, null, rol)
             };
-            var pagedUsers = new PagedList<Usuario>(users, users.Count, paginationParams.PageNumber, paginationParams.PageSize);
+            var pagedUsers = new PagedList<Usuario>(users, users.Count, queryParameters.PageNumber, queryParameters.PageSize);
 
             var persona1 = new PersonaDto { IdPersona = 1, Nombre = "John", Apellido = "Doe", Correo = "john.doe@test.com" };
             var persona2 = new PersonaDto { IdPersona = 2, Nombre = "Jane", Apellido = "Doe", Correo = "jane.doe@test.com" };
 
-            _userRepositoryMock.Setup(r => r.GetUsersAsync(paginationParams)).ReturnsAsync(pagedUsers);
+            _userRepositoryMock.Setup(r => r.GetUsersAsync(queryParameters)).ReturnsAsync(pagedUsers);
             _personaServiceMock.Setup(s => s.GetPersonaByIdAsync(1)).ReturnsAsync(persona1);
             _personaServiceMock.Setup(s => s.GetPersonaByIdAsync(2)).ReturnsAsync(persona2);
 
             // Act
-            var result = await _sut.GetUsersAsync(paginationParams);
+            var result = await _sut.GetUsersAsync(queryParameters);
 
             // Assert
             Assert.NotNull(result);

@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using SharedKernel;
+
 namespace Contracts
 {
     public class PagedApiResponse<T> : ApiResponse<T>
@@ -6,6 +9,7 @@ namespace Contracts
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
         public int TotalRecords { get; set; }
+        public List<LinkDto> Links { get; set; } = new List<LinkDto>();
 
         public PagedApiResponse(T data, int pageNumber, int pageSize, int totalRecords)
         {

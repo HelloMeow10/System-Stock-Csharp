@@ -66,17 +66,18 @@ namespace Services.Controllers
         /// <summary>
         /// Retrieves a paginated list of users.
         /// </summary>
-        /// <param name="paginationParams">The pagination parameters (pageNumber, pageSize).</param>
+        /// <param name="queryParameters">The pagination, filtering, and sorting parameters.</param>
         /// <returns>A paginated list of users with HATEOAS links.</returns>
         [HttpGet(Name = "GetUsers")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PagedApiResponse<IEnumerable<UserDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Get([FromQuery] PaginationParams paginationParams)
+        public async Task<IActionResult> Get([FromQuery] UserQueryParameters queryParameters)
         {
-            var pagedUsers = await _userService.GetUsersAsync(paginationParams);
+            var pagedUsers = await _userService.GetUsersAsync(queryParameters);
             pagedUsers.Items.ForEach(user => _linkService.AddLinks(user));
 
             var response = new PagedApiResponse<IEnumerable<UserDto>>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
+            _linkService.AddPaginationLinks(response, "GetUsers", queryParameters);
 
             return Ok(response);
         }

@@ -53,5 +53,38 @@ namespace Services.Hateoas
             }
         }
 
+        public void AddPaginationLinks<T>(PagedApiResponse<T> pagedResponse, string routeName, UserQueryParameters queryParameters)
+        {
+            if (_actionContextAccessor.ActionContext == null) return;
+            var urlHelper = _urlHelperFactory.GetUrlHelper(_actionContextAccessor.ActionContext);
+
+            if (pagedResponse.PageNumber > 1)
+            {
+                var prevPageParams = new UserQueryParameters
+                {
+                    PageNumber = pagedResponse.PageNumber - 1,
+                    PageSize = pagedResponse.PageSize,
+                    Username = queryParameters.Username,
+                    Email = queryParameters.Email,
+                    SortBy = queryParameters.SortBy
+                };
+                var prevPageLink = urlHelper.Link(routeName, prevPageParams);
+                pagedResponse.Links.Add(new LinkDto(prevPageLink, "previous_page", "GET"));
+            }
+
+            if (pagedResponse.PageNumber < pagedResponse.TotalPages)
+            {
+                var nextPageParams = new UserQueryParameters
+                {
+                    PageNumber = pagedResponse.PageNumber + 1,
+                    PageSize = pagedResponse.PageSize,
+                    Username = queryParameters.Username,
+                    Email = queryParameters.Email,
+                    SortBy = queryParameters.SortBy
+                };
+                var nextPageLink = urlHelper.Link(routeName, nextPageParams);
+                pagedResponse.Links.Add(new LinkDto(nextPageLink, "next_page", "GET"));
+            }
+        }
     }
 }

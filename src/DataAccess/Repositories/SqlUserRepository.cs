@@ -7,6 +7,7 @@ using DataAccess.Entities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using UserManagementSystem.DataAccess.Exceptions;
+using Contracts;
 
 namespace DataAccess.Repositories
 {
@@ -104,24 +105,37 @@ namespace DataAccess.Repositories
             CommandType.StoredProcedure
         );
 
-        public async Task<PagedList<Usuario>> GetUsersAsync(PaginationParams paginationParams)
+        public async Task<PagedList<Usuario>> GetUsersAsync(UserQueryParameters queryParameters)
         {
-            // This is a temporary in-memory pagination implementation.
-            // For production, this should be replaced with a stored procedure
-            // that performs pagination at the database level for efficiency.
-            var allUsers = await GetAllUsersAsync();
-            return PagedList<Usuario>.ToPagedList(allUsers, paginationParams.PageNumber, paginationParams.PageSize);
-        }
-
-        private async Task<List<Usuario>> GetAllUsersAsync() => await ExecuteReaderAsync("sp_get_all_users", async reader =>
-        {
-            var list = new List<Usuario>();
-            while (await reader.ReadAsync())
+            var totalRecords = new SqlParameter
             {
-                list.Add(MapToUsuario(reader));
-            }
-            return list;
-        }, commandType: CommandType.StoredProcedure);
+                ParameterName = "@TotalRecords",
+                SqlDbType = SqlDbType.Int,
+                Direction = ParameterDirection.Output
+            };
+
+            var parameters = new Action<SqlParameterCollection>(p =>
+            {
+                p.AddWithValue("@PageNumber", queryParameters.PageNumber);
+                p.AddWithValue("@PageSize", queryParameters.PageSize);
+                p.AddWithValue("@Username", (object?)queryParameters.Username ?? DBNull.Value);
+                p.AddWithValue("@Email", (object?)queryParameters.Email ?? DBNull.Value);
+                p.AddWithValue("@SortBy", (object?)queryParameters.SortBy ?? "id_usuario");
+                p.Add(totalRecords);
+            });
+
+            var users = await ExecuteReaderAsync("sp_get_users", async reader =>
+            {
+                var list = new List<Usuario>();
+                while (await reader.ReadAsync())
+                {
+                    list.Add(MapToUsuario(reader));
+                }
+                return list;
+            }, parameters, CommandType.StoredProcedure);
+
+            return new PagedList<Usuario>(users, queryParameters.PageNumber, queryParameters.PageSize, (int)totalRecords.Value);
+        }
 
         private static Usuario MapToUsuario(SqlDataReader reader)
         {
