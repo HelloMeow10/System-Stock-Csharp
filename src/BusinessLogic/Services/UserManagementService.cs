@@ -137,7 +137,7 @@ namespace BusinessLogic.Services
             return new PagedList<UserDto>(userDtos, pagedUsers.TotalCount, pagedUsers.CurrentPage, pagedUsers.PageSize);
         }, "getting all users");
 
-        public async Task<UserDto> UpdateUserAsync(int id, UserDto userDto) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<UserDto> UpdateUserAsync(int id, UpdateUserRequest updateUserRequest) => await ExecuteServiceOperationAsync(async () =>
         {
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
@@ -153,8 +153,8 @@ namespace BusinessLogic.Services
 
             persona.Update(
                 persona.Legajo,
-                userDto.Nombre ?? persona.Nombre,
-                userDto.Apellido ?? persona.Apellido,
+                updateUserRequest.Nombre ?? persona.Nombre,
+                updateUserRequest.Apellido ?? persona.Apellido,
                 persona.IdTipoDoc,
                 persona.NumDoc,
                 persona.FechaNacimiento,
@@ -163,7 +163,7 @@ namespace BusinessLogic.Services
                 persona.Altura,
                 persona.IdLocalidad,
                 persona.IdGenero,
-                userDto.Correo ?? persona.Correo,
+                updateUserRequest.Correo ?? persona.Correo,
                 persona.Celular,
                 persona.FechaIngreso
             );
@@ -171,11 +171,11 @@ namespace BusinessLogic.Services
 
             const string adminUsername = "Admin";
 
-            usuario.ChangeRole(userDto.IdRol);
-            usuario.SetExpiration(userDto.FechaExpiracion);
-            usuario.ForcePasswordChange(userDto.CambioContrasenaObligatorio);
+            usuario.ChangeRole(updateUserRequest.IdRol);
+            usuario.SetExpiration(updateUserRequest.FechaExpiracion);
+            usuario.ForcePasswordChange(updateUserRequest.CambioContrasenaObligatorio);
 
-            if (userDto.Habilitado)
+            if (updateUserRequest.Habilitado)
             {
                 usuario.Habilitar();
             }

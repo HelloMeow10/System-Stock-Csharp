@@ -120,9 +120,9 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody] UserDto userDto)
+        public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
-            var updatedUser = await _userService.UpdateUserAsync(id, userDto);
+            var updatedUser = await _userService.UpdateUserAsync(id, updateUserRequest);
             if (updatedUser == null)
             {
                 return NotFound(ApiResponse<UserDto>.Fail("User not found."));
