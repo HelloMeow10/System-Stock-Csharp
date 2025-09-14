@@ -4,6 +4,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BusinessLogic.Exceptions;
 using Microsoft.AspNetCore.Http;
+using System.Text.Json.Serialization;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
@@ -39,39 +41,36 @@ namespace Services.Middleware
         private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             HttpStatusCode code;
-            ErrorResponse errorResponse;
+            ApiResponse<object> response;
 
             switch (exception)
             {
                 case ValidationException validationException:
                     code = HttpStatusCode.BadRequest;
-                    errorResponse = new ErrorResponse
-                    {
-                        Message = "Se produjeron uno o más errores de validación.",
-                        Errors = validationException.Errors
-                    };
+                    response = ApiResponse<object>.Fail(validationException.Errors.ToList());
                     break;
                 case BusinessLogicException businessLogicException when businessLogicException.Message.Contains("not found"):
                     code = HttpStatusCode.NotFound;
-                    errorResponse = new ErrorResponse { Message = businessLogicException.Message };
+                    response = ApiResponse<object>.Fail(businessLogicException.Message);
                     break;
                 case BusinessLogicException businessLogicException:
                     code = HttpStatusCode.Conflict; // Using 409 Conflict for business rule violations
-                    errorResponse = new ErrorResponse { Message = businessLogicException.Message };
+                    response = ApiResponse<object>.Fail(businessLogicException.Message);
                     break;
                 default:
                     code = HttpStatusCode.InternalServerError;
-                    errorResponse = new ErrorResponse { Message = "Ocurrió un error interno inesperado en el servidor." };
+                    var errorList = new List<string> { "Ocurrió un error interno inesperado en el servidor." };
                     if (_env.IsDevelopment())
                     {
-                        errorResponse.Errors = new[] { exception.ToString() };
+                        errorList.Add(exception.ToString());
                     }
+                    response = ApiResponse<object>.Fail(errorList);
                     break;
             }
 
             _logger.LogError(exception, "Una excepción fue manejada por el middleware: {Message}", exception.Message);
 
-            var result = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var result = JsonSerializer.Serialize(response, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)code;
             return context.Response.WriteAsync(result);
