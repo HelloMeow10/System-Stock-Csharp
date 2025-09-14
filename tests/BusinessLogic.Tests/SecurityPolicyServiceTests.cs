@@ -22,18 +22,18 @@ namespace BusinessLogic.Tests
         }
 
         [Fact]
-        public void UpdatePoliticaSeguridad_WhenPolicyExists_CallsRepository()
+        public async Task UpdatePoliticaSeguridadAsync_WhenPolicyExists_CallsRepository()
         {
             // Arrange
-            var politicaDto = new PoliticaSeguridadDto { IdPolitica = 1, MinCaracteres = 10, CantPreguntas = 3 };
+            var request = new UpdatePoliticaSeguridadRequest { MinCaracteres = 10, CantPreguntas = 3 };
             var politica = new PoliticaSeguridad(1, true, true, true, true, true, true, 8, 3);
-            _securityRepositoryMock.Setup(r => r.GetPoliticaSeguridad()).Returns(politica);
+            _securityRepositoryMock.Setup(r => r.GetPoliticaSeguridadAsync()).ReturnsAsync(politica);
 
             // Act
-            _sut.UpdatePoliticaSeguridad(politicaDto);
+            await _sut.UpdatePoliticaSeguridadAsync(request);
 
             // Assert
-            _securityRepositoryMock.Verify(r => r.UpdatePoliticaSeguridad(It.Is<PoliticaSeguridad>(p => p.MinCaracteres == 10)), Times.Once);
+            _securityRepositoryMock.Verify(r => r.UpdatePoliticaSeguridadAsync(It.Is<PoliticaSeguridad>(p => p.MinCaracteres == 10)), Times.Once);
         }
     }
 }

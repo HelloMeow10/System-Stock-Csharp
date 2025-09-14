@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using BusinessLogic.Models;
 using Microsoft.AspNetCore.Authorization;
+using Services.Hateoas;
+using System.Threading.Tasks;
 
 namespace Services.Controllers
 {
@@ -9,31 +11,35 @@ namespace Services.Controllers
     public class SecurityPolicyController : BaseApiController
     {
         private readonly ISecurityPolicyService _securityPolicyService;
+        private readonly ILinkService _linkService;
 
-        public SecurityPolicyController(ISecurityPolicyService securityPolicyService)
+        public SecurityPolicyController(ISecurityPolicyService securityPolicyService, ILinkService linkService)
         {
             _securityPolicyService = securityPolicyService;
+            _linkService = linkService;
         }
 
-        [HttpGet]
+        [HttpGet(Name = "GetSecurityPolicy")]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<PoliticaSeguridadDto> Get()
+        public async Task<ActionResult<PoliticaSeguridadDto>> Get()
         {
-            var politica = _securityPolicyService.GetPoliticaSeguridad();
+            var politica = await _securityPolicyService.GetPoliticaSeguridadAsync();
             if (politica == null)
             {
                 return NotFound();
             }
+            _linkService.AddLinksForSecurityPolicy(Url, politica);
             return Ok(politica);
         }
 
-        [HttpPut]
-        [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
-        public IActionResult Put([FromBody] PoliticaSeguridadDto politica)
+        [HttpPut(Name = "UpdateSecurityPolicy")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Put([FromBody] UpdatePoliticaSeguridadRequest request)
         {
-            var updatedPolitica = _securityPolicyService.UpdatePoliticaSeguridad(politica);
-            return Ok(updatedPolitica);
+            await _securityPolicyService.UpdatePoliticaSeguridadAsync(request);
+            return NoContent();
         }
     }
 }

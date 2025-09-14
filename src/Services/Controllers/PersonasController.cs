@@ -106,27 +106,20 @@ namespace Services.Controllers
 
         [HttpPut("{id}", Name = "UpdatePersona")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> Put(int id, [FromBody] PersonaDto personaDto)
+        public async Task<IActionResult> Put(int id, [FromBody] UpdatePersonaRequest request)
         {
-            if (id != personaDto.IdPersona)
-            {
-                return BadRequest("The ID in the URL must match the ID in the request body.");
-            }
-
-            var updatedPersona = await _personaService.UpdatePersonaAsync(personaDto);
+            var updatedPersona = await _personaService.UpdatePersonaAsync(id, request);
             if (updatedPersona == null)
             {
                 return NotFound();
             }
 
-            _linkService.AddLinksForPersona(Url, updatedPersona);
-
-            return Ok(updatedPersona);
+            return NoContent();
         }
 
         /// <summary>

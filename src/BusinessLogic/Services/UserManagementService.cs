@@ -136,23 +136,50 @@ namespace BusinessLogic.Services
             return new PagedList<UserDto>(userDtos, pagedUsers.TotalCount, pagedUsers.CurrentPage, pagedUsers.PageSize);
         }, "getting all users");
 
-        public async Task<UserDto> UpdateUserAsync(UserDto userDto) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserRequest request) => await ExecuteServiceOperationAsync(async () =>
         {
-            var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(userDto.Username);
+            var usuario = await _userRepository.GetUsuarioByIdAsync(userId);
             if (usuario == null)
             {
                 return null; // User not found
             }
 
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            if (persona == null)
+            {
+                // This case should ideally not happen in a consistent database.
+                // Handle as a business logic exception or log a warning.
+                throw new BusinessLogicException($"Persona not found for user ID: {userId}.");
+            }
+
+            // Update Persona entity by calling its Update method
+            persona.Update(
+                persona.Legajo,
+                request.Nombre ?? persona.Nombre,
+                request.Apellido ?? persona.Apellido,
+                persona.IdTipoDoc,
+                persona.NumDoc,
+                persona.FechaNacimiento,
+                persona.Cuil,
+                persona.Calle,
+                persona.Altura,
+                persona.IdLocalidad,
+                persona.IdGenero,
+                request.Correo ?? persona.Correo,
+                persona.Celular,
+                persona.FechaIngreso
+            );
+            await _personaRepository.UpdatePersonaAsync(persona);
+
             // The admin username should come from the current session context in a real app
             const string adminUsername = "Admin";
 
-            // Apply updates to the entity
-            usuario.ChangeRole(userDto.IdRol);
-            usuario.SetExpiration(userDto.FechaExpiracion);
-            usuario.ForcePasswordChange(userDto.CambioContrasenaObligatorio);
+            // Apply updates to the User entity
+            usuario.ChangeRole(request.IdRol);
+            usuario.SetExpiration(request.FechaExpiracion);
+            usuario.ForcePasswordChange(request.CambioContrasenaObligatorio);
 
-            if (userDto.Habilitado)
+            if (request.Habilitado)
             {
                 usuario.Habilitar();
             }

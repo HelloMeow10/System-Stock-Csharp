@@ -18,11 +18,11 @@ namespace BusinessLogic.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private T ExecuteServiceOperation<T>(Func<T> operation, string operationName)
+        private async Task<T> ExecuteServiceOperationAsync<T>(Func<Task<T>> operation, string operationName)
         {
             try
             {
-                return operation();
+                return await operation();
             }
             catch (ValidationException)
             {
@@ -35,11 +35,11 @@ namespace BusinessLogic.Services
             }
         }
 
-        private void ExecuteServiceOperation(Action operation, string operationName)
+        private async Task ExecuteServiceOperationAsync(Func<Task> operation, string operationName)
         {
             try
             {
-                operation();
+                await operation();
             }
             catch (ValidationException)
             {
@@ -52,22 +52,21 @@ namespace BusinessLogic.Services
             }
         }
 
-        public PoliticaSeguridadDto? GetPoliticaSeguridad() => ExecuteServiceOperation(() =>
+        public async Task<PoliticaSeguridadDto?> GetPoliticaSeguridadAsync() => await ExecuteServiceOperationAsync(async () =>
         {
-            var politica = _securityRepository.GetPoliticaSeguridad();
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync();
             return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica);
         }, "getting security policy");
 
-        public PoliticaSeguridadDto UpdatePoliticaSeguridad(PoliticaSeguridadDto politicaDto) => ExecuteServiceOperation(() =>
+        public async Task UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request) => await ExecuteServiceOperationAsync(async () =>
         {
-            var politica = _securityRepository.GetPoliticaSeguridad()
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync()
                 ?? throw new ValidationException("No se encontró la política de seguridad para actualizar.");
 
-            politica.Update(politicaDto.MayusYMinus, politicaDto.LetrasYNumeros, politicaDto.CaracterEspecial, politicaDto.Autenticacion2FA, politicaDto.NoRepetirAnteriores, politicaDto.SinDatosPersonales, politicaDto.MinCaracteres, politicaDto.CantPreguntas);
+            politica.Update(request.MayusYMinus, request.LetrasYNumeros, request.CaracterEspecial, request.Autenticacion2FA, request.NoRepetirAnteriores, request.SinDatosPersonales, request.MinCaracteres, request.CantPreguntas);
 
-            _securityRepository.UpdatePoliticaSeguridad(politica);
+            await _securityRepository.UpdatePoliticaSeguridadAsync(politica);
 
-            return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica);
         }, "updating security policy");
     }
 }

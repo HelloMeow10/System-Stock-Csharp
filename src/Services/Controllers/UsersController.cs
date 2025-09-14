@@ -162,34 +162,29 @@ namespace Services.Controllers
         /// Updates an existing user.
         /// </summary>
         /// <param name="id">The ID of the user to update.</param>
-        /// <param name="userDto">The updated user data.</param>
-        /// <returns>The updated user.</returns>
-        /// <response code="200">Returns the updated user.</response>
-        /// <response code="400">If the ID in the URL does not match the ID in the body.</response>
+        /// <param name="updateRequest">The user data for the update.</param>
+        /// <returns>No content if the update is successful.</returns>
+        /// <response code="204">If the user was successfully updated.</response>
+        /// <response code="400">If the request is invalid.</response>
         /// <response code="404">If the user to update is not found.</response>
         /// <response code="401">If the user is not authenticated.</response>
         /// <response code="403">If the user is not an administrator.</response>
         [HttpPut("{id}", Name = "UpdateUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> Put(int id, [FromBody] UserDto userDto)
+        public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateRequest)
         {
-            if (id != userDto.IdUsuario)
-            {
-                return BadRequest("The ID in the URL must match the ID in the request body.");
-            }
-
-            var updatedUser = await _userService.UpdateUserAsync(userDto);
+            var updatedUser = await _userService.UpdateUserAsync(id, updateRequest);
             if (updatedUser == null)
             {
                 return NotFound();
             }
 
-            return Ok(updatedUser);
+            return NoContent();
         }
 
         /// <summary>

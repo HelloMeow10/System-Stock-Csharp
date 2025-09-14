@@ -51,7 +51,7 @@ namespace BusinessLogic.Services
                     return validationResult;
                 }
 
-                var politica = _securityPolicyService.GetPoliticaSeguridad();
+                var politica = await _securityPolicyService.GetPoliticaSeguridadAsync();
                 if (politica?.Autenticacion2FA ?? false)
                 {
                     return await HandleTwoFactorAuthentication(username, usuario!.IdPersona);

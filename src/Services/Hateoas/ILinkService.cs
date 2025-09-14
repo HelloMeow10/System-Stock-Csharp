@@ -9,6 +9,7 @@ namespace Services.Hateoas
     {
         void AddLinksForUser(IUrlHelper urlHelper, UserDto user);
         void AddLinksForPersona(IUrlHelper urlHelper, PersonaDto persona);
+        void AddLinksForSecurityPolicy(IUrlHelper urlHelper, PoliticaSeguridadDto policy);
         List<LinkDto> CreateLinksForCollection<T>(IUrlHelper urlHelper, PagedList<T> pagedList, string routeName, PaginationParams paginationParams);
     }
 }

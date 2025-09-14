@@ -47,19 +47,19 @@ namespace BusinessLogic.Factories
                 throw new ValidationException("La persona seleccionada no tiene un correo electrónico para enviar la contraseña.");
             }
 
-            string passwordToUse = GenerateRandomPassword(request.Username, persona);
+            string passwordToUse = await GenerateRandomPasswordAsync(request.Username, persona);
             var passwordHash = _passwordHasher.Hash(request.Username, passwordToUse);
             var rolId = _referenceDataRepository.GetRolByNombre(request.Rol)?.IdRol ?? throw new ValidationException("Rol no encontrado");
-            var politica = _securityRepository.GetPoliticaSeguridad();
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync();
 
             var usuario = new Usuario(request.Username, passwordHash, personaId, rolId, politica?.IdPolitica);
 
             return (usuario, passwordToUse);
         }
 
-        private string GenerateRandomPassword(string? username = null, Persona? persona = null)
+        private async Task<string> GenerateRandomPasswordAsync(string? username = null, Persona? persona = null)
         {
-            var politica = _securityRepository.GetPoliticaSeguridad() ?? new PoliticaSeguridad(0, false, true, true, false, false, true, 12, 3);
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync() ?? new PoliticaSeguridad(0, false, true, true, false, false, true, 12, 3);
             var random = new Random();
 
             while (true)

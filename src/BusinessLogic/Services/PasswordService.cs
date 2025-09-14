@@ -45,7 +45,7 @@ namespace BusinessLogic.Services
             if (string.IsNullOrWhiteSpace(username))
                 throw new ValidationException("Username is required");
 
-            var politica = _securityRepository.GetPoliticaSeguridad() ?? throw new BusinessLogicException("Security policy not configured.");
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync() ?? throw new BusinessLogicException("Security policy not configured.");
             if (answers == null || answers.Count != politica.CantPreguntas || answers.Any(r => string.IsNullOrWhiteSpace(r.Value)))
                 throw new ValidationException($"Se requieren {politica.CantPreguntas} respuestas de seguridad.");
 
@@ -71,7 +71,7 @@ namespace BusinessLogic.Services
                 }
             }
 
-            var newPassword = GenerateRandomPassword(username, persona);
+            var newPassword = await GenerateRandomPasswordAsync(username, persona);
             var newPasswordHash = _passwordHasher.Hash(username, newPassword);
 
             usuario.ChangePassword(newPasswordHash);
@@ -103,11 +103,11 @@ namespace BusinessLogic.Services
             var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona)
                 ?? throw new ValidationException("Persona no encontrada");
 
-            ValidatePasswordPolicy(newPassword, username, persona);
+            await ValidatePasswordPolicyAsync(newPassword, username, persona);
 
             var newPasswordHash = _passwordHasher.Hash(username, newPassword);
 
-            var politica = _securityRepository.GetPoliticaSeguridad();
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync();
             if (politica?.NoRepetirAnteriores ?? false)
             {
                 var historial = await _userRepository.GetHistorialContrasenasByUsuarioIdAsync(usuario.IdUsuario);
@@ -129,9 +129,9 @@ namespace BusinessLogic.Services
             await _userRepository.UpdateUsuarioAsync(usuario);
         }, "changing password");
 
-        private void ValidatePasswordPolicy(string password, string username, Persona persona)
+        private async Task ValidatePasswordPolicyAsync(string password, string username, Persona persona)
         {
-            var politica = _securityRepository.GetPoliticaSeguridad();
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync();
             if (politica == null) return;
 
             if (password.Length < politica.MinCaracteres)
@@ -169,9 +169,9 @@ namespace BusinessLogic.Services
             }
         }
 
-        private string GenerateRandomPassword(string? username = null, Persona? persona = null)
+        private async Task<string> GenerateRandomPasswordAsync(string? username = null, Persona? persona = null)
         {
-            var politica = _securityRepository.GetPoliticaSeguridad() ?? throw new BusinessLogicException("Security policy not configured.");
+            var politica = await _securityRepository.GetPoliticaSeguridadAsync() ?? throw new BusinessLogicException("Security policy not configured.");
             var random = new Random();
 
             while (true)

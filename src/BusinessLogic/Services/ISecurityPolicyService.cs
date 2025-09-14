@@ -1,10 +1,11 @@
 using BusinessLogic.Models;
+using System.Threading.Tasks;
 
 namespace BusinessLogic.Services
 {
     public interface ISecurityPolicyService
     {
-        PoliticaSeguridadDto? GetPoliticaSeguridad();
-        PoliticaSeguridadDto UpdatePoliticaSeguridad(PoliticaSeguridadDto politica);
+        Task<PoliticaSeguridadDto?> GetPoliticaSeguridadAsync();
+        Task UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request);
     }
 }
