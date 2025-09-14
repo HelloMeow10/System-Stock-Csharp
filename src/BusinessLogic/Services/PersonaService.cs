@@ -37,7 +37,7 @@ namespace BusinessLogic.Services
             return PersonaMapper.MapToPersonaDto(persona)!;
         }
 
-        public async Task<PersonaDto> UpdatePersonaAsync(int id, PersonaDto personaDto)
+        public async Task<PersonaDto> UpdatePersonaAsync(int id, UpdatePersonaRequest personaDto)
         {
             var persona = await _personaRepository.GetPersonaByIdAsync(id);
             if (persona == null)
@@ -46,21 +46,23 @@ namespace BusinessLogic.Services
                 throw new KeyNotFoundException($"Persona with ID {id} not found.");
             }
 
+            // Legajo and FechaIngreso are not part of UpdatePersonaRequest, so we keep the existing ones.
+            // FechaNacimiento and Cuil are nullable in UpdatePersonaRequest, so we use existing if not provided.
             persona.Update(
                 persona.Legajo,
                 personaDto.Nombre,
                 personaDto.Apellido,
                 personaDto.IdTipoDoc,
                 personaDto.NumDoc,
-                personaDto.FechaNacimiento,
-                personaDto.Cuil,
-                personaDto.Calle,
-                personaDto.Altura,
+                personaDto.FechaNacimiento ?? persona.FechaNacimiento,
+                personaDto.Cuil ?? persona.Cuil,
+                personaDto.Calle ?? persona.Calle,
+                personaDto.Altura ?? persona.Altura,
                 personaDto.IdLocalidad,
                 personaDto.IdGenero,
-                personaDto.Correo,
-                personaDto.Celular,
-                personaDto.FechaIngreso
+                personaDto.Correo ?? persona.Correo,
+                personaDto.Celular ?? persona.Celular,
+                persona.FechaIngreso
             );
 
             await _personaRepository.UpdatePersonaAsync(persona);

@@ -67,7 +67,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ApiResponse<PersonaDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<PersonaDto>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<PersonaDto>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody] PersonaDto personaDto)
+        public async Task<IActionResult> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
             var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaDto);
             if (updatedPersona == null)
