@@ -113,14 +113,21 @@ namespace Services.Controllers
             return Ok(ApiResponse<PersonaDto>.Success(updatedPersona));
         }
 
+        /// <summary>
+        /// Deletes a persona.
+        /// </summary>
+        /// <param name="id">The ID of the persona to delete.</param>
+        /// <returns>No content if the deletion is successful.</returns>
+        /// <response code="204">The persona was successfully deleted.</response>
+        /// <response code="404">If the persona is not found.</response>
         [HttpDelete("{id}", Name = "DeletePersona")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
             await _personaService.DeletePersonaAsync(id);
-            return Ok(ApiResponse<object>.Success(new { message = "Persona deleted successfully." }));
+            return NoContent();
         }
     }
 }
