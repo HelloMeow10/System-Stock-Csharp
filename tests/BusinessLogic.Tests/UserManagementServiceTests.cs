@@ -72,7 +72,7 @@ namespace BusinessLogic.Tests
             // Arrange
             var userId = 100;
             var personaId = 1;
-            var updateRequest = new UpdateUserRequest { Nombre = "New", Apellido = "Name", Correo = "new@test.com", IdRol = 1, Habilitado = true };
+            var userDto = new UserDto { IdUsuario = userId, IdPersona = personaId, Nombre = "New", Apellido = "Name", Correo = "new@test.com", IdRol = 1, Habilitado = true, Username = "testuser" };
             var rol = new Rol { IdRol = 1, Nombre = "User" };
             var usuario = new Usuario(userId, "testuser", new byte[0], personaId, DateTime.MaxValue, null, DateTime.Now, 1, 1, false, null, null, null, rol);
             var persona = new Persona(personaId, "Old", "Name", 1, "123", null, null, null, null, 1, 1, "old@test.com", null, DateTime.Now);
@@ -83,7 +83,7 @@ namespace BusinessLogic.Tests
             _personaRepositoryMock.Setup(r => r.UpdatePersonaAsync(It.IsAny<Persona>())).Returns(Task.CompletedTask);
 
             // Act
-            var result = await _sut.UpdateUserAsync(userId, updateRequest);
+            var result = await _sut.UpdateUserAsync(userDto);
 
             // Assert
             _userRepositoryMock.Verify(r => r.UpdateUsuarioAsync(It.Is<Usuario>(u => u.IdUsuario == userId)), Times.Once);
@@ -97,11 +97,11 @@ namespace BusinessLogic.Tests
         {
             // Arrange
             var userId = 999;
-            var updateRequest = new UpdateUserRequest();
+            var userDto = new UserDto { IdUsuario = userId };
             _userRepositoryMock.Setup(r => r.GetUsuarioByIdAsync(userId)).ReturnsAsync((Usuario?)null);
 
             // Act
-            var result = await _sut.UpdateUserAsync(userId, updateRequest);
+            var result = await _sut.UpdateUserAsync(userDto);
 
             // Assert
             Assert.Null(result);
