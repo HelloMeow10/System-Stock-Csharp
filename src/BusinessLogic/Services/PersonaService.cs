@@ -36,36 +36,36 @@ namespace BusinessLogic.Services
             return PersonaMapper.MapToPersonaDto(persona)!;
         }
 
-        public async Task<PersonaDto?> UpdatePersonaAsync(PersonaDto personaDto)
+        public async Task<PersonaDto> UpdatePersonaAsync(int id, UpdatePersonaRequest request)
         {
-            var persona = await _personaRepository.GetPersonaByIdAsync(personaDto.IdPersona);
+            var persona = await _personaRepository.GetPersonaByIdAsync(id);
             if (persona == null)
             {
-                _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", personaDto.IdPersona);
-                return null; // Persona not found
+                _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", id);
+                throw new KeyNotFoundException($"Persona with ID {id} not found.");
             }
 
             // Use the entity's Update method
             persona.Update(
-                personaDto.Legajo, // Legajo is not updatable
-                personaDto.Nombre,
-                personaDto.Apellido,
-                personaDto.IdTipoDoc,
-                personaDto.NumDoc,
-                personaDto.FechaNacimiento,
-                personaDto.Cuil,
-                personaDto.Calle,
-                personaDto.Altura,
-                personaDto.IdLocalidad,
-                personaDto.IdGenero,
-                personaDto.Correo,
-                personaDto.Celular,
+                persona.Legajo, // Legajo is not updatable
+                request.Nombre,
+                request.Apellido,
+                request.IdTipoDoc,
+                request.NumDoc,
+                request.FechaNacimiento,
+                request.Cuil,
+                request.Calle,
+                request.Altura,
+                request.IdLocalidad,
+                request.IdGenero,
+                request.Correo,
+                request.Celular,
                 persona.FechaIngreso // FechaIngreso is not updatable
             );
 
             await _personaRepository.UpdatePersonaAsync(persona);
 
-            return PersonaMapper.MapToPersonaDto(persona);
+            return PersonaMapper.MapToPersonaDto(persona)!;
         }
 
         public async Task DeletePersonaAsync(int personaId)
@@ -84,6 +84,13 @@ namespace BusinessLogic.Services
         {
             var persona = await _personaRepository.GetPersonaByIdAsync(personaId);
             return PersonaMapper.MapToPersonaDto(persona);
+        }
+
+        public async Task<UpdatePersonaRequest?> GetPersonaForUpdateAsync(int id)
+        {
+            var persona = await _personaRepository.GetPersonaByIdAsync(id);
+            if (persona == null) return null;
+            return PersonaMapper.MapToUpdatePersonaRequest(persona);
         }
     }
 }

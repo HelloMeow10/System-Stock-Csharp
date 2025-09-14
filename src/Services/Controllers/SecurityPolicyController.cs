@@ -3,6 +3,8 @@ using BusinessLogic.Services;
 using BusinessLogic.Models;
 using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
+using Services.Hateoas;
+using System.Collections.Generic;
 
 namespace Services.Controllers
 {
@@ -10,10 +12,12 @@ namespace Services.Controllers
     public class SecurityPolicyController : BaseApiController
     {
         private readonly ISecurityPolicyService _securityPolicyService;
+        private readonly ILinkService _linkService;
 
-        public SecurityPolicyController(ISecurityPolicyService securityPolicyService)
+        public SecurityPolicyController(ISecurityPolicyService securityPolicyService, ILinkService linkService)
         {
             _securityPolicyService = securityPolicyService;
+            _linkService = linkService;
         }
 
         [HttpGet(Name = "GetSecurityPolicy")]
@@ -32,8 +36,12 @@ namespace Services.Controllers
 
         private void AddLinksToPolicy(PoliticaSeguridadDto politica)
         {
-            politica.Links.Add(CreateLink("GetSecurityPolicy", null, "self", "GET"));
-            politica.Links.Add(CreateLink("UpdateSecurityPolicy", null, "update_policy", "PUT"));
+            var links = new List<LinkSpec>
+            {
+                new LinkSpec("GetSecurityPolicy", null, "self", "GET"),
+                new LinkSpec("UpdateSecurityPolicy", null, "update_policy", "PUT")
+            };
+            _linkService.AddLinksToResource(politica, links);
         }
 
         [HttpPut(Name = "UpdateSecurityPolicy")]

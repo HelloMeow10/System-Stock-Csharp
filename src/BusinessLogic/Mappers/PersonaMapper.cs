@@ -35,5 +35,26 @@ namespace BusinessLogic.Mappers
                 FechaIngreso = p.FechaIngreso
             };
         }
+
+        public static UpdatePersonaRequest MapToUpdatePersonaRequest(Persona p)
+        {
+            return new UpdatePersonaRequest
+            {
+                Nombre = p.Nombre,
+                Apellido = p.Apellido,
+                IdTipoDoc = p.IdTipoDoc,
+                NumDoc = p.NumDoc,
+                FechaNacimiento = p.FechaNacimiento,
+                Cuil = p.Cuil,
+                Calle = p.Calle,
+                Altura = p.Altura,
+                IdLocalidad = p.IdLocalidad,
+                IdPartido = p.Localidad?.IdPartido ?? 0,
+                IdProvincia = p.Localidad?.Partido?.IdProvincia ?? 0,
+                IdGenero = p.IdGenero,
+                Correo = p.Correo,
+                Celular = p.Celular
+            };
+        }
     }
 }

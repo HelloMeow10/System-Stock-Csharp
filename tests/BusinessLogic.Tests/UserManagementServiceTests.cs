@@ -72,7 +72,16 @@ namespace BusinessLogic.Tests
             // Arrange
             var userId = 100;
             var personaId = 1;
-            var userDto = new UserDto { IdUsuario = userId, IdPersona = personaId, Nombre = "New", Apellido = "Name", Correo = "new@test.com", IdRol = 1, Habilitado = true, Username = "testuser" };
+            var request = new UpdateUserRequest
+            {
+                Nombre = "New",
+                Apellido = "Name",
+                Correo = "new@test.com",
+                IdRol = 2,
+                Habilitado = false,
+                CambioContrasenaObligatorio = true,
+                FechaExpiracion = new DateTime(2025, 1, 1)
+            };
             var rol = new Rol { IdRol = 1, Nombre = "User" };
             var usuario = new Usuario(userId, "testuser", new byte[0], personaId, DateTime.MaxValue, null, DateTime.Now, 1, 1, false, null, null, null, rol);
             var persona = new Persona(personaId, "Old", "Name", 1, "123", null, null, null, null, 1, 1, "old@test.com", null, DateTime.Now);
@@ -81,30 +90,40 @@ namespace BusinessLogic.Tests
             _personaRepositoryMock.Setup(r => r.GetPersonaByIdAsync(personaId)).ReturnsAsync(persona);
             _userRepositoryMock.Setup(r => r.UpdateUsuarioAsync(It.IsAny<Usuario>())).Returns(Task.CompletedTask);
             _personaRepositoryMock.Setup(r => r.UpdatePersonaAsync(It.IsAny<Persona>())).Returns(Task.CompletedTask);
+            _personaRepositoryMock.Setup(r => r.GetPersonaByIdAsync(personaId)).ReturnsAsync(persona);
+
 
             // Act
-            var result = await _sut.UpdateUserAsync(userDto);
+            var result = await _sut.UpdateUserAsync(userId, request);
 
             // Assert
-            _userRepositoryMock.Verify(r => r.UpdateUsuarioAsync(It.Is<Usuario>(u => u.IdUsuario == userId)), Times.Once);
-            _personaRepositoryMock.Verify(r => r.UpdatePersonaAsync(It.Is<Persona>(p => p.Nombre == "New")), Times.Once);
+            _userRepositoryMock.Verify(r => r.UpdateUsuarioAsync(It.Is<Usuario>(u =>
+                u.IdUsuario == userId &&
+                u.IdRol == request.IdRol &&
+                u.CambioContrasenaObligatorio == request.CambioContrasenaObligatorio &&
+                u.FechaExpiracion == request.FechaExpiracion
+            )), Times.Once);
+
+            _personaRepositoryMock.Verify(r => r.UpdatePersonaAsync(It.Is<Persona>(p =>
+                p.Nombre == request.Nombre &&
+                p.Apellido == request.Apellido &&
+                p.Correo == request.Correo
+            )), Times.Once);
+
             Assert.NotNull(result);
             Assert.Equal("testuser", result.Username);
         }
 
         [Fact]
-        public async Task UpdateUserAsync_WhenUserDoesNotExist_ShouldReturnNull()
+        public async Task UpdateUserAsync_WhenUserDoesNotExist_ShouldThrowException()
         {
             // Arrange
             var userId = 999;
-            var userDto = new UserDto { IdUsuario = userId };
+            var request = new UpdateUserRequest();
             _userRepositoryMock.Setup(r => r.GetUsuarioByIdAsync(userId)).ReturnsAsync((Usuario?)null);
 
-            // Act
-            var result = await _sut.UpdateUserAsync(userDto);
-
-            // Assert
-            Assert.Null(result);
+            // Act & Assert
+            await Assert.ThrowsAsync<BusinessLogicException>(() => _sut.UpdateUserAsync(userId, request));
         }
 
         [Fact]
