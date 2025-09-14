@@ -136,9 +136,9 @@ namespace BusinessLogic.Services
             return new PagedList<UserDto>(userDtos, pagedUsers.TotalCount, pagedUsers.CurrentPage, pagedUsers.PageSize);
         }, "getting all users");
 
-        public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserRequest request) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<UserDto?> UpdateUserAsync(UserDto userDto) => await ExecuteServiceOperationAsync(async () =>
         {
-            var usuario = await _userRepository.GetUsuarioByIdAsync(userId);
+            var usuario = await _userRepository.GetUsuarioByIdAsync(userDto.IdUsuario);
             if (usuario == null)
             {
                 return null; // User not found
@@ -149,14 +149,14 @@ namespace BusinessLogic.Services
             {
                 // This case should ideally not happen in a consistent database.
                 // Handle as a business logic exception or log a warning.
-                throw new BusinessLogicException($"Persona not found for user ID: {userId}.");
+                throw new BusinessLogicException($"Persona not found for user ID: {userDto.IdUsuario}.");
             }
 
             // Update Persona entity by calling its Update method
             persona.Update(
                 persona.Legajo,
-                request.Nombre ?? persona.Nombre,
-                request.Apellido ?? persona.Apellido,
+                userDto.Nombre ?? persona.Nombre,
+                userDto.Apellido ?? persona.Apellido,
                 persona.IdTipoDoc,
                 persona.NumDoc,
                 persona.FechaNacimiento,
@@ -165,7 +165,7 @@ namespace BusinessLogic.Services
                 persona.Altura,
                 persona.IdLocalidad,
                 persona.IdGenero,
-                request.Correo ?? persona.Correo,
+                userDto.Correo ?? persona.Correo,
                 persona.Celular,
                 persona.FechaIngreso
             );
@@ -175,11 +175,11 @@ namespace BusinessLogic.Services
             const string adminUsername = "Admin";
 
             // Apply updates to the User entity
-            usuario.ChangeRole(request.IdRol);
-            usuario.SetExpiration(request.FechaExpiracion);
-            usuario.ForcePasswordChange(request.CambioContrasenaObligatorio);
+            usuario.ChangeRole(userDto.IdRol);
+            usuario.SetExpiration(userDto.FechaExpiracion);
+            usuario.ForcePasswordChange(userDto.CambioContrasenaObligatorio);
 
-            if (request.Habilitado)
+            if (userDto.Habilitado)
             {
                 usuario.Habilitar();
             }

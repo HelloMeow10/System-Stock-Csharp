@@ -6,20 +6,18 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using System.Text.Json;
-using Services.Hateoas;
 using Microsoft.AspNetCore.JsonPatch;
+using System.Linq;
 
 namespace Services.Controllers
 {
     public class UsersController : BaseApiController
     {
         private readonly IUserService _userService;
-        private readonly ILinkService _linkService;
 
-        public UsersController(IUserService userService, ILinkService linkService)
+        public UsersController(IUserService userService)
         {
             _userService = userService;
-            _linkService = linkService;
         }
 
         /// <summary>
@@ -62,7 +60,7 @@ namespace Services.Controllers
 
             var updatedUser = await _userService.UpdateUserAsync(userToUpdate);
 
-            _linkService.AddLinksForUser(Url, updatedUser);
+            AddLinksToUser(updatedUser);
 
             return Ok(updatedUser);
         }
@@ -96,9 +94,10 @@ namespace Services.Controllers
 
             Response.Headers.Append("X-Pagination", JsonSerializer.Serialize(paginationMetadata));
 
-            var links = _linkService.CreateLinksForCollection(Url, pagedUsers, "GetUsers", paginationParams);
-            var linkedUsers = pagedUsers.Items.Select(user => {
-                _linkService.AddLinksForUser(Url, user);
+            var links = CreateLinksForCollection(pagedUsers, "GetUsers", paginationParams);
+            var linkedUsers = pagedUsers.Items.Select(user =>
+            {
+                AddLinksToUser(user);
                 return user;
             });
 
@@ -132,9 +131,36 @@ namespace Services.Controllers
                 return NotFound();
             }
 
-            _linkService.AddLinksForUser(Url, user);
+            AddLinksToUser(user);
 
             return Ok(user);
+        }
+
+        private void AddLinksToUser(UserDto user)
+        {
+            user.Links.Add(CreateLink("GetUserById", new { id = user.IdUsuario }, "self", "GET"));
+            user.Links.Add(CreateLink("DeleteUser", new { id = user.IdUsuario }, "delete_user", "DELETE"));
+            user.Links.Add(CreateLink("UpdateUser", new { id = user.IdUsuario }, "update_user", "PUT"));
+        }
+
+        private List<LinkDto> CreateLinksForCollection<T>(PagedList<T> pagedList, string routeName, PaginationParams paginationParams)
+        {
+            var links = new List<LinkDto>
+            {
+                CreateLink(routeName, new { pageNumber = paginationParams.PageNumber, pageSize = paginationParams.PageSize }, "self", "GET")
+            };
+
+            if (pagedList.HasNext)
+            {
+                links.Add(CreateLink(routeName, new { pageNumber = pagedList.CurrentPage + 1, pageSize = pagedList.PageSize }, "nextPage", "GET"));
+            }
+
+            if (pagedList.HasPrevious)
+            {
+                links.Add(CreateLink(routeName, new { pageNumber = pagedList.CurrentPage - 1, pageSize = pagedList.PageSize }, "previousPage", "GET"));
+            }
+
+            return links;
         }
 
         /// <summary>
@@ -159,10 +185,10 @@ namespace Services.Controllers
         }
 
         /// <summary>
-        /// Updates an existing user.
+        /// Fully updates an existing user.
         /// </summary>
         /// <param name="id">The ID of the user to update.</param>
-        /// <param name="updateRequest">The user data for the update.</param>
+        /// <param name="userDto">The user data for the update.</param>
         /// <returns>No content if the update is successful.</returns>
         /// <response code="204">If the user was successfully updated.</response>
         /// <response code="400">If the request is invalid.</response>
@@ -176,9 +202,14 @@ namespace Services.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateRequest)
+        public async Task<IActionResult> Put(int id, [FromBody] UserDto userDto)
         {
-            var updatedUser = await _userService.UpdateUserAsync(id, updateRequest);
+            if (id != userDto.IdUsuario)
+            {
+                return BadRequest("User ID in the URL must match the ID in the request body.");
+            }
+
+            var updatedUser = await _userService.UpdateUserAsync(userDto);
             if (updatedUser == null)
             {
                 return NotFound();
