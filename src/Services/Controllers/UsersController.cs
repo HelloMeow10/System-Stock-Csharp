@@ -58,7 +58,7 @@ namespace Services.Controllers
             }
 
             var updatedUser = await _userService.UpdateUserAsync(id, userToPatch);
-            AddLinksToUser(updatedUser);
+            _linkService.AddLinks(updatedUser);
 
             return Ok(updatedUser);
         }
@@ -87,18 +87,10 @@ namespace Services.Controllers
 
             Response.Headers.Append("X-Pagination", JsonSerializer.Serialize(paginationMetadata));
 
-            var links = _linkService.GetLinksForCollection(pagedUsers, "GetUsers", paginationParams);
+            pagedUsers.Items.ForEach(user => _linkService.AddLinks(user));
 
-            var linkedUsers = pagedUsers.Items.Select(user => {
-                AddLinksToUser(user);
-                return user;
-            });
-
-            var result = new
-            {
-                value = linkedUsers,
-                links
-            };
+            var result = new LinkedCollectionResource<UserDto>(pagedUsers.Items);
+            result.Links.AddRange(_linkService.GetLinksForCollection(pagedUsers, "GetUsers", paginationParams));
 
             return Ok(result);
         }
@@ -120,7 +112,7 @@ namespace Services.Controllers
                 return NotFound();
             }
 
-            AddLinksToUser(user);
+            _linkService.AddLinks(user);
 
             return Ok(user);
         }
@@ -137,7 +129,7 @@ namespace Services.Controllers
         public async Task<IActionResult> Post([FromBody] UserRequest userRequest)
         {
             var newUser = await _userService.CreateUserAsync(userRequest);
-            AddLinksToUser(newUser);
+            _linkService.AddLinks(newUser);
 
             return CreatedAtRoute("GetUserById", new { id = newUser.IdUsuario }, newUser);
         }
@@ -147,15 +139,21 @@ namespace Services.Controllers
         /// </summary>
         /// <param name="id">The ID of the user to update.</param>
         /// <param name="updateUserRequest">The user data for the update.</param>
-        /// <returns>No content if the update is successful.</returns>
+        /// <returns>The updated user.</returns>
         [HttpPut("{id}", Name = "UpdateUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
-            await _userService.UpdateUserAsync(id, updateUserRequest);
-            return NoContent();
+            var updatedUser = await _userService.UpdateUserAsync(id, updateUserRequest);
+            if (updatedUser == null)
+            {
+                return NotFound();
+            }
+            _linkService.AddLinks(updatedUser);
+            return Ok(updatedUser);
         }
 
         /// <summary>
@@ -173,16 +171,5 @@ namespace Services.Controllers
             return NoContent();
         }
 
-        private void AddLinksToUser(UserDto user)
-        {
-            var links = new List<LinkSpec>
-            {
-                new LinkSpec("GetUserById", new { id = user.IdUsuario }, "self", "GET"),
-                new LinkSpec("DeleteUser", new { id = user.IdUsuario }, "delete_user", "DELETE"),
-                new LinkSpec("UpdateUser", new { id = user.IdUsuario }, "update_user", "PUT"),
-                new LinkSpec("PatchUser", new { id = user.IdUsuario }, "patch_user", "PATCH")
-            };
-            _linkService.AddLinksToResource(user, links);
-        }
     }
 }

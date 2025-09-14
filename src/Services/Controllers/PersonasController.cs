@@ -45,18 +45,10 @@ namespace Services.Controllers
 
             Response.Headers.Append("X-Pagination", JsonSerializer.Serialize(paginationMetadata));
 
-            var links = _linkService.GetLinksForCollection(pagedPersonas, "GetPersonas", paginationParams);
-            var linkedPersonas = pagedPersonas.Items.Select(persona =>
-            {
-                AddLinksToPersona(persona);
-                return persona;
-            });
+            pagedPersonas.Items.ForEach(persona => _linkService.AddLinks(persona));
 
-            var result = new
-            {
-                value = linkedPersonas,
-                links
-            };
+            var result = new LinkedCollectionResource<PersonaDto>(pagedPersonas.Items);
+            result.Links.AddRange(_linkService.GetLinksForCollection(pagedPersonas, "GetPersonas", paginationParams));
 
             return Ok(result);
         }
@@ -76,7 +68,7 @@ namespace Services.Controllers
                 return NotFound();
             }
 
-            AddLinksToPersona(persona);
+            _linkService.AddLinks(persona);
 
             return Ok(persona);
         }
@@ -91,7 +83,7 @@ namespace Services.Controllers
         public async Task<IActionResult> Post([FromBody] PersonaRequest personaRequest)
         {
             var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
-            AddLinksToPersona(newPersona);
+            _linkService.AddLinks(newPersona);
 
             return CreatedAtRoute("GetPersonaById", new { id = newPersona.IdPersona }, newPersona);
         }
@@ -101,12 +93,18 @@ namespace Services.Controllers
         /// </summary>
         [HttpPut("{id}", Name = "UpdatePersona")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Put(int id, [FromBody] UpdatePersonaRequest request)
         {
-            await _personaService.UpdatePersonaAsync(id, request);
-            return NoContent();
+            var updatedPersona = await _personaService.UpdatePersonaAsync(id, request);
+            if (updatedPersona == null)
+            {
+                return NotFound();
+            }
+            _linkService.AddLinks(updatedPersona);
+            return Ok(updatedPersona);
         }
 
         /// <summary>
@@ -138,7 +136,7 @@ namespace Services.Controllers
             }
 
             var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaToPatch);
-            AddLinksToPersona(updatedPersona);
+            _linkService.AddLinks(updatedPersona);
 
             return Ok(updatedPersona);
         }
@@ -156,16 +154,5 @@ namespace Services.Controllers
             return NoContent();
         }
 
-        private void AddLinksToPersona(PersonaDto persona)
-        {
-            var links = new List<LinkSpec>
-            {
-                new LinkSpec("GetPersonaById", new { id = persona.IdPersona }, "self", "GET"),
-                new LinkSpec("DeletePersona", new { id = persona.IdPersona }, "delete_persona", "DELETE"),
-                new LinkSpec("UpdatePersona", new { id = persona.IdPersona }, "update_persona", "PUT"),
-                new LinkSpec("PatchPersona", new { id = persona.IdPersona }, "patch_persona", "PATCH")
-            };
-            _linkService.AddLinksToResource(persona, links);
-        }
     }
 }
