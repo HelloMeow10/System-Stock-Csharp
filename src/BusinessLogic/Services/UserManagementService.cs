@@ -136,27 +136,25 @@ namespace BusinessLogic.Services
             return new PagedList<UserDto>(userDtos, pagedUsers.TotalCount, pagedUsers.CurrentPage, pagedUsers.PageSize);
         }, "getting all users");
 
-        public async Task<UserDto?> UpdateUserAsync(UserDto userDto) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<UserDto> UpdateUserAsync(int id, UpdateUserRequest request) => await ExecuteServiceOperationAsync(async () =>
         {
-            var usuario = await _userRepository.GetUsuarioByIdAsync(userDto.IdUsuario);
+            var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
             {
-                return null; // User not found
+                throw new BusinessLogicException($"User with ID {id} not found.");
             }
 
             var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
             if (persona == null)
             {
-                // This case should ideally not happen in a consistent database.
-                // Handle as a business logic exception or log a warning.
-                throw new BusinessLogicException($"Persona not found for user ID: {userDto.IdUsuario}.");
+                throw new BusinessLogicException($"Persona not found for user ID: {id}.");
             }
 
-            // Update Persona entity by calling its Update method
+            // Update Persona entity
             persona.Update(
                 persona.Legajo,
-                userDto.Nombre ?? persona.Nombre,
-                userDto.Apellido ?? persona.Apellido,
+                request.Nombre ?? persona.Nombre,
+                request.Apellido ?? persona.Apellido,
                 persona.IdTipoDoc,
                 persona.NumDoc,
                 persona.FechaNacimiento,
@@ -165,7 +163,7 @@ namespace BusinessLogic.Services
                 persona.Altura,
                 persona.IdLocalidad,
                 persona.IdGenero,
-                userDto.Correo ?? persona.Correo,
+                request.Correo ?? persona.Correo,
                 persona.Celular,
                 persona.FechaIngreso
             );
@@ -175,11 +173,11 @@ namespace BusinessLogic.Services
             const string adminUsername = "Admin";
 
             // Apply updates to the User entity
-            usuario.ChangeRole(userDto.IdRol);
-            usuario.SetExpiration(userDto.FechaExpiracion);
-            usuario.ForcePasswordChange(userDto.CambioContrasenaObligatorio);
+            usuario.ChangeRole(request.IdRol);
+            usuario.SetExpiration(request.FechaExpiracion);
+            usuario.ForcePasswordChange(request.CambioContrasenaObligatorio);
 
-            if (userDto.Habilitado)
+            if (request.Habilitado)
             {
                 usuario.Habilitar();
             }
@@ -190,8 +188,13 @@ namespace BusinessLogic.Services
 
             await _userRepository.UpdateUsuarioAsync(usuario);
 
-            // The in-memory entity is up-to-date, map it back to a DTO
-            return UserMapper.MapToUserDto(usuario);
+            var updatedDto = UserMapper.MapToUserDto(usuario);
+            var updatedPersona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            updatedDto.Nombre = updatedPersona.Nombre;
+            updatedDto.Apellido = updatedPersona.Apellido;
+            updatedDto.Correo = updatedPersona.Correo;
+
+            return updatedDto;
         }, "updating user");
 
         public async Task DeleteUserAsync(int userId) => await ExecuteServiceOperationAsync(async () =>
@@ -209,5 +212,17 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             return UserMapper.MapToUserDto(usuario);
         }, "getting user by id");
+
+        public async Task<UpdateUserRequest?> GetUserForUpdateAsync(int id) => await ExecuteServiceOperationAsync(async () =>
+        {
+            var usuario = await _userRepository.GetUsuarioByIdAsync(id);
+            if (usuario == null) return null;
+
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            if (persona == null) return null;
+
+            return UserMapper.MapToUpdateUserRequest(usuario, persona);
+
+        }, "getting user for update");
     }
 }

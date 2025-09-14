@@ -17,7 +17,21 @@ namespace BusinessLogic.Mappers
                 IdPersona = u.IdPersona,
                 CambioContrasenaObligatorio = u.CambioContrasenaObligatorio,
                 FechaExpiracion = u.FechaExpiracion,
-                Habilitado = u.FechaBloqueo > System.DateTime.Now
+                Habilitado = u.FechaBloqueo == null || u.FechaBloqueo > System.DateTime.Now
+            };
+        }
+
+        public static UpdateUserRequest MapToUpdateUserRequest(Usuario u, Persona p)
+        {
+            return new UpdateUserRequest
+            {
+                Nombre = p.Nombre,
+                Apellido = p.Apellido,
+                Correo = p.Correo,
+                IdRol = u.IdRol,
+                CambioContrasenaObligatorio = u.CambioContrasenaObligatorio,
+                FechaExpiracion = u.FechaExpiracion,
+                Habilitado = u.FechaBloqueo == null || u.FechaBloqueo > System.DateTime.Now
             };
         }
     }
