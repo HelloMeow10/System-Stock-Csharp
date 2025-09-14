@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BusinessLogic.Exceptions;
-using BusinessLogic.Models;
+using Contracts;
 using BusinessLogic.Security;
 using DataAccess.Entities;
 using DataAccess.Repositories;

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
-using BusinessLogic.Models;
+using Contracts;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 
@@ -17,51 +17,51 @@ namespace Services.Controllers
         }
 
         [HttpGet("tiposdoc")]
-        [ProducesResponseType(typeof(IEnumerable<TipoDocDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<TipoDocDto>> GetTiposDoc()
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<TipoDocDto>>), StatusCodes.Status200OK)]
+        public IActionResult GetTiposDoc()
         {
             var data = _referenceDataService.GetTiposDoc();
-            return Ok(data);
+            return Ok(ApiResponse<IEnumerable<TipoDocDto>>.Success(data));
         }
 
         [HttpGet("provincias")]
-        [ProducesResponseType(typeof(IEnumerable<ProvinciaDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<ProvinciaDto>> GetProvincias()
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<ProvinciaDto>>), StatusCodes.Status200OK)]
+        public IActionResult GetProvincias()
         {
             var data = _referenceDataService.GetProvincias();
-            return Ok(data);
+            return Ok(ApiResponse<IEnumerable<ProvinciaDto>>.Success(data));
         }
 
         [HttpGet("partidos/{provinciaId}")]
-        [ProducesResponseType(typeof(IEnumerable<PartidoDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<PartidoDto>> GetPartidos(int provinciaId)
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<PartidoDto>>), StatusCodes.Status200OK)]
+        public IActionResult GetPartidos(int provinciaId)
         {
             var data = _referenceDataService.GetPartidosByProvinciaId(provinciaId);
-            return Ok(data);
+            return Ok(ApiResponse<IEnumerable<PartidoDto>>.Success(data));
         }
 
         [HttpGet("localidades/{partidoId}")]
-        [ProducesResponseType(typeof(IEnumerable<LocalidadDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<LocalidadDto>> GetLocalidades(int partidoId)
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<LocalidadDto>>), StatusCodes.Status200OK)]
+        public IActionResult GetLocalidades(int partidoId)
         {
             var data = _referenceDataService.GetLocalidadesByPartidoId(partidoId);
-            return Ok(data);
+            return Ok(ApiResponse<IEnumerable<LocalidadDto>>.Success(data));
         }
 
         [HttpGet("generos")]
-        [ProducesResponseType(typeof(IEnumerable<GeneroDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<GeneroDto>> GetGeneros()
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<GeneroDto>>), StatusCodes.Status200OK)]
+        public IActionResult GetGeneros()
         {
             var data = _referenceDataService.GetGeneros();
-            return Ok(data);
+            return Ok(ApiResponse<IEnumerable<GeneroDto>>.Success(data));
         }
 
         [HttpGet("roles")]
-        [ProducesResponseType(typeof(IEnumerable<RolDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<RolDto>> GetRoles()
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<RolDto>>), StatusCodes.Status200OK)]
+        public IActionResult GetRoles()
         {
             var data = _referenceDataService.GetRoles();
-            return Ok(data);
+            return Ok(ApiResponse<IEnumerable<RolDto>>.Success(data));
         }
     }
 }

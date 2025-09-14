@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using BusinessLogic.Models;
+using Contracts;
 
 namespace BusinessLogic.Services
 {

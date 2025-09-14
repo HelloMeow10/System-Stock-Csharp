@@ -4,7 +4,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using BusinessLogic.Models;
+using Contracts;
 using System.Collections.Generic;
 
 namespace Presentation.ApiClient
@@ -116,11 +116,4 @@ namespace Presentation.ApiClient
         public async Task SaveUserSecurityAnswersAsync(string username, Dictionary<int, string> answers) => await PostAsync($"api/securityquestions/{username}/answers", answers);
     }
 
-    public class LoginResponse
-    {
-        public string Token { get; set; }
-        public string Username { get; set; }
-        public string Rol { get; set; }
-        public bool Requires2fa { get; set; }
-    }
 }

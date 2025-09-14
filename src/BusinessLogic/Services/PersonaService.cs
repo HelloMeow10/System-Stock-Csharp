@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
-using BusinessLogic.Models;
+using Contracts;
 using SharedKernel;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;

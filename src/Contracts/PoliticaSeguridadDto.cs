@@ -1,6 +1,6 @@
 using SharedKernel;
 
-namespace BusinessLogic.Models
+namespace Contracts
 {
     public class PoliticaSeguridadDto : ResourceDto
     {

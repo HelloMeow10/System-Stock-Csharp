@@ -1,7 +1,7 @@
 using Xunit;
 using Moq;
 using BusinessLogic.Services;
-using BusinessLogic.Models;
+using Contracts;
 using DataAccess.Repositories;
 using DataAccess.Entities;
 using Microsoft.Extensions.Logging;

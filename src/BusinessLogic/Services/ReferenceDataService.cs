@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using BusinessLogic.Models;
+using Contracts;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
 using System;

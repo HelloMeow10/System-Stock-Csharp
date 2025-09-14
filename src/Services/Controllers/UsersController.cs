@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
-using BusinessLogic.Models;
+using Contracts;
 using SharedKernel;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -34,33 +34,33 @@ namespace Services.Controllers
         /// <response code="404">If the user to update is not found.</response>
         [HttpPatch("{id}", Name = "PatchUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
             if (patchDoc == null)
             {
-                return BadRequest("A patch document is required.");
+                return BadRequest(ApiResponse<UserDto>.Fail("A patch document is required."));
             }
 
             var userToPatch = await _userService.GetUserForUpdateAsync(id);
             if (userToPatch == null)
             {
-                return NotFound();
+                return NotFound(ApiResponse<UserDto>.Fail("User not found."));
             }
 
             patchDoc.ApplyTo(userToPatch, ModelState);
 
             if (!TryValidateModel(userToPatch))
             {
-                return ValidationProblem(ModelState);
+                return BadRequest(ApiResponse<UserDto>.Fail(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()));
             }
 
             var updatedUser = await _userService.UpdateUserAsync(id, userToPatch);
             _linkService.AddLinks(updatedUser);
 
-            return Ok(updatedUser);
+            return Ok(ApiResponse<UserDto>.Success(updatedUser));
         }
 
         /// <summary>
@@ -70,29 +70,15 @@ namespace Services.Controllers
         /// <returns>A paginated list of users with HATEOAS links.</returns>
         [HttpGet(Name = "GetUsers")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PagedApiResponse<IEnumerable<UserDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Get([FromQuery] PaginationParams paginationParams)
         {
             var pagedUsers = await _userService.GetUsersAsync(paginationParams);
-
-            var paginationMetadata = new
-            {
-                pagedUsers.TotalCount,
-                pagedUsers.PageSize,
-                pagedUsers.CurrentPage,
-                pagedUsers.TotalPages,
-                pagedUsers.HasNext,
-                pagedUsers.HasPrevious
-            };
-
-            Response.Headers.Append("X-Pagination", JsonSerializer.Serialize(paginationMetadata));
-
             pagedUsers.Items.ForEach(user => _linkService.AddLinks(user));
 
-            var result = new LinkedCollectionResource<UserDto>(pagedUsers.Items);
-            result.Links.AddRange(_linkService.GetLinksForCollection(pagedUsers, "GetUsers", paginationParams));
+            var response = new PagedApiResponse<IEnumerable<UserDto>>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
 
-            return Ok(result);
+            return Ok(response);
         }
 
         /// <summary>
@@ -102,19 +88,19 @@ namespace Services.Controllers
         /// <returns>The requested user with HATEOAS links.</returns>
         [HttpGet("{id}", Name = "GetUserById")]
         [Authorize]
-        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<UserDto>> GetById(int id)
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetById(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
             if (user == null)
             {
-                return NotFound();
+                return NotFound(ApiResponse<UserDto>.Fail("User not found."));
             }
 
             _linkService.AddLinks(user);
 
-            return Ok(user);
+            return Ok(ApiResponse<UserDto>.Success(user));
         }
 
         /// <summary>
@@ -124,14 +110,16 @@ namespace Services.Controllers
         /// <returns>The newly created user.</returns>
         [HttpPost(Name = "CreateUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Post([FromBody] UserRequest userRequest)
         {
             var newUser = await _userService.CreateUserAsync(userRequest);
             _linkService.AddLinks(newUser);
 
-            return CreatedAtRoute("GetUserById", new { id = newUser.IdUsuario }, newUser);
+            var response = ApiResponse<UserDto>.Success(newUser);
+
+            return CreatedAtRoute("GetUserById", new { id = newUser.IdUsuario }, response);
         }
 
         /// <summary>
@@ -142,18 +130,18 @@ namespace Services.Controllers
         /// <returns>The updated user.</returns>
         [HttpPut("{id}", Name = "UpdateUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
             var updatedUser = await _userService.UpdateUserAsync(id, updateUserRequest);
             if (updatedUser == null)
             {
-                return NotFound();
+                return NotFound(ApiResponse<UserDto>.Fail("User not found."));
             }
             _linkService.AddLinks(updatedUser);
-            return Ok(updatedUser);
+            return Ok(ApiResponse<UserDto>.Success(updatedUser));
         }
 
         /// <summary>
@@ -163,12 +151,12 @@ namespace Services.Controllers
         /// <returns>No content.</returns>
         [HttpDelete("{id}", Name = "DeleteUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
             await _userService.DeleteUserAsync(id);
-            return NoContent();
+            return Ok(ApiResponse<object>.Success(new { message = "User deleted successfully." }));
         }
 
     }

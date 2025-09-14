@@ -4,7 +4,7 @@ using BusinessLogic.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using Presentation.ApiClient;
-using BusinessLogic.Models;
+using Contracts;
 
 namespace Presentation
 {

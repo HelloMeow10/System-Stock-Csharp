@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
-using BusinessLogic.Models;
+using Contracts;
 using Session;
+using System.Threading.Tasks;
 
 namespace Services.Controllers
 {
@@ -19,26 +20,21 @@ namespace Services.Controllers
         }
 
         [HttpPost("login")]
-        [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var authResult = await _authService.AuthenticateAsync(request.Username, request.Password);
 
             if (!authResult.Success || authResult.User == null)
             {
-                return Unauthorized(new ProblemDetails
-                {
-                    Title = "Authentication Failed",
-                    Detail = "Invalid username or password.",
-                    Status = StatusCodes.Status401Unauthorized
-                });
+                return Unauthorized(ApiResponse<LoginResponse>.Fail("Invalid username or password."));
             }
 
             if (authResult.Requires2fa)
             {
                 var twoFaResponse = new LoginResponse { Requires2fa = true };
-                return Ok(twoFaResponse);
+                return Ok(ApiResponse<LoginResponse>.Success(twoFaResponse));
             }
 
             var user = authResult.User;
@@ -50,24 +46,19 @@ namespace Services.Controllers
                 Username = user.Username,
                 Rol = user.Rol ?? "Unknown",
             };
-            return Ok(response);
+            return Ok(ApiResponse<LoginResponse>.Success(response));
         }
 
         [HttpPost("validate-2fa")]
-        [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Validate2fa([FromBody] Validate2faRequest request)
         {
             var authResult = await _authService.Validate2faAsync(request.Username, request.Code);
 
             if (!authResult.Success || authResult.User == null)
             {
-                return Unauthorized(new ProblemDetails
-                {
-                    Title = "2FA Validation Failed",
-                    Detail = "Invalid 2FA code.",
-                    Status = StatusCodes.Status401Unauthorized
-                });
+                return Unauthorized(ApiResponse<LoginResponse>.Fail("Invalid 2FA code."));
             }
 
             var user = authResult.User;
@@ -79,7 +70,7 @@ namespace Services.Controllers
                 Username = user.Username,
                 Rol = user.Rol ?? "Unknown",
             };
-            return Ok(response);
+            return Ok(ApiResponse<LoginResponse>.Success(response));
         }
     }
 }

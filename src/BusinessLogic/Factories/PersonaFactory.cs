@@ -1,4 +1,4 @@
-using BusinessLogic.Models;
+using Contracts;
 using DataAccess.Entities;
 using DataAccess.Repositories;
 using BusinessLogic.Exceptions;

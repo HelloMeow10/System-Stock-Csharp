@@ -1,5 +1,5 @@
 // src/BusinessLogic/Models/AuthenticationResult.cs
-namespace BusinessLogic.Models
+namespace Contracts
 {
     public enum PostLoginAction
     {

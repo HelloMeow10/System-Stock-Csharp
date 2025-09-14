@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
-using BusinessLogic.Models;
+using Contracts;
 using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
 using Services.Hateoas;
-using System.Collections.Generic;
 
 namespace Services.Controllers
 {
@@ -21,36 +20,26 @@ namespace Services.Controllers
         }
 
         [HttpGet(Name = "GetSecurityPolicy")]
-        [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<PoliticaSeguridadDto>> Get()
+        [ProducesResponseType(typeof(ApiResponse<PoliticaSeguridadDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PoliticaSeguridadDto>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Get()
         {
             var politica = await _securityPolicyService.GetPoliticaSeguridadAsync();
             if (politica == null)
             {
-                return NotFound();
+                return NotFound(ApiResponse<PoliticaSeguridadDto>.Fail("Security policy not found."));
             }
-            AddLinksToPolicy(politica);
-            return Ok(politica);
-        }
-
-        private void AddLinksToPolicy(PoliticaSeguridadDto politica)
-        {
-            var links = new List<LinkSpec>
-            {
-                new LinkSpec("GetSecurityPolicy", null, "self", "GET"),
-                new LinkSpec("UpdateSecurityPolicy", null, "update_policy", "PUT")
-            };
-            _linkService.AddLinksToResource(politica, links);
+            _linkService.AddLinks(politica);
+            return Ok(ApiResponse<PoliticaSeguridadDto>.Success(politica));
         }
 
         [HttpPut(Name = "UpdateSecurityPolicy")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Put([FromBody] UpdatePoliticaSeguridadRequest request)
         {
             await _securityPolicyService.UpdatePoliticaSeguridadAsync(request);
-            return NoContent();
+            return Ok(ApiResponse<object>.Success(new { message = "Security policy updated successfully." }));
         }
     }
 }

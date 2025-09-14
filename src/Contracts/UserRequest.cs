@@ -1,5 +1,5 @@
 // src/BusinessLogic/Models/UserRequest.cs
-namespace BusinessLogic.Models
+namespace Contracts
 {
     public class UserRequest
     {
