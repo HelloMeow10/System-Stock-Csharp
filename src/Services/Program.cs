@@ -1,4 +1,5 @@
 using BusinessLogic;
+using DataAccess;
 using Services;
 using Services.Middleware;
 
@@ -9,7 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddApiServices();
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddBusinessLogic(builder.Configuration);
+builder.Services.AddDataAccess();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 

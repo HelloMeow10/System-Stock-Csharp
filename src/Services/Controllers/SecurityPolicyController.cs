@@ -5,10 +5,11 @@ using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
 using Services.Hateoas;
 using BusinessLogic.Exceptions;
+using Services.Authentication;
 
 namespace Services.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [HasApiKey]
     public class SecurityPolicyController : BaseApiController
     {
         private readonly ISecurityPolicyService _securityPolicyService;
