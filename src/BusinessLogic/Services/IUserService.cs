@@ -14,6 +14,6 @@ namespace BusinessLogic.Services
         Task DeleteUserAsync(int userId);
         Task<PagedList<UserDto>> GetUsersAsync(UserQueryParameters queryParameters);
         Task<UserDto?> GetUserByUsernameAsync(string username);
-        Task<UserDto?> GetUserByIdAsync(int id);
+        Task<UserDto> GetUserByIdAsync(int id);
     }
 }

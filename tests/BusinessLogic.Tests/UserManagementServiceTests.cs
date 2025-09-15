@@ -131,6 +131,8 @@ namespace BusinessLogic.Tests
         {
             // Arrange
             int userId = 1;
+            var user = new Usuario(userId, "test", new byte[0], 1, DateTime.Now, null, DateTime.Now, 1, 1, false, null, null, null, new Rol());
+            _userRepositoryMock.Setup(r => r.GetUsuarioByIdAsync(userId)).ReturnsAsync(user);
             _userRepositoryMock.Setup(r => r.DeleteUsuarioAsync(userId)).Returns(Task.CompletedTask);
 
             // Act

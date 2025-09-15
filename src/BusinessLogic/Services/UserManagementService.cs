@@ -257,8 +257,14 @@ namespace BusinessLogic.Services
         }, "patching user");
 
         public async Task DeleteUserAsync(int userId) => await ExecuteServiceOperationAsync(async () =>
-            await _userRepository.DeleteUsuarioAsync(userId),
-            "deleting user");
+        {
+            var user = await _userRepository.GetUsuarioByIdAsync(userId);
+            if (user == null)
+            {
+                throw new BusinessLogicException($"User with ID {userId} not found.");
+            }
+            await _userRepository.DeleteUsuarioAsync(userId);
+        }, "deleting user");
 
         public async Task<UserDto?> GetUserByUsernameAsync(string username) => await ExecuteServiceOperationAsync(async () =>
         {
@@ -266,10 +272,14 @@ namespace BusinessLogic.Services
             return UserMapper.MapToUserDto(usuario);
         }, "getting user by username");
 
-        public async Task<UserDto?> GetUserByIdAsync(int id) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<UserDto> GetUserByIdAsync(int id) => await ExecuteServiceOperationAsync(async () =>
         {
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
-            return UserMapper.MapToUserDto(usuario);
+            if (usuario == null)
+            {
+                throw new BusinessLogicException($"User with ID {id} not found.");
+            }
+            return UserMapper.MapToUserDto(usuario)!;
         }, "getting user by id");
     }
 }
