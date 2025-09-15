@@ -19,29 +19,27 @@ namespace Services.Controllers
         [HttpGet("{username}")]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetUserQuestions(string username)
+        public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetUserQuestions(string username)
         {
-            var questions = await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
-            return Ok(questions);
+            return await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
         }
 
         [HttpGet]
         [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
-        public IActionResult GetAllQuestions()
+        public ActionResult<IEnumerable<PreguntaSeguridadDto>> GetAllQuestions()
         {
-            var questions = _securityQuestionService.GetSecurityQuestions();
-            return Ok(questions);
+            return _securityQuestionService.GetSecurityQuestions();
         }
 
         [HttpPost("{username}/answers")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SaveAnswers(string username, [FromBody] Dictionary<int, string> answers)
         {
             await _securityQuestionService.SaveSecurityAnswersAsync(username, answers);
-            return Ok(new { message = "Answers saved successfully." });
+            return NoContent();
         }
     }
 }

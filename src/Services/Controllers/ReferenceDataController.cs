@@ -18,50 +18,44 @@ namespace Services.Controllers
 
         [HttpGet("tiposdoc")]
         [ProducesResponseType(typeof(IEnumerable<TipoDocDto>), StatusCodes.Status200OK)]
-        public IActionResult GetTiposDoc()
+        public ActionResult<IEnumerable<TipoDocDto>> GetTiposDoc()
         {
-            var data = _referenceDataService.GetTiposDoc();
-            return Ok(data);
+            return _referenceDataService.GetTiposDoc();
         }
 
         [HttpGet("provincias")]
         [ProducesResponseType(typeof(IEnumerable<ProvinciaDto>), StatusCodes.Status200OK)]
-        public IActionResult GetProvincias()
+        public ActionResult<IEnumerable<ProvinciaDto>> GetProvincias()
         {
-            var data = _referenceDataService.GetProvincias();
-            return Ok(data);
+            return _referenceDataService.GetProvincias();
         }
 
         [HttpGet("partidos/{provinciaId}")]
         [ProducesResponseType(typeof(IEnumerable<PartidoDto>), StatusCodes.Status200OK)]
-        public IActionResult GetPartidos(int provinciaId)
+        public ActionResult<IEnumerable<PartidoDto>> GetPartidos(int provinciaId)
         {
-            var data = _referenceDataService.GetPartidosByProvinciaId(provinciaId);
-            return Ok(data);
+            return _referenceDataService.GetPartidosByProvinciaId(provinciaId);
         }
 
         [HttpGet("localidades/{partidoId}")]
         [ProducesResponseType(typeof(IEnumerable<LocalidadDto>), StatusCodes.Status200OK)]
-        public IActionResult GetLocalidades(int partidoId)
+        public ActionResult<IEnumerable<LocalidadDto>> GetLocalidades(int partidoId)
         {
-            var data = _referenceDataService.GetLocalidadesByPartidoId(partidoId);
-            return Ok(data);
+            return _referenceDataService.GetLocalidadesByPartidoId(partidoId);
         }
 
         [HttpGet("generos")]
         [ProducesResponseType(typeof(IEnumerable<GeneroDto>), StatusCodes.Status200OK)]
-        public IActionResult GetGeneros()
+        public ActionResult<IEnumerable<GeneroDto>> GetGeneros()
         {
-            var data = _referenceDataService.GetGeneros();
-            return Ok(data);
+            return _referenceDataService.GetGeneros();
         }
 
         [HttpGet("roles")]
         [ProducesResponseType(typeof(IEnumerable<RolDto>), StatusCodes.Status200OK)]
-        public IActionResult GetRoles()
+        public ActionResult<IEnumerable<RolDto>> GetRoles()
         {
-            var data = _referenceDataService.GetRoles();
-            return Ok(data);
+            return _referenceDataService.GetRoles();
         }
     }
 }

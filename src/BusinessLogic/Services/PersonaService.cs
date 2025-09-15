@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using BusinessLogic.Exceptions;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
 using Contracts;
@@ -43,7 +44,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", id);
-                throw new KeyNotFoundException($"Persona with ID {id} not found.");
+                throw new BusinessLogicException($"Resource not found.");
             }
 
             // Legajo and FechaIngreso are not part of UpdatePersonaRequest, so we keep the existing ones.
@@ -76,7 +77,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", id);
-                throw new KeyNotFoundException($"Persona with ID {id} not found.");
+                throw new BusinessLogicException($"Resource not found.");
             }
 
             var personaToPatch = PersonaMapper.MapToUpdatePersonaRequest(persona);
@@ -106,6 +107,12 @@ namespace BusinessLogic.Services
 
         public async Task DeletePersonaAsync(int personaId)
         {
+            var persona = await _personaRepository.GetPersonaByIdAsync(personaId);
+            if (persona == null)
+            {
+                _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para eliminar.", personaId);
+                throw new BusinessLogicException($"Resource not found.");
+            }
             await _personaRepository.DeletePersonaAsync(personaId);
         }
 
@@ -116,10 +123,15 @@ namespace BusinessLogic.Services
             return new PagedList<PersonaDto>(personaDtos, pagedPersonas.TotalCount, pagedPersonas.CurrentPage, pagedPersonas.PageSize);
         }
 
-        public async Task<PersonaDto?> GetPersonaByIdAsync(int personaId)
+        public async Task<PersonaDto> GetPersonaByIdAsync(int personaId)
         {
             var persona = await _personaRepository.GetPersonaByIdAsync(personaId);
-            return PersonaMapper.MapToPersonaDto(persona);
+            if (persona == null)
+            {
+                _logger.LogWarning("No se encontró la persona con ID: {PersonaId}.", personaId);
+                throw new BusinessLogicException("Resource not found");
+            }
+            return PersonaMapper.MapToPersonaDto(persona)!;
         }
     }
 }

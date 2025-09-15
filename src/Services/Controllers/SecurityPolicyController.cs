@@ -21,23 +21,18 @@ namespace Services.Controllers
         [HttpGet(Name = "GetSecurityPolicy")]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Get()
+        public async Task<ActionResult<PoliticaSeguridadDto>> Get()
         {
-            var politica = await _securityPolicyService.GetPoliticaSeguridadAsync();
-            if (politica == null)
-            {
-                throw new BusinessLogicException("Security policy not found.");
-            }
-            return Ok(politica);
+            return await _securityPolicyService.GetPoliticaSeguridadAsync();
         }
 
         [HttpPut(Name = "UpdateSecurityPolicy")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Put([FromBody] UpdatePoliticaSeguridadRequest request)
         {
             await _securityPolicyService.UpdatePoliticaSeguridadAsync(request);
-            return Ok(new { message = "Security policy updated successfully." });
+            return NoContent();
         }
     }
 }
