@@ -10,7 +10,6 @@ namespace BusinessLogic.Services
     {
         Task<UserDto> CreateUserAsync(UserRequest request);
         Task<UserDto> UpdateUserAsync(int id, UpdateUserRequest userDto);
-        Task<UserDto> UpdateUserAsync(int id, JsonPatchDocument<UpdateUserRequest> patchDoc);
         Task DeleteUserAsync(int userId);
         Task<PagedList<UserDto>> GetUsersAsync(UserQueryParameters queryParameters);
         Task<UserDto?> GetUserByUsernameAsync(string username);

@@ -10,25 +10,29 @@ namespace Services.Hateoas
         {
             var personaId = resource.IdPersona;
 
-            resource.Links.Add(new LinkDto(
-                href: urlHelper.Link("GetPersonaById", new { id = personaId }),
-                rel: "self",
-                method: "GET"));
+            var selfLink = urlHelper.Link("GetPersonaById", new { id = personaId });
+            if (selfLink != null)
+            {
+                resource.Links.Add(new LinkDto(selfLink, "self", "GET"));
+            }
 
-            resource.Links.Add(new LinkDto(
-                href: urlHelper.Link("UpdatePersona", new { id = personaId }),
-                rel: "update-persona",
-                method: "PUT"));
+            var updateLink = urlHelper.Link("UpdatePersona", new { id = personaId });
+            if (updateLink != null)
+            {
+                resource.Links.Add(new LinkDto(updateLink, "update-persona", "PUT"));
+            }
 
-            resource.Links.Add(new LinkDto(
-                href: urlHelper.Link("PatchPersona", new { id = personaId }),
-                rel: "partially-update-persona",
-                method: "PATCH"));
+            var patchLink = urlHelper.Link("PatchPersona", new { id = personaId });
+            if (patchLink != null)
+            {
+                resource.Links.Add(new LinkDto(patchLink, "partially-update-persona", "PATCH"));
+            }
 
-            resource.Links.Add(new LinkDto(
-                href: urlHelper.Link("DeletePersona", new { id = personaId }),
-                rel: "delete-persona",
-                method: "DELETE"));
+            var deleteLink = urlHelper.Link("DeletePersona", new { id = personaId });
+            if (deleteLink != null)
+            {
+                resource.Links.Add(new LinkDto(deleteLink, "delete-persona", "DELETE"));
+            }
         }
     }
 }

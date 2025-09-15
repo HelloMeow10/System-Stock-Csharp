@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Services.Hateoas;
 using BusinessLogic.Exceptions;
+using BusinessLogic.Mappers;
 
 namespace Services.Controllers
 {
@@ -34,9 +35,23 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<UserDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
+        public async Task<UserDto> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            return await _userService.UpdateUserAsync(id, patchDoc);
+            // TODO: This requires getting a Persona as well, which is not ideal.
+            // This mapping logic should be improved in the future.
+            var user = await _userService.GetUserByIdAsync(id);
+            var userToPatch = UserMapper.MapToUpdateUserRequest(user);
+
+            patchDoc.ApplyTo(userToPatch, ModelState);
+
+            TryValidateModel(userToPatch);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                throw new ValidationException(errors);
+            }
+
+            return await _userService.UpdateUserAsync(id, userToPatch);
         }
 
         /// <summary>
@@ -47,7 +62,7 @@ namespace Services.Controllers
         [HttpGet(Name = "GetUsers")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PagedResponse<IEnumerable<UserDto>>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<PagedResponse<IEnumerable<UserDto>>>> Get([FromQuery] UserQueryParameters queryParameters)
+        public async Task<PagedResponse<IEnumerable<UserDto>>> Get([FromQuery] UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userService.GetUsersAsync(queryParameters);
             return new PagedResponse<IEnumerable<UserDto>>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
@@ -62,7 +77,7 @@ namespace Services.Controllers
         [Authorize]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<UserDto>> GetById(int id)
+        public async Task<UserDto> GetById(int id)
         {
             return await _userService.GetUserByIdAsync(id);
         }
@@ -93,7 +108,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<UserDto>> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
+        public async Task<UserDto> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
             return await _userService.UpdateUserAsync(id, updateUserRequest);
         }

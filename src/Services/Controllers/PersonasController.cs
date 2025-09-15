@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Services.Hateoas;
 using BusinessLogic.Exceptions;
+using BusinessLogic.Mappers;
 
 namespace Services.Controllers
 {
@@ -23,20 +24,17 @@ namespace Services.Controllers
         [HttpGet(Name = "GetPersonas")]
         [Authorize]
         [ProducesResponseType(typeof(PagedResponse<IEnumerable<PersonaDto>>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<PagedResponse<IEnumerable<PersonaDto>>>> Get([FromQuery] PaginationParams paginationParams)
+        public async Task<PagedResponse<IEnumerable<PersonaDto>>> Get([FromQuery] PaginationParams paginationParams)
         {
             var pagedPersonas = await _personaService.GetPersonasAsync(paginationParams);
-
-            var response = new PagedResponse<IEnumerable<PersonaDto>>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
-
-            return response;
+            return new PagedResponse<IEnumerable<PersonaDto>>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
         [Authorize]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<PersonaDto>> Get(int id)
+        public async Task<PersonaDto> Get(int id)
         {
             return await _personaService.GetPersonaByIdAsync(id);
         }
@@ -56,7 +54,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<PersonaDto>> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
+        public async Task<PersonaDto> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
             return await _personaService.UpdatePersonaAsync(id, personaDto);
         }
@@ -66,9 +64,22 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<PersonaDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
+        public async Task<PersonaDto> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
-            return await _personaService.UpdatePersonaAsync(id, patchDoc);
+            var persona = await _personaService.GetPersonaByIdAsync(id);
+            var personaToPatch = PersonaMapper.MapToUpdatePersonaRequest(persona);
+
+            patchDoc.ApplyTo(personaToPatch, ModelState);
+
+            // Re-validate the model after applying the patch
+            TryValidateModel(personaToPatch);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                throw new ValidationException(errors);
+            }
+
+            return await _personaService.UpdatePersonaAsync(id, personaToPatch);
         }
 
         /// <summary>

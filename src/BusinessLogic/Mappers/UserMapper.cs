@@ -21,6 +21,20 @@ namespace BusinessLogic.Mappers
             };
         }
 
+        public static UpdateUserRequest MapToUpdateUserRequest(UserDto dto)
+        {
+            return new UpdateUserRequest
+            {
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                IdRol = dto.IdRol,
+                CambioContrasenaObligatorio = dto.CambioContrasenaObligatorio,
+                FechaExpiracion = dto.FechaExpiracion,
+                Habilitado = dto.Habilitado
+            };
+        }
+
         public static UpdateUserRequest MapToUpdateUserRequest(Usuario u, Persona p)
         {
             return new UpdateUserRequest
