@@ -14,7 +14,14 @@ namespace Services.Hateoas
 
         public void AddLinks(PagedResponse<IEnumerable<T>> resource, IUrlHelper urlHelper)
         {
-            var routeName = urlHelper.ActionContext.RouteData.Values["action"].ToString();
+            if (!urlHelper.ActionContext.RouteData.Values.TryGetValue("action", out var routeNameObj) || routeNameObj == null)
+            {
+                // Cannot determine route name in this context, so cannot generate HATEOAS links for pagination.
+                // This can happen in some test scenarios.
+                return;
+            }
+            var routeName = routeNameObj.ToString();
+
             var queryParams = urlHelper.ActionContext.HttpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString());
 
             if (resource.PageNumber < resource.TotalPages)

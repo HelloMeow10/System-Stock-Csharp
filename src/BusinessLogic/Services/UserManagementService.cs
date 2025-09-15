@@ -13,7 +13,6 @@ using BusinessLogic.Exceptions;
 using BusinessLogic.Security;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
-using Microsoft.AspNetCore.JsonPatch;
 
 namespace BusinessLogic.Services
 {
@@ -195,67 +194,6 @@ namespace BusinessLogic.Services
             return updatedDto;
         }, "updating user");
 
-        public async Task<UserDto> UpdateUserAsync(int id, Microsoft.AspNetCore.JsonPatch.JsonPatchDocument<UpdateUserRequest> patchDoc) => await ExecuteServiceOperationAsync(async () =>
-        {
-            var usuario = await _userRepository.GetUsuarioByIdAsync(id);
-            if (usuario == null)
-            {
-                throw new BusinessLogicException($"User with ID {id} not found.");
-            }
-
-            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
-            if (persona == null)
-            {
-                throw new BusinessLogicException($"Persona not found for user ID: {id}.");
-            }
-
-            var userToPatch = UserMapper.MapToUpdateUserRequest(usuario, persona);
-            patchDoc.ApplyTo(userToPatch);
-
-            persona.Update(
-                persona.Legajo,
-                userToPatch.Nombre ?? persona.Nombre,
-                userToPatch.Apellido ?? persona.Apellido,
-                persona.IdTipoDoc,
-                persona.NumDoc,
-                persona.FechaNacimiento,
-                persona.Cuil,
-                persona.Calle,
-                persona.Altura,
-                persona.IdLocalidad,
-                persona.IdGenero,
-                userToPatch.Correo ?? persona.Correo,
-                persona.Celular,
-                persona.FechaIngreso
-            );
-            await _personaRepository.UpdatePersonaAsync(persona);
-
-            const string adminUsername = "Admin";
-
-            usuario.ChangeRole(userToPatch.IdRol);
-            usuario.SetExpiration(userToPatch.FechaExpiracion);
-            usuario.ForcePasswordChange(userToPatch.CambioContrasenaObligatorio);
-
-            if (userToPatch.Habilitado)
-            {
-                usuario.Habilitar();
-            }
-            else
-            {
-                usuario.Deshabilitar(adminUsername);
-            }
-
-            await _userRepository.UpdateUsuarioAsync(usuario);
-
-            var updatedDto = UserMapper.MapToUserDto(usuario);
-            var updatedPersona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
-            updatedDto.Nombre = updatedPersona.Nombre;
-            updatedDto.Apellido = updatedPersona.Apellido;
-            updatedDto.Correo = updatedPersona.Correo;
-
-            return updatedDto;
-        }, "patching user");
-
         public async Task DeleteUserAsync(int userId) => await ExecuteServiceOperationAsync(async () =>
         {
             var user = await _userRepository.GetUsuarioByIdAsync(userId);
@@ -279,7 +217,18 @@ namespace BusinessLogic.Services
             {
                 throw new BusinessLogicException($"User with ID {id} not found.");
             }
-            return UserMapper.MapToUserDto(usuario)!;
+
+            var userDto = UserMapper.MapToUserDto(usuario)!;
+
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            if (persona != null)
+            {
+                userDto.Nombre = persona.Nombre;
+                userDto.Apellido = persona.Apellido;
+                userDto.Correo = persona.Correo;
+            }
+
+            return userDto;
         }, "getting user by id");
     }
 }
