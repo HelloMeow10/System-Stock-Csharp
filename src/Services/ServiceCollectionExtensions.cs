@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Contracts;
 using Microsoft.OpenApi.Models;
 using Services.Hateoas;
 using Session;
@@ -18,8 +19,13 @@ namespace Services
         {
             services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionContextAccessor, Microsoft.AspNetCore.Mvc.Infrastructure.ActionContextAccessor>();
             services.AddScoped<ITokenService, TokenService>();
-            services.AddScoped<ILinkService, LinkService>();
-            services.AddScoped<UserLinksFilter>();
+
+            // Register HATEOAS services
+            services.AddScoped<HateoasActionFilter>();
+            services.AddScoped<ILinkFactory<UserDto>, UserLinksFactory>();
+            services.AddScoped<ILinkFactory<PersonaDto>, PersonaLinksFactory>();
+            services.AddScoped<ILinkFactory<PoliticaSeguridadDto>, PoliticaSeguridadLinksFactory>();
+
             return services;
         }
 
