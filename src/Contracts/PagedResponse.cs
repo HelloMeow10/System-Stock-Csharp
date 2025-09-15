@@ -3,14 +3,13 @@ using SharedKernel;
 
 namespace Contracts
 {
-    public class PagedResponse<T>
+    public class PagedResponse<T> : ResourceDto
     {
         public T Data { get; set; }
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
         public int TotalRecords { get; set; }
-        public List<LinkDto> Links { get; set; } = new List<LinkDto>();
 
         public PagedResponse(T data, int pageNumber, int pageSize, int totalRecords)
         {

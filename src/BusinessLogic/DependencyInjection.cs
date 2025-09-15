@@ -1,65 +1,36 @@
 using BusinessLogic.Configuration;
+using BusinessLogic.Factories;
 using BusinessLogic.Security;
 using BusinessLogic.Services;
-using DataAccess;
-using DataAccess.Repositories;
-using BusinessLogic.Factories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace BusinessLogic
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddBusinessLogic(this IServiceCollection services, IConfiguration configuration)
         {
             // Register configuration
-            services.AddSingleton(configuration);
-
-            // Configure SmtpSettings using the options pattern
             services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
 
-            // Register logging
-            services.AddSingleton<ILoggerFactory>(serviceProvider =>
-            {
-                return LoggerFactory.Create(builder =>
-                {
-                    builder
-                        .AddFilter("Microsoft", LogLevel.Warning)
-                        .AddFilter("System", LogLevel.Warning)
-                        .AddConsole();
-                });
-            });
+            // Register Factories
+            services.AddScoped<IPersonaFactory, PersonaFactory>();
+            services.AddScoped<IUsuarioFactory, UsuarioFactory>();
 
-            services.AddLogging();
+            // Register Security Services
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
+            services.AddScoped<IPasswordPolicyValidator, PasswordPolicyValidator>();
 
-            // Register DataAccess components
-            services.AddSingleton<DatabaseConnectionFactory>();
-            services.AddScoped<IUserRepository, SqlUserRepository>();
-            services.AddScoped<IPersonaRepository, SqlPersonaRepository>();
-            services.AddScoped<ISecurityRepository, SqlSecurityRepository>();
-            services.AddScoped<IReferenceDataRepository, SqlReferenceDataRepository>();
-
-            // Register BusinessLogic factories
-            services.AddTransient<IPersonaFactory, PersonaFactory>();
-            services.AddTransient<IUsuarioFactory, UsuarioFactory>();
-
-            // Register BusinessLogic services
-            services.AddTransient<IEmailService, EmailService>();
-            services.AddTransient<IPasswordHasher, PasswordHasher>();
-            services.AddTransient<IPasswordPolicyValidator, PasswordPolicyValidator>();
-
-            // Register new granular services
-            services.AddTransient<IAuthenticationService, AuthenticationService>();
-            services.AddTransient<IPasswordService, PasswordService>();
-            services.AddTransient<IPersonaService, PersonaService>();
-
-            services.AddTransient<ISecurityQuestionService, SecurityQuestionService>();
-            services.AddTransient<ISecurityPolicyService, SecurityPolicyService>();
-
-            services.AddTransient<IUserService, UserManagementService>();
-            services.AddTransient<IReferenceDataService, ReferenceDataService>();
+            // Register Main Services
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
+            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IPasswordService, PasswordService>();
+            services.AddScoped<IPersonaService, PersonaService>();
+            services.AddScoped<IReferenceDataService, ReferenceDataService>();
+            services.AddScoped<ISecurityPolicyService, SecurityPolicyService>();
+            services.AddScoped<ISecurityQuestionService, SecurityQuestionService>();
+            services.AddScoped<IUserService, UserManagementService>();
 
             return services;
         }

@@ -7,7 +7,7 @@ using System;
 using System.Collections;
 using System.Linq;
 using System.Reflection;
-using Contracts; // For PagedResponse
+using Contracts;
 
 namespace Services.Hateoas
 {
@@ -45,18 +45,28 @@ namespace Services.Hateoas
             }
             else if (value.GetType().IsGenericType && value.GetType().GetGenericTypeDefinition() == typeof(PagedResponse<>))
             {
-                // This handles PagedResponse<IEnumerable<ResourceDto>>
-                var data = value.GetType().GetProperty("Data")?.GetValue(value) as IEnumerable;
-                if (data == null) return;
-
-                foreach (var item in data)
+                var pagedResponse = (dynamic)value;
+                if (pagedResponse.Data is IEnumerable data)
+                {
+                    foreach (var item in data)
+                    {
+                        if (item is ResourceDto itemResource)
+                        {
+                            AddLinksToResource(itemResource, urlHelper);
+                        }
+                    }
+                }
+                AddLinksToPagedResponse(pagedResponse, urlHelper);
+            }
+            else if (value is IEnumerable enumerable && !(value is string))
+            {
+                foreach (var item in enumerable)
                 {
                     if (item is ResourceDto itemResource)
                     {
                         AddLinksToResource(itemResource, urlHelper);
                     }
                 }
-                // We can also add pagination links to the PagedResponse itself here if needed in a generic way.
             }
         }
 
@@ -70,6 +80,19 @@ namespace Services.Hateoas
             {
                 var addLinksMethod = factory.GetType().GetMethod("AddLinks");
                 addLinksMethod?.Invoke(factory, new object[] { resource, urlHelper });
+            }
+        }
+
+        private void AddLinksToPagedResponse(object pagedResponse, IUrlHelper urlHelper)
+        {
+            var pagedResponseType = pagedResponse.GetType();
+            var factoryType = typeof(ILinkFactory<>).MakeGenericType(pagedResponseType);
+            var factory = _serviceProvider.GetService(factoryType);
+
+            if (factory != null)
+            {
+                var addLinksMethod = factory.GetType().GetMethod("AddLinks");
+                addLinksMethod?.Invoke(factory, new object[] { pagedResponse, urlHelper });
             }
         }
     }

@@ -10,6 +10,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Services.Authentication;
 
 namespace Services
 {
@@ -25,6 +26,7 @@ namespace Services
             services.AddScoped<ILinkFactory<UserDto>, UserLinksFactory>();
             services.AddScoped<ILinkFactory<PersonaDto>, PersonaLinksFactory>();
             services.AddScoped<ILinkFactory<PoliticaSeguridadDto>, PoliticaSeguridadLinksFactory>();
+            services.AddScoped(typeof(ILinkFactory<>), typeof(PagedResponseLinksFactory<>));
 
             return services;
         }
@@ -43,7 +45,8 @@ namespace Services
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
                     };
-                });
+                })
+                .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthSchemeOptions.Scheme, null);
             return services;
         }
 
