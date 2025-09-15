@@ -63,7 +63,7 @@ namespace BusinessLogic.Services
             return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica)!;
         }, "getting security policy");
 
-        public async Task UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<PoliticaSeguridadDto> UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request) => await ExecuteServiceOperationAsync(async () =>
         {
             var politica = await _securityRepository.GetPoliticaSeguridadAsync()
                 ?? throw new BusinessLogicException("Resource not found");
@@ -71,6 +71,8 @@ namespace BusinessLogic.Services
             politica.Update(request.MayusYMinus, request.LetrasYNumeros, request.CaracterEspecial, request.Autenticacion2FA, request.NoRepetirAnteriores, request.SinDatosPersonales, request.MinCaracteres, request.CantPreguntas);
 
             await _securityRepository.UpdatePoliticaSeguridadAsync(politica);
+
+            return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica)!;
 
         }, "updating security policy");
     }
