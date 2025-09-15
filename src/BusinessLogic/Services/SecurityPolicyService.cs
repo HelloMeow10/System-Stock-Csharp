@@ -52,16 +52,21 @@ namespace BusinessLogic.Services
             }
         }
 
-        public async Task<PoliticaSeguridadDto?> GetPoliticaSeguridadAsync() => await ExecuteServiceOperationAsync(async () =>
+        public async Task<PoliticaSeguridadDto> GetPoliticaSeguridadAsync() => await ExecuteServiceOperationAsync(async () =>
         {
             var politica = await _securityRepository.GetPoliticaSeguridadAsync();
-            return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica);
+            if (politica == null)
+            {
+                _logger.LogWarning("Security policy not found.");
+                throw new BusinessLogicException("Resource not found");
+            }
+            return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica)!;
         }, "getting security policy");
 
         public async Task UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request) => await ExecuteServiceOperationAsync(async () =>
         {
             var politica = await _securityRepository.GetPoliticaSeguridadAsync()
-                ?? throw new ValidationException("No se encontró la política de seguridad para actualizar.");
+                ?? throw new BusinessLogicException("Resource not found");
 
             politica.Update(request.MayusYMinus, request.LetrasYNumeros, request.CaracterEspecial, request.Autenticacion2FA, request.NoRepetirAnteriores, request.SinDatosPersonales, request.MinCaracteres, request.CantPreguntas);
 

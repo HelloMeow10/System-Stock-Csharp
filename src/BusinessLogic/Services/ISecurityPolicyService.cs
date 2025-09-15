@@ -5,7 +5,7 @@ namespace BusinessLogic.Services
 {
     public interface ISecurityPolicyService
     {
-        Task<PoliticaSeguridadDto?> GetPoliticaSeguridadAsync();
+        Task<PoliticaSeguridadDto> GetPoliticaSeguridadAsync();
         Task UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request);
     }
 }

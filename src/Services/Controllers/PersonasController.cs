@@ -23,34 +23,29 @@ namespace Services.Controllers
         [HttpGet(Name = "GetPersonas")]
         [Authorize]
         [ProducesResponseType(typeof(PagedResponse<IEnumerable<PersonaDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Get([FromQuery] PaginationParams paginationParams)
+        public async Task<ActionResult<PagedResponse<IEnumerable<PersonaDto>>>> Get([FromQuery] PaginationParams paginationParams)
         {
             var pagedPersonas = await _personaService.GetPersonasAsync(paginationParams);
 
             var response = new PagedResponse<IEnumerable<PersonaDto>>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
 
-            return Ok(response);
+            return response;
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
         [Authorize]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Get(int id)
+        public async Task<ActionResult<PersonaDto>> Get(int id)
         {
-            var persona = await _personaService.GetPersonaByIdAsync(id);
-            if (persona == null)
-            {
-                throw new BusinessLogicException($"Persona with id {id} not found");
-            }
-            return Ok(persona);
+            return await _personaService.GetPersonaByIdAsync(id);
         }
 
         [HttpPost(Name = "CreatePersona")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Post([FromBody] PersonaRequest personaRequest)
+        public async Task<ActionResult<PersonaDto>> Post([FromBody] PersonaRequest personaRequest)
         {
             var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
             return CreatedAtRoute("GetPersonaById", new { id = newPersona.IdPersona }, newPersona);
@@ -61,10 +56,9 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
+        public async Task<ActionResult<PersonaDto>> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
-            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaDto);
-            return Ok(updatedPersona);
+            return await _personaService.UpdatePersonaAsync(id, personaDto);
         }
 
         [HttpPatch("{id}", Name = "PatchPersona")]
@@ -72,10 +66,9 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
+        public async Task<ActionResult<PersonaDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
-            var updatedPersona = await _personaService.UpdatePersonaAsync(id, patchDoc);
-            return Ok(updatedPersona);
+            return await _personaService.UpdatePersonaAsync(id, patchDoc);
         }
 
         /// <summary>
