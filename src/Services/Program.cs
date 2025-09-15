@@ -10,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddApiServices();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 
 builder.Services.AddRouting(options =>
 {
@@ -27,7 +29,8 @@ builder.Services.AddSwaggerDocumentation();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseExceptionHandler(options => { });
+
 
 if (app.Environment.IsDevelopment())
 {

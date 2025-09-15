@@ -17,22 +17,23 @@ namespace Services.Controllers
 
         [HttpPost("change")]
         [Authorize]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             await _passwordService.ChangePasswordAsync(request.Username, request.NewPassword, request.OldPassword);
-            return Ok(ApiResponse<object>.Success(new { message = "Password changed successfully." }));
+            return Ok(new { message = "Password changed successfully." });
         }
 
         [HttpPost("recover")]
         [AllowAnonymous]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request)
         {
             await _passwordService.RecoverPasswordAsync(request.Username, request.Answers);
-            return Ok(ApiResponse<object>.Success(new { message = "If the user exists, a password recovery email has been sent." }));
+            return Ok(new { message = "If the user exists, a password recovery email has been sent." });
         }
     }
 }

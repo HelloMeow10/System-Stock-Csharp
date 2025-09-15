@@ -5,7 +5,7 @@ namespace Services.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    [ServiceFilter(typeof(UserLinksFilter))]
+    [ServiceFilter(typeof(HateoasActionFilter))]
     public abstract class BaseApiController : ControllerBase
     {
     }
