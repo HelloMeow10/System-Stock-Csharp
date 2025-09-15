@@ -34,10 +34,9 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
+        public async Task<ActionResult<UserDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            var updatedUser = await _userService.UpdateUserAsync(id, patchDoc);
-            return Ok(updatedUser);
+            return await _userService.UpdateUserAsync(id, patchDoc);
         }
 
         /// <summary>
@@ -48,13 +47,10 @@ namespace Services.Controllers
         [HttpGet(Name = "GetUsers")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PagedResponse<IEnumerable<UserDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Get([FromQuery] UserQueryParameters queryParameters)
+        public async Task<ActionResult<PagedResponse<IEnumerable<UserDto>>>> Get([FromQuery] UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userService.GetUsersAsync(queryParameters);
-
-            var response = new PagedResponse<IEnumerable<UserDto>>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
-
-            return Ok(response);
+            return new PagedResponse<IEnumerable<UserDto>>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
         }
 
         /// <summary>
@@ -66,14 +62,9 @@ namespace Services.Controllers
         [Authorize]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<ActionResult<UserDto>> GetById(int id)
         {
-            var user = await _userService.GetUserByIdAsync(id);
-            if (user == null)
-            {
-                throw new BusinessLogicException($"User with id {id} not found");
-            }
-            return Ok(user);
+            return await _userService.GetUserByIdAsync(id);
         }
 
         /// <summary>
@@ -85,7 +76,7 @@ namespace Services.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Post([FromBody] UserRequest userRequest)
+        public async Task<ActionResult<UserDto>> Post([FromBody] UserRequest userRequest)
         {
             var newUser = await _userService.CreateUserAsync(userRequest);
             return CreatedAtRoute("GetUserById", new { id = newUser.IdUsuario }, newUser);
@@ -102,10 +93,9 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
+        public async Task<ActionResult<UserDto>> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
-            var updatedUser = await _userService.UpdateUserAsync(id, updateUserRequest);
-            return Ok(updatedUser);
+            return await _userService.UpdateUserAsync(id, updateUserRequest);
         }
 
         /// <summary>

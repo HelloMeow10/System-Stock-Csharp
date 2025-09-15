@@ -26,10 +26,14 @@ namespace Services.Hateoas
 
         public void OnActionExecuted(ActionExecutedContext context)
         {
-            if (context.Result is OkObjectResult okResult && okResult.Value != null)
+            if (context.Result is ObjectResult objectResult &&
+                objectResult.Value != null &&
+                objectResult.StatusCode.HasValue &&
+                objectResult.StatusCode.Value >= 200 &&
+                objectResult.StatusCode.Value < 300)
             {
                 var urlHelper = _urlHelperFactory.GetUrlHelper(context);
-                ProcessHateoas(okResult.Value, urlHelper);
+                ProcessHateoas(objectResult.Value, urlHelper);
             }
         }
 
