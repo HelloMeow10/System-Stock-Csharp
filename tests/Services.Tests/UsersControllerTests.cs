@@ -39,7 +39,7 @@ namespace Services.Tests
             }).CreateClient();
 
             // Act
-            var response = await client.GetAsync("/api/v1/users/999");
+            var response = await client.GetAsync("/api/v1.0/users/999");
 
             // Assert
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -64,7 +64,7 @@ namespace Services.Tests
             }).CreateClient();
 
             // Act
-            var response = await client.GetAsync("/api/v1/users");
+            var response = await client.GetAsync("/api/v1.0/users");
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);

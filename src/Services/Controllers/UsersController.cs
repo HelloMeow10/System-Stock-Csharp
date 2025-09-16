@@ -9,9 +9,11 @@ using Microsoft.AspNetCore.JsonPatch;
 using Services.Hateoas;
 using BusinessLogic.Exceptions;
 using BusinessLogic.Mappers;
+using Asp.Versioning;
 
 namespace Services.Controllers
 {
+    [ApiVersion("1.0")]
     public class UsersController : BaseApiController
     {
         private readonly IUserService _userService;
@@ -49,10 +51,11 @@ namespace Services.Controllers
         [HttpGet(Name = "GetUsers")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PagedResponse<UserDto>), StatusCodes.Status200OK)]
-        public async Task<PagedResponse<UserDto>> Get([FromQuery] UserQueryParameters queryParameters)
+        public async Task<ActionResult<PagedResponse<UserDto>>> Get([FromQuery] UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userService.GetUsersAsync(queryParameters);
-            return new PagedResponse<UserDto>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
+            var pagedResponse = new PagedResponse<UserDto>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
+            return Ok(pagedResponse);
         }
 
         /// <summary>
@@ -64,9 +67,10 @@ namespace Services.Controllers
         [Authorize]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<UserDto> GetById(int id)
+        public async Task<ActionResult<UserDto>> GetById(int id)
         {
-            return await _userService.GetUserByIdAsync(id);
+            var user = await _userService.GetUserByIdAsync(id);
+            return Ok(user);
         }
 
         /// <summary>

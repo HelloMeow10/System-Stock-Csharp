@@ -3,9 +3,11 @@ using BusinessLogic.Services;
 using Contracts;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Asp.Versioning;
 
 namespace Services.Controllers
 {
+    [ApiVersion("1.0")]
     public class PasswordController : BaseApiController
     {
         private readonly IPasswordService _passwordService;

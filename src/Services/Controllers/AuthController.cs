@@ -5,10 +5,12 @@ using Contracts;
 using Session;
 using System.Threading.Tasks;
 using BusinessLogic.Exceptions;
+using Asp.Versioning;
 
 namespace Services.Controllers
 {
     [AllowAnonymous]
+    [ApiVersion("1.0")]
     public class AuthController : BaseApiController
     {
         private readonly IAuthenticationService _authService;

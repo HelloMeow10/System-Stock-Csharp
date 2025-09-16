@@ -4,7 +4,7 @@ using Services.Hateoas;
 namespace Services.Controllers
 {
     [ApiController]
-    [Route("api/v1/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ServiceFilter(typeof(HateoasActionFilter))]
     public abstract class BaseApiController : ControllerBase
     {

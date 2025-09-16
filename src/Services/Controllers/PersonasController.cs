@@ -9,9 +9,11 @@ using Microsoft.AspNetCore.JsonPatch;
 using Services.Hateoas;
 using BusinessLogic.Exceptions;
 using BusinessLogic.Mappers;
+using Asp.Versioning;
 
 namespace Services.Controllers
 {
+    [ApiVersion("1.0")]
     public class PersonasController : BaseApiController
     {
         private readonly IPersonaService _personaService;
@@ -24,19 +26,21 @@ namespace Services.Controllers
         [HttpGet(Name = "GetPersonas")]
         [Authorize]
         [ProducesResponseType(typeof(PagedResponse<PersonaDto>), StatusCodes.Status200OK)]
-        public async Task<PagedResponse<PersonaDto>> Get([FromQuery] PaginationParams paginationParams)
+        public async Task<ActionResult<PagedResponse<PersonaDto>>> Get([FromQuery] PaginationParams paginationParams)
         {
             var pagedPersonas = await _personaService.GetPersonasAsync(paginationParams);
-            return new PagedResponse<PersonaDto>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
+            var response = new PagedResponse<PersonaDto>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
+            return Ok(response);
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
         [Authorize]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<PersonaDto> Get(int id)
+        public async Task<ActionResult<PersonaDto>> Get(int id)
         {
-            return await _personaService.GetPersonaByIdAsync(id);
+            var persona = await _personaService.GetPersonaByIdAsync(id);
+            return Ok(persona);
         }
 
         [HttpPost(Name = "CreatePersona")]
