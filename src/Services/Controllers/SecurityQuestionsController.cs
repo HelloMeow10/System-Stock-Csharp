@@ -4,9 +4,11 @@ using Contracts;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
+using Asp.Versioning;
 
 namespace Services.Controllers
 {
+    [ApiVersion("1.0")]
     public class SecurityQuestionsController : BaseApiController
     {
         private readonly ISecurityQuestionService _securityQuestionService;
@@ -19,9 +21,10 @@ namespace Services.Controllers
         [HttpGet("{username}")]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IEnumerable<PreguntaSeguridadDto>> GetUserQuestions(string username)
+        public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetUserQuestions(string username)
         {
-            return await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
+            var questions = await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
+            return Ok(questions);
         }
 
         [HttpGet]
@@ -29,7 +32,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<PreguntaSeguridadDto>> GetAllQuestions()
         {
-            return _securityQuestionService.GetSecurityQuestions();
+            return Ok(_securityQuestionService.GetSecurityQuestions());
         }
 
         [HttpPost("{username}/answers")]

@@ -1,5 +1,8 @@
+using Asp.Versioning.ApiExplorer;
 using BusinessLogic;
 using DataAccess;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Services;
 using Services.Middleware;
 
@@ -10,10 +13,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddApiServices();
+builder.Services.AddApiVersioningServices();
 builder.Services.AddBusinessLogic(builder.Configuration);
 builder.Services.AddDataAccess();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+builder.Services.AddHealthChecks()
+    .AddSqlServer(
+        connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "database",
+        timeout: TimeSpan.FromSeconds(3),
+        tags: new[] { "ready" });
 
 builder.Services.AddRouting(options =>
 {
@@ -37,10 +47,14 @@ app.UseExceptionHandler(options => { });
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    app.UseSwaggerUI(options =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "User Management API V1");
-        c.RoutePrefix = string.Empty;
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+        }
+        options.RoutePrefix = string.Empty;
     });
 }
 
@@ -50,6 +64,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = (check) => check.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = (_) => false
+});
+
 
 app.Run();
 

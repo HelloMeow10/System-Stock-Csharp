@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 using Services.Hateoas;
 using BusinessLogic.Exceptions;
 using Services.Authentication;
+using Asp.Versioning;
 
 namespace Services.Controllers
 {
     [HasApiKey]
-    [Route("api/v1/security-policy")]
+    [ApiVersion("1.0")]
     public class SecurityPolicyController : BaseApiController
     {
         private readonly ISecurityPolicyService _securityPolicyService;
@@ -23,9 +24,10 @@ namespace Services.Controllers
         [HttpGet(Name = "GetSecurityPolicy")]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<PoliticaSeguridadDto> Get()
+        public async Task<ActionResult<PoliticaSeguridadDto>> Get()
         {
-            return await _securityPolicyService.GetPoliticaSeguridadAsync();
+            var policy = await _securityPolicyService.GetPoliticaSeguridadAsync();
+            return Ok(policy);
         }
 
         [HttpPut(Name = "UpdateSecurityPolicy")]

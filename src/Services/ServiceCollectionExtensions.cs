@@ -10,7 +10,12 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
 using Services.Authentication;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Services.Swagger;
 
 namespace Services
 {
@@ -26,7 +31,26 @@ namespace Services
             services.AddScoped<ILinkFactory<UserDto>, UserLinksFactory>();
             services.AddScoped<ILinkFactory<PersonaDto>, PersonaLinksFactory>();
             services.AddScoped<ILinkFactory<PoliticaSeguridadDto>, PoliticaSeguridadLinksFactory>();
-            services.AddScoped(typeof(ILinkFactory<>), typeof(PagedResponseLinksFactory<>));
+
+            // Register the generic factory for paged responses by its concrete type
+            services.AddScoped(typeof(PagedResponseLinksFactory<>));
+
+            return services;
+        }
+
+        public static IServiceCollection AddApiVersioningServices(this IServiceCollection services)
+        {
+            services.AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+                options.ApiVersionReader = new UrlSegmentApiVersionReader();
+            }).AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
 
             return services;
         }
@@ -52,20 +76,12 @@ namespace Services
 
         public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
         {
-            services.AddEndpointsApiExplorer();
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
             services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "User Management API",
-                    Version = "v1",
-                    Description = "An API for managing users, persons, and security policies."
-                });
-
-                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                options.IncludeXmlComments(xmlPath);
+                // The XML comments and security definitions are now handled by ConfigureSwaggerOptions
             });
+
             return services;
         }
     }

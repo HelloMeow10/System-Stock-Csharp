@@ -46,7 +46,7 @@ namespace Services.Hateoas
             else if (value.GetType().IsGenericType && value.GetType().GetGenericTypeDefinition() == typeof(PagedResponse<>))
             {
                 var pagedResponse = (dynamic)value;
-                if (pagedResponse.Data is IEnumerable data)
+                if (pagedResponse.Items is IEnumerable data)
                 {
                     foreach (var item in data)
                     {
@@ -85,9 +85,15 @@ namespace Services.Hateoas
 
         private void AddLinksToPagedResponse(object pagedResponse, IUrlHelper urlHelper)
         {
-            var pagedResponseType = pagedResponse.GetType();
-            var factoryType = typeof(ILinkFactory<>).MakeGenericType(pagedResponseType);
-            var factory = _serviceProvider.GetService(factoryType);
+            var pagedResponseType = pagedResponse.GetType(); // e.g., PagedResponse<UserDto>
+            var itemType = pagedResponseType.GetGenericArguments().First(); // e.g., UserDto
+
+            // We need to construct the concrete factory type PagedResponseLinksFactory<UserDto>
+            var factoryGenericType = typeof(PagedResponseLinksFactory<>);
+            var factorySpecificType = factoryGenericType.MakeGenericType(itemType);
+
+            // And resolve that concrete type from the container
+            var factory = _serviceProvider.GetService(factorySpecificType);
 
             if (factory != null)
             {
