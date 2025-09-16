@@ -48,11 +48,11 @@ namespace Services.Controllers
         /// <returns>A paginated list of users with HATEOAS links.</returns>
         [HttpGet(Name = "GetUsers")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(PagedResponse<IEnumerable<UserDto>>), StatusCodes.Status200OK)]
-        public async Task<PagedResponse<IEnumerable<UserDto>>> Get([FromQuery] UserQueryParameters queryParameters)
+        [ProducesResponseType(typeof(PagedResponse<UserDto>), StatusCodes.Status200OK)]
+        public async Task<PagedResponse<UserDto>> Get([FromQuery] UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userService.GetUsersAsync(queryParameters);
-            return new PagedResponse<IEnumerable<UserDto>>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
+            return new PagedResponse<UserDto>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
         }
 
         /// <summary>
