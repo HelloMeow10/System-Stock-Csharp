@@ -19,7 +19,7 @@ namespace Services.Controllers
         [HttpGet("{username}")]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetUserQuestions(string username)
+        public async Task<IEnumerable<PreguntaSeguridadDto>> GetUserQuestions(string username)
         {
             return await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
         }
@@ -36,10 +36,9 @@ namespace Services.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> SaveAnswers(string username, [FromBody] Dictionary<int, string> answers)
+        public async Task SaveAnswers(string username, [FromBody] Dictionary<int, string> answers)
         {
             await _securityQuestionService.SaveSecurityAnswersAsync(username, answers);
-            return NoContent();
         }
     }
 }

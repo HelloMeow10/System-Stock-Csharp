@@ -13,5 +13,6 @@ namespace BusinessLogic.Services
         Task DeletePersonaAsync(int personaId);
         Task<PagedList<PersonaDto>> GetPersonasAsync(PaginationParams paginationParams);
         Task<PersonaDto> GetPersonaByIdAsync(int personaId);
+        Task<PersonaDto> PatchPersonaAsync(int id, JsonPatchDocument<UpdatePersonaRequest> patchDoc);
     }
 }

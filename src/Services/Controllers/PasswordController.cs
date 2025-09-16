@@ -20,10 +20,9 @@ namespace Services.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        public async Task ChangePassword([FromBody] ChangePasswordRequest request)
         {
             await _passwordService.ChangePasswordAsync(request.Username, request.NewPassword, request.OldPassword);
-            return NoContent();
         }
 
         /// <summary>
@@ -37,10 +36,9 @@ namespace Services.Controllers
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request)
+        public async Task RecoverPassword([FromBody] RecoverPasswordRequest request)
         {
             await _passwordService.RecoverPasswordAsync(request.Username, request.Answers);
-            return NoContent();
         }
     }
 }

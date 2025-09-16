@@ -66,20 +66,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<PersonaDto> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
-            var persona = await _personaService.GetPersonaByIdAsync(id);
-            var personaToPatch = PersonaMapper.MapToUpdatePersonaRequest(persona);
-
-            patchDoc.ApplyTo(personaToPatch, ModelState);
-
-            // Re-validate the model after applying the patch
-            TryValidateModel(personaToPatch);
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                throw new ValidationException(errors);
-            }
-
-            return await _personaService.UpdatePersonaAsync(id, personaToPatch);
+            return await _personaService.PatchPersonaAsync(id, patchDoc);
         }
 
         /// <summary>
@@ -93,10 +80,9 @@ namespace Services.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task Delete(int id)
         {
             await _personaService.DeletePersonaAsync(id);
-            return NoContent();
         }
     }
 }
