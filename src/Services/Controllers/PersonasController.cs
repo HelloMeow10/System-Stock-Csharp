@@ -23,11 +23,11 @@ namespace Services.Controllers
 
         [HttpGet(Name = "GetPersonas")]
         [Authorize]
-        [ProducesResponseType(typeof(PagedResponse<IEnumerable<PersonaDto>>), StatusCodes.Status200OK)]
-        public async Task<PagedResponse<IEnumerable<PersonaDto>>> Get([FromQuery] PaginationParams paginationParams)
+        [ProducesResponseType(typeof(PagedResponse<PersonaDto>), StatusCodes.Status200OK)]
+        public async Task<PagedResponse<PersonaDto>> Get([FromQuery] PaginationParams paginationParams)
         {
             var pagedPersonas = await _personaService.GetPersonasAsync(paginationParams);
-            return new PagedResponse<IEnumerable<PersonaDto>>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
+            return new PagedResponse<PersonaDto>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
