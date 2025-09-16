@@ -143,13 +143,13 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
             {
-                throw new BusinessLogicException($"User with ID {id} not found.");
+                throw new NotFoundException($"User with ID {id} not found.");
             }
 
             var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
             if (persona == null)
             {
-                throw new BusinessLogicException($"Persona not found for user ID: {id}.");
+                throw new NotFoundException($"Persona not found for user ID: {id}.");
             }
 
             persona.Update(
@@ -201,7 +201,7 @@ namespace BusinessLogic.Services
             var user = await _userRepository.GetUsuarioByIdAsync(userId);
             if (user == null)
             {
-                throw new BusinessLogicException($"User with ID {userId} not found.");
+                throw new NotFoundException($"User with ID {userId} not found.");
             }
             await _userRepository.DeleteUsuarioAsync(userId);
         }, "deleting user");
@@ -217,7 +217,7 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
             {
-                throw new BusinessLogicException($"User with ID {id} not found.");
+                throw new NotFoundException($"User with ID {id} not found.");
             }
 
             var userDto = UserMapper.MapToUserDto(usuario)!;
