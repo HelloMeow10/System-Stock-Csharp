@@ -29,11 +29,12 @@ namespace Services.Controllers
         }
 
         [HttpPut(Name = "UpdateSecurityPolicy")]
-        [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<PoliticaSeguridadDto> Put([FromBody] UpdatePoliticaSeguridadRequest request)
+        public async Task<IActionResult> Put([FromBody] UpdatePoliticaSeguridadRequest request)
         {
-            return await _securityPolicyService.UpdatePoliticaSeguridadAsync(request);
+            await _securityPolicyService.UpdatePoliticaSeguridadAsync(request);
+            return NoContent();
         }
     }
 }

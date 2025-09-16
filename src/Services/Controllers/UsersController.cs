@@ -26,18 +26,19 @@ namespace Services.Controllers
         /// </summary>
         /// <param name="id">The ID of the user to update.</param>
         /// <param name="patchDoc">The JSON patch document with the updates.</param>
-        /// <returns>The updated user.</returns>
-        /// <response code="200">Returns the updated user.</response>
+        /// <returns>No content if the update is successful.</returns>
+        /// <response code="204">The user was successfully updated.</response>
         /// <response code="400">If the patch document is invalid or the model state is invalid after patching.</response>
         /// <response code="404">If the user to update is not found.</response>
         [HttpPatch("{id}", Name = "PatchUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<UserDto> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
+        public async Task<IActionResult> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            return await _userService.PatchUserAsync(id, patchDoc);
+            await _userService.PatchUserAsync(id, patchDoc);
+            return NoContent();
         }
 
         /// <summary>
@@ -88,15 +89,19 @@ namespace Services.Controllers
         /// </summary>
         /// <param name="id">The ID of the user to update.</param>
         /// <param name="updateUserRequest">The user data for the update.</param>
-        /// <returns>The updated user.</returns>
+        /// <returns>No content if the update is successful.</returns>
+        /// <response code="204">The user was successfully updated.</response>
+        /// <response code="400">If the request is invalid.</response>
+        /// <response code="404">If the user is not found.</response>
         [HttpPut("{id}", Name = "UpdateUser")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<UserDto> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
+        public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
-            return await _userService.UpdateUserAsync(id, updateUserRequest);
+            await _userService.UpdateUserAsync(id, updateUserRequest);
+            return NoContent();
         }
 
         /// <summary>
@@ -110,9 +115,10 @@ namespace Services.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             await _userService.DeleteUserAsync(id);
+            return NoContent();
         }
     }
 }
