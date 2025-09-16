@@ -27,7 +27,7 @@ namespace Services.Controllers
         public async Task<ActionResult<PoliticaSeguridadDto>> Get()
         {
             var policy = await _securityPolicyService.GetPoliticaSeguridadAsync();
-            return Ok(policy);
+            return policy;
         }
 
         [HttpPut(Name = "UpdateSecurityPolicy")]

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 using Asp.Versioning;
+using System.Linq;
 
 namespace Services.Controllers
 {
@@ -24,7 +25,7 @@ namespace Services.Controllers
         public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetUserQuestions(string username)
         {
             var questions = await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
-            return Ok(questions);
+            return questions.ToList();
         }
 
         [HttpGet]
@@ -32,7 +33,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<PreguntaSeguridadDto>> GetAllQuestions()
         {
-            return Ok(_securityQuestionService.GetSecurityQuestions());
+            return _securityQuestionService.GetSecurityQuestions().ToList();
         }
 
         [HttpPost("{username}/answers")]
