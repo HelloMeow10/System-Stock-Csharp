@@ -36,9 +36,10 @@ namespace Services.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task SaveAnswers(string username, [FromBody] Dictionary<int, string> answers)
+        public async Task<IActionResult> SaveAnswers(string username, [FromBody] Dictionary<int, string> answers)
         {
             await _securityQuestionService.SaveSecurityAnswersAsync(username, answers);
+            return NoContent();
         }
     }
 }

@@ -51,22 +51,24 @@ namespace Services.Controllers
 
         [HttpPut("{id}", Name = "UpdatePersona")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<PersonaDto> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
+        public async Task<IActionResult> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
-            return await _personaService.UpdatePersonaAsync(id, personaDto);
+            await _personaService.UpdatePersonaAsync(id, personaDto);
+            return NoContent();
         }
 
         [HttpPatch("{id}", Name = "PatchPersona")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<PersonaDto> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
+        public async Task<IActionResult> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
-            return await _personaService.PatchPersonaAsync(id, patchDoc);
+            await _personaService.PatchPersonaAsync(id, patchDoc);
+            return NoContent();
         }
 
         /// <summary>
@@ -80,9 +82,10 @@ namespace Services.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             await _personaService.DeletePersonaAsync(id);
+            return NoContent();
         }
     }
 }
