@@ -55,7 +55,7 @@ namespace Services.Controllers
         {
             var pagedUsers = await _userService.GetUsersAsync(queryParameters);
             var pagedResponse = new PagedResponse<UserDto>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
-            return Ok(pagedResponse);
+            return pagedResponse;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Services.Controllers
         public async Task<ActionResult<UserDto>> GetById(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
-            return Ok(user);
+            return user;
         }
 
         /// <summary>

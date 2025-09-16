@@ -30,7 +30,7 @@ namespace Services.Controllers
         {
             var pagedPersonas = await _personaService.GetPersonasAsync(paginationParams);
             var response = new PagedResponse<PersonaDto>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
-            return Ok(response);
+            return response;
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
@@ -40,7 +40,7 @@ namespace Services.Controllers
         public async Task<ActionResult<PersonaDto>> Get(int id)
         {
             var persona = await _personaService.GetPersonaByIdAsync(id);
-            return Ok(persona);
+            return persona;
         }
 
         [HttpPost(Name = "CreatePersona")]
