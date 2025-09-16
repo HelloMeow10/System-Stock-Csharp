@@ -123,7 +123,7 @@ namespace BusinessLogic.Tests
             _userRepositoryMock.Setup(r => r.GetUsuarioByIdAsync(userId)).ReturnsAsync((Usuario?)null);
 
             // Act & Assert
-            await Assert.ThrowsAsync<BusinessLogicException>(() => _sut.UpdateUserAsync(userId, request));
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateUserAsync(userId, request));
         }
 
         [Fact]

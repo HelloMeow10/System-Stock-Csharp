@@ -58,7 +58,7 @@ namespace BusinessLogic.Services
             if (politica == null)
             {
                 _logger.LogWarning("Security policy not found.");
-                throw new BusinessLogicException("Resource not found");
+                throw new NotFoundException("Security policy not found.");
             }
             return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica)!;
         }, "getting security policy");
@@ -66,7 +66,7 @@ namespace BusinessLogic.Services
         public async Task<PoliticaSeguridadDto> UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request) => await ExecuteServiceOperationAsync(async () =>
         {
             var politica = await _securityRepository.GetPoliticaSeguridadAsync()
-                ?? throw new BusinessLogicException("Resource not found");
+                ?? throw new NotFoundException("Security policy not found.");
 
             politica.Update(request.MayusYMinus, request.LetrasYNumeros, request.CaracterEspecial, request.Autenticacion2FA, request.NoRepetirAnteriores, request.SinDatosPersonales, request.MinCaracteres, request.CantPreguntas);
 

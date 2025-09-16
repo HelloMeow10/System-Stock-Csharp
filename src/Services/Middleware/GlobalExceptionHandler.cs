@@ -62,11 +62,11 @@ namespace Services.Middleware
                     problemDetails.Extensions["errors"] = validationException.Errors;
                     break;
 
-                case BusinessLogicException businessLogicException when businessLogicException.Message.Contains("not found", StringComparison.OrdinalIgnoreCase):
+                case NotFoundException notFoundException:
                     problemDetails.Title = "Resource Not Found";
                     problemDetails.Status = StatusCodes.Status404NotFound;
                     problemDetails.Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4";
-                    problemDetails.Detail = businessLogicException.Message;
+                    problemDetails.Detail = notFoundException.Message;
                     break;
 
                 case BusinessLogicException businessLogicException:

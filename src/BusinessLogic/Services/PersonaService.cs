@@ -45,7 +45,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", id);
-                throw new BusinessLogicException($"Resource not found.");
+                throw new NotFoundException($"Persona with ID {id} not found.");
             }
 
             // Legajo and FechaIngreso are not part of UpdatePersonaRequest, so we keep the existing ones.
@@ -78,7 +78,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para eliminar.", personaId);
-                throw new BusinessLogicException($"Resource not found.");
+                throw new NotFoundException($"Persona with ID {personaId} not found.");
             }
             await _personaRepository.DeletePersonaAsync(personaId);
         }
@@ -96,7 +96,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId}.", personaId);
-                throw new BusinessLogicException("Resource not found");
+                throw new NotFoundException($"Persona with ID {personaId} not found.");
             }
             return PersonaMapper.MapToPersonaDto(persona)!;
         }
@@ -107,7 +107,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", id);
-                throw new BusinessLogicException($"Resource not found.");
+                throw new NotFoundException($"Persona with ID {id} not found.");
             }
 
             var personaToPatch = PersonaMapper.MapToUpdatePersonaRequest(persona);
