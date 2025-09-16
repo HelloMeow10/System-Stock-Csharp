@@ -37,21 +37,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<UserDto> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            // TODO: This requires getting a Persona as well, which is not ideal.
-            // This mapping logic should be improved in the future.
-            var user = await _userService.GetUserByIdAsync(id);
-            var userToPatch = UserMapper.MapToUpdateUserRequest(user);
-
-            patchDoc.ApplyTo(userToPatch, ModelState);
-
-            TryValidateModel(userToPatch);
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                throw new ValidationException(errors);
-            }
-
-            return await _userService.UpdateUserAsync(id, userToPatch);
+            return await _userService.PatchUserAsync(id, patchDoc);
         }
 
         /// <summary>
@@ -124,10 +110,9 @@ namespace Services.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task Delete(int id)
         {
             await _userService.DeleteUserAsync(id);
-            return NoContent();
         }
     }
 }

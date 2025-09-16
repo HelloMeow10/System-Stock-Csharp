@@ -13,6 +13,8 @@ using BusinessLogic.Exceptions;
 using BusinessLogic.Security;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
+using Microsoft.AspNetCore.JsonPatch;
+using System.ComponentModel.DataAnnotations;
 
 namespace BusinessLogic.Services
 {
@@ -51,7 +53,7 @@ namespace BusinessLogic.Services
             {
                 return operation();
             }
-            catch (ValidationException)
+            catch (BusinessLogic.Exceptions.ValidationException)
             {
                 throw;
             }
@@ -63,7 +65,7 @@ namespace BusinessLogic.Services
             {
                 operation();
             }
-            catch (ValidationException)
+            catch (BusinessLogic.Exceptions.ValidationException)
             {
                 throw;
             }
@@ -74,7 +76,7 @@ namespace BusinessLogic.Services
             {
                 return await operation();
             }
-            catch (ValidationException)
+            catch (BusinessLogic.Exceptions.ValidationException)
             {
                 throw;
             }
@@ -86,7 +88,7 @@ namespace BusinessLogic.Services
             {
                 await operation();
             }
-            catch (ValidationException)
+            catch (BusinessLogic.Exceptions.ValidationException)
             {
                 throw;
             }
@@ -230,5 +232,23 @@ namespace BusinessLogic.Services
 
             return userDto;
         }, "getting user by id");
+
+        public async Task<UserDto> PatchUserAsync(int id, JsonPatchDocument<UpdateUserRequest> patchDoc) => await ExecuteServiceOperationAsync(async () =>
+        {
+            var user = await GetUserByIdAsync(id);
+            var userToPatch = UserMapper.MapToUpdateUserRequest(user);
+
+            patchDoc.ApplyTo(userToPatch);
+
+            var validationResults = new List<ValidationResult>();
+            var validationContext = new ValidationContext(userToPatch, null, null);
+            if (!Validator.TryValidateObject(userToPatch, validationContext, validationResults, true))
+            {
+                var errors = validationResults.Select(r => r.ErrorMessage!);
+                throw new BusinessLogic.Exceptions.ValidationException(errors);
+            }
+
+            return await UpdateUserAsync(id, userToPatch);
+        }, "patching user");
     }
 }

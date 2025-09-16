@@ -8,6 +8,8 @@ using Contracts;
 using SharedKernel;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.JsonPatch;
+using System.ComponentModel.DataAnnotations;
 
 namespace BusinessLogic.Services
 {
@@ -97,6 +99,30 @@ namespace BusinessLogic.Services
                 throw new BusinessLogicException("Resource not found");
             }
             return PersonaMapper.MapToPersonaDto(persona)!;
+        }
+
+        public async Task<PersonaDto> PatchPersonaAsync(int id, JsonPatchDocument<UpdatePersonaRequest> patchDoc)
+        {
+            var persona = await _personaRepository.GetPersonaByIdAsync(id);
+            if (persona == null)
+            {
+                _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", id);
+                throw new BusinessLogicException($"Resource not found.");
+            }
+
+            var personaToPatch = PersonaMapper.MapToUpdatePersonaRequest(persona);
+
+            patchDoc.ApplyTo(personaToPatch);
+
+            var validationResults = new System.Collections.Generic.List<ValidationResult>();
+            var validationContext = new ValidationContext(personaToPatch, null, null);
+            if (!Validator.TryValidateObject(personaToPatch, validationContext, validationResults, true))
+            {
+                var errors = validationResults.Select(r => r.ErrorMessage!);
+                throw new BusinessLogic.Exceptions.ValidationException(errors);
+            }
+
+            return await UpdatePersonaAsync(id, personaToPatch);
         }
     }
 }
