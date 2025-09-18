@@ -18,41 +18,8 @@ namespace BusinessLogic.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private async Task<T> ExecuteServiceOperationAsync<T>(Func<Task<T>> operation, string operationName)
-        {
-            try
-            {
-                return await operation();
-            }
-            catch (ValidationException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during {OperationName}", operationName);
-                throw new BusinessLogicException($"An unexpected error occurred during {operationName}.", ex);
-            }
-        }
 
-        private async Task ExecuteServiceOperationAsync(Func<Task> operation, string operationName)
-        {
-            try
-            {
-                await operation();
-            }
-            catch (ValidationException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during {OperationName}", operationName);
-                throw new BusinessLogicException($"An unexpected error occurred during {operationName}.", ex);
-            }
-        }
-
-        public async Task<PoliticaSeguridadDto> GetPoliticaSeguridadAsync() => await ExecuteServiceOperationAsync(async () =>
+        public async Task<PoliticaSeguridadDto> GetPoliticaSeguridadAsync()
         {
             var politica = await _securityRepository.GetPoliticaSeguridadAsync();
             if (politica == null)
@@ -61,9 +28,9 @@ namespace BusinessLogic.Services
                 throw new NotFoundException("Security policy not found.");
             }
             return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica)!;
-        }, "getting security policy");
+        }
 
-        public async Task<PoliticaSeguridadDto> UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request) => await ExecuteServiceOperationAsync(async () =>
+        public async Task<PoliticaSeguridadDto> UpdatePoliticaSeguridadAsync(UpdatePoliticaSeguridadRequest request)
         {
             var politica = await _securityRepository.GetPoliticaSeguridadAsync()
                 ?? throw new NotFoundException("Security policy not found.");
@@ -74,6 +41,6 @@ namespace BusinessLogic.Services
 
             return PoliticaSeguridadMapper.MapToPoliticaSeguridadDto(politica)!;
 
-        }, "updating security policy");
+        }
     }
 }

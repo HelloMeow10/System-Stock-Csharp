@@ -29,8 +29,7 @@ namespace Services.Controllers
         public async Task<ActionResult<PagedResponse<PersonaDto>>> Get([FromQuery] PaginationParams paginationParams)
         {
             var pagedPersonas = await _personaService.GetPersonasAsync(paginationParams);
-            var response = new PagedResponse<PersonaDto>(pagedPersonas.Items, pagedPersonas.CurrentPage, pagedPersonas.PageSize, pagedPersonas.TotalCount);
-            return response;
+            return Ok(pagedPersonas);
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
@@ -55,24 +54,24 @@ namespace Services.Controllers
 
         [HttpPut("{id}", Name = "UpdatePersona")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
+        public async Task<ActionResult<PersonaDto>> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
-            await _personaService.UpdatePersonaAsync(id, personaDto);
-            return NoContent();
+            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaDto);
+            return Ok(updatedPersona);
         }
 
         [HttpPatch("{id}", Name = "PatchPersona")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
+        public async Task<ActionResult<PersonaDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
-            await _personaService.PatchPersonaAsync(id, patchDoc);
-            return NoContent();
+            var updatedPersona = await _personaService.PatchPersonaAsync(id, patchDoc);
+            return Ok(updatedPersona);
         }
 
         /// <summary>
