@@ -21,6 +21,24 @@ namespace BusinessLogic.Mappers
             };
         }
 
+        public static UserDtoV2? MapToUserDtoV2(Usuario? u, PersonaDto? p)
+        {
+            if (u == null) return null;
+            return new UserDtoV2
+            {
+                IdUsuario = u.IdUsuario,
+                Username = u.UsuarioNombre,
+                FullName = p?.NombreCompleto,
+                Correo = p?.Correo,
+                Rol = u.Rol?.Nombre,
+                IdRol = u.IdRol,
+                IdPersona = u.IdPersona,
+                CambioContrasenaObligatorio = u.CambioContrasenaObligatorio,
+                FechaExpiracion = u.FechaExpiracion,
+                Habilitado = u.FechaBloqueo == null || u.FechaBloqueo > System.DateTime.Now
+            };
+        }
+
         public static UpdateUserRequest MapToUpdateUserRequest(UserDto dto)
         {
             return new UpdateUserRequest

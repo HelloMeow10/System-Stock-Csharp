@@ -11,9 +11,12 @@ using BusinessLogic.Exceptions;
 using BusinessLogic.Mappers;
 using Asp.Versioning;
 
+using System.Linq;
+
 namespace Services.Controllers
 {
     [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     public class UsersController : BaseApiController
     {
         private readonly IUserService _userService;
@@ -32,7 +35,8 @@ namespace Services.Controllers
         /// <response code="204">The user was successfully updated.</response>
         /// <response code="400">If the patch document is invalid or the model state is invalid after patching.</response>
         /// <response code="404">If the user to update is not found.</response>
-        [HttpPatch("{id}", Name = "PatchUser")]
+        [HttpPatch("{id}", Name = "PatchUserV1")]
+        [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -44,11 +48,27 @@ namespace Services.Controllers
         }
 
         /// <summary>
-        /// Retrieves a paginated list of users.
+        /// Partially updates an existing user. (v2)
+        /// </summary>
+        [HttpPatch("{id}", Name = "PatchUserV2")]
+        [MapToApiVersion("2.0")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PatchV2(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
+        {
+            await _userService.PatchUserAsyncV2(id, patchDoc);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Retrieves a paginated list of users. (v1)
         /// </summary>
         /// <param name="queryParameters">The pagination, filtering, and sorting parameters.</param>
         /// <returns>A paginated list of users with HATEOAS links.</returns>
-        [HttpGet(Name = "GetUsers")]
+        [HttpGet(Name = "GetUsersV1")]
+        [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PagedResponse<UserDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResponse<UserDto>>> Get([FromQuery] UserQueryParameters queryParameters)
@@ -59,11 +79,28 @@ namespace Services.Controllers
         }
 
         /// <summary>
+        /// Retrieves a paginated list of users. (v2)
+        /// </summary>
+        /// <param name="queryParameters">The pagination, filtering, and sorting parameters.</param>
+        /// <returns>A paginated list of users with HATEOAS links.</returns>
+        [HttpGet(Name = "GetUsersV2")]
+        [MapToApiVersion("2.0")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(PagedResponse<UserDtoV2>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PagedResponse<UserDtoV2>>> GetV2([FromQuery] UserQueryParameters queryParameters)
+        {
+            var pagedUsers = await _userService.GetUsersAsyncV2(queryParameters);
+            var pagedResponse = new PagedResponse<UserDtoV2>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
+            return pagedResponse;
+        }
+
+        /// <summary>
         /// Retrieves a specific user by their ID.
         /// </summary>
         /// <param name="id">The ID of the user to retrieve.</param>
         /// <returns>The requested user with HATEOAS links.</returns>
-        [HttpGet("{id}", Name = "GetUserById")]
+        [HttpGet("{id}", Name = "GetUserByIdV1")]
+        [MapToApiVersion("1.0")]
         [Authorize]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -74,18 +111,47 @@ namespace Services.Controllers
         }
 
         /// <summary>
+        /// Retrieves a specific user by their ID. (v2)
+        /// </summary>
+        [HttpGet("{id}", Name = "GetUserByIdV2")]
+        [MapToApiVersion("2.0")]
+        [Authorize]
+        [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<UserDtoV2>> GetByIdV2(int id)
+        {
+            var user = await _userService.GetUserByIdAsyncV2(id);
+            return user;
+        }
+
+        /// <summary>
         /// Creates a new user.
         /// </summary>
         /// <param name="userRequest">The user data for creation.</param>
         /// <returns>The newly created user.</returns>
-        [HttpPost(Name = "CreateUser")]
+        [HttpPost(Name = "CreateUserV1")]
+        [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<UserDto>> Post([FromBody] UserRequest userRequest)
         {
             var newUser = await _userService.CreateUserAsync(userRequest);
-            return CreatedAtRoute("GetUserById", new { id = newUser.IdUsuario }, newUser);
+            return CreatedAtRoute("GetUserByIdV1", new { id = newUser.IdUsuario, version = "1.0" }, newUser);
+        }
+
+        /// <summary>
+        /// Creates a new user. (v2)
+        /// </summary>
+        [HttpPost(Name = "CreateUserV2")]
+        [MapToApiVersion("2.0")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<UserDtoV2>> PostV2([FromBody] UserRequestV2 userRequest)
+        {
+            var newUserV2 = await _userService.CreateUserAsyncV2(userRequest);
+            return CreatedAtRoute("GetUserByIdV2", new { id = newUserV2.IdUsuario, version = "2.0" }, newUserV2);
         }
 
         /// <summary>
@@ -97,7 +163,8 @@ namespace Services.Controllers
         /// <response code="204">The user was successfully updated.</response>
         /// <response code="400">If the request is invalid.</response>
         /// <response code="404">If the user is not found.</response>
-        [HttpPut("{id}", Name = "UpdateUser")]
+        [HttpPut("{id}", Name = "UpdateUserV1")]
+        [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -109,17 +176,47 @@ namespace Services.Controllers
         }
 
         /// <summary>
+        /// Fully updates an existing user. (v2)
+        /// </summary>
+        [HttpPut("{id}", Name = "UpdateUserV2")]
+        [MapToApiVersion("2.0")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PutV2(int id, [FromBody] UpdateUserRequestV2 updateUserRequest)
+        {
+            await _userService.UpdateUserAsyncV2(id, updateUserRequest);
+            return NoContent();
+        }
+
+        /// <summary>
         /// Deletes a user.
         /// </summary>
         /// <param name="id">The ID of the user to delete.</param>
         /// <returns>No content if the deletion is successful.</returns>
         /// <response code="204">The user was successfully deleted.</response>
         /// <response code="404">If the user is not found.</response>
-        [HttpDelete("{id}", Name = "DeleteUser")]
+        [HttpDelete("{id}", Name = "DeleteUserV1")]
+        [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
+        {
+            await _userService.DeleteUserAsync(id);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Deletes a user. (v2)
+        /// </summary>
+        [HttpDelete("{id}", Name = "DeleteUserV2")]
+        [MapToApiVersion("2.0")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteV2(int id)
         {
             await _userService.DeleteUserAsync(id);
             return NoContent();

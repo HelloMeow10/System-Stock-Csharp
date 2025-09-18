@@ -29,6 +29,7 @@ namespace Services
             // Register HATEOAS services
             services.AddScoped<HateoasActionFilter>();
             services.AddScoped<ILinkFactory<UserDto>, UserLinksFactory>();
+            services.AddScoped<ILinkFactory<UserDtoV2>, UserLinksFactoryV2>();
             services.AddScoped<ILinkFactory<PersonaDto>, PersonaLinksFactory>();
             services.AddScoped<ILinkFactory<PoliticaSeguridadDto>, PoliticaSeguridadLinksFactory>();
 
