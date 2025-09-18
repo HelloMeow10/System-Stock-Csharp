@@ -31,20 +31,20 @@ namespace Services.Controllers
         /// </summary>
         /// <param name="id">The ID of the user to update.</param>
         /// <param name="patchDoc">The JSON patch document with the updates.</param>
-        /// <returns>No content if the update is successful.</returns>
-        /// <response code="204">The user was successfully updated.</response>
+        /// <returns>The updated user.</returns>
+        /// <response code="200">The user was successfully updated.</response>
         /// <response code="400">If the patch document is invalid or the model state is invalid after patching.</response>
         /// <response code="404">If the user to update is not found.</response>
         [HttpPatch("{id}", Name = "PatchUserV1")]
         [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
+        public async Task<ActionResult<UserDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            await _userService.PatchUserAsync(id, patchDoc);
-            return NoContent();
+            var updatedUser = await _userService.PatchUserAsync(id, patchDoc);
+            return Ok(updatedUser);
         }
 
         /// <summary>
@@ -53,13 +53,13 @@ namespace Services.Controllers
         [HttpPatch("{id}", Name = "PatchUserV2")]
         [MapToApiVersion("2.0")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> PatchV2(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
+        public async Task<ActionResult<UserDtoV2>> PatchV2(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
         {
-            await _userService.PatchUserAsyncV2(id, patchDoc);
-            return NoContent();
+            var updatedUser = await _userService.PatchUserAsyncV2(id, patchDoc);
+            return Ok(updatedUser);
         }
 
         /// <summary>
@@ -74,8 +74,7 @@ namespace Services.Controllers
         public async Task<ActionResult<PagedResponse<UserDto>>> Get([FromQuery] UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userService.GetUsersAsync(queryParameters);
-            var pagedResponse = new PagedResponse<UserDto>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
-            return pagedResponse;
+            return Ok(pagedUsers);
         }
 
         /// <summary>
@@ -90,8 +89,7 @@ namespace Services.Controllers
         public async Task<ActionResult<PagedResponse<UserDtoV2>>> GetV2([FromQuery] UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userService.GetUsersAsyncV2(queryParameters);
-            var pagedResponse = new PagedResponse<UserDtoV2>(pagedUsers.Items, pagedUsers.CurrentPage, pagedUsers.PageSize, pagedUsers.TotalCount);
-            return pagedResponse;
+            return Ok(pagedUsers);
         }
 
         /// <summary>
@@ -159,20 +157,20 @@ namespace Services.Controllers
         /// </summary>
         /// <param name="id">The ID of the user to update.</param>
         /// <param name="updateUserRequest">The user data for the update.</param>
-        /// <returns>No content if the update is successful.</returns>
-        /// <response code="204">The user was successfully updated.</response>
+        /// <returns>The updated user.</returns>
+        /// <response code="200">The user was successfully updated.</response>
         /// <response code="400">If the request is invalid.</response>
         /// <response code="404">If the user is not found.</response>
         [HttpPut("{id}", Name = "UpdateUserV1")]
         [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
+        public async Task<ActionResult<UserDto>> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
-            await _userService.UpdateUserAsync(id, updateUserRequest);
-            return NoContent();
+            var updatedUser = await _userService.UpdateUserAsync(id, updateUserRequest);
+            return Ok(updatedUser);
         }
 
         /// <summary>
@@ -181,13 +179,13 @@ namespace Services.Controllers
         [HttpPut("{id}", Name = "UpdateUserV2")]
         [MapToApiVersion("2.0")]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> PutV2(int id, [FromBody] UpdateUserRequestV2 updateUserRequest)
+        public async Task<ActionResult<UserDtoV2>> PutV2(int id, [FromBody] UpdateUserRequestV2 updateUserRequest)
         {
-            await _userService.UpdateUserAsyncV2(id, updateUserRequest);
-            return NoContent();
+            var updatedUser = await _userService.UpdateUserAsyncV2(id, updateUserRequest);
+            return Ok(updatedUser);
         }
 
         /// <summary>
