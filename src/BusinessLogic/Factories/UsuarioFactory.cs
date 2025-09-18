@@ -17,19 +17,59 @@ namespace BusinessLogic.Factories
         private readonly IReferenceDataRepository _referenceDataRepository;
         private readonly ISecurityRepository _securityRepository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IPersonaFactory _personaFactory;
 
         public UsuarioFactory(
             IUserRepository userRepository,
             IPersonaRepository personaRepository,
             IReferenceDataRepository referenceDataRepository,
             ISecurityRepository securityRepository,
-            IPasswordHasher passwordHasher)
+            IPasswordHasher passwordHasher,
+            IPersonaFactory personaFactory)
         {
             _userRepository = userRepository;
             _personaRepository = personaRepository;
             _referenceDataRepository = referenceDataRepository;
             _securityRepository = securityRepository;
             _passwordHasher = passwordHasher;
+            _personaFactory = personaFactory;
+        }
+
+        public async Task<(Usuario Usuario, string PlainPassword)> CreateV2(UserRequestV2 request)
+        {
+            // 1. Create Persona from V2 request
+            var nameParts = request.FullName?.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            var personaRequest = new PersonaRequest
+            {
+                Nombre = nameParts?.Length > 0 ? nameParts[0] : "Unknown",
+                Apellido = nameParts?.Length > 1 ? nameParts[1] : "User",
+                Correo = request.Email,
+                // Using defaults for other required fields for this example
+                Legajo = "0",
+                TipoDoc = "DNI",
+                NumDoc = "0",
+                FechaNacimiento = DateTime.Now.AddYears(-18),
+                Celular = "",
+                Cuil = "",
+                Calle = "",
+                Altura = "",
+                Localidad = "Desconocida",
+                Genero = "Otro",
+                FechaIngreso = DateTime.Now
+            };
+            var persona = _personaFactory.Create(personaRequest);
+            await _personaRepository.AddPersonaAsync(persona);
+
+            // 2. Create Usuario, linking to the new persona
+            var userRequest = new UserRequest
+            {
+                PersonaId = persona.IdPersona.ToString(),
+                Username = request.Username,
+                Password = request.Password,
+                Rol = request.Rol
+            };
+
+            return await Create(userRequest);
         }
 
         public async Task<(Usuario Usuario, string PlainPassword)> Create(UserRequest request)
