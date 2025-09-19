@@ -10,6 +10,7 @@ using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.JsonPatch;
 using System.ComponentModel.DataAnnotations;
+using BusinessLogic.Mappers;
 
 namespace BusinessLogic.Services
 {
@@ -83,11 +84,11 @@ namespace BusinessLogic.Services
             await _personaRepository.DeletePersonaAsync(personaId);
         }
 
-        public async Task<PagedList<PersonaDto>> GetPersonasAsync(PaginationParams paginationParams)
+        public async Task<PagedResponse<PersonaDto>> GetPersonasAsync(PaginationParams paginationParams)
         {
             var pagedPersonas = await _personaRepository.GetPersonasAsync(paginationParams);
             var personaDtos = pagedPersonas.Items.Select(p => PersonaMapper.MapToPersonaDto(p)!).ToList();
-            return new PagedList<PersonaDto>(personaDtos, pagedPersonas.TotalCount, pagedPersonas.CurrentPage, pagedPersonas.PageSize);
+            return pagedPersonas.ToPagedResponse(personaDtos);
         }
 
         public async Task<PersonaDto> GetPersonaByIdAsync(int personaId)

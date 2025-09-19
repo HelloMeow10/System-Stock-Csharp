@@ -28,8 +28,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PagedResponse<PersonaDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResponse<PersonaDto>>> Get([FromQuery] PaginationParams paginationParams)
         {
-            var pagedPersonas = await _personaService.GetPersonasAsync(paginationParams);
-            return Ok(pagedPersonas);
+            return await _personaService.GetPersonasAsync(paginationParams);
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
@@ -38,8 +37,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<PersonaDto>> Get(int id)
         {
-            var persona = await _personaService.GetPersonaByIdAsync(id);
-            return persona;
+            return await _personaService.GetPersonaByIdAsync(id);
         }
 
         [HttpPost(Name = "CreatePersona")]
@@ -59,8 +57,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<PersonaDto>> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
-            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaDto);
-            return Ok(updatedPersona);
+            return await _personaService.UpdatePersonaAsync(id, personaDto);
         }
 
         [HttpPatch("{id}", Name = "PatchPersona")]
@@ -70,8 +67,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<PersonaDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
-            var updatedPersona = await _personaService.PatchPersonaAsync(id, patchDoc);
-            return Ok(updatedPersona);
+            return await _personaService.PatchPersonaAsync(id, patchDoc);
         }
 
         /// <summary>

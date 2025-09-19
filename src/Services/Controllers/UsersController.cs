@@ -43,8 +43,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            var updatedUser = await _userService.PatchUserAsync(id, patchDoc);
-            return Ok(updatedUser);
+            return await _userService.PatchUserAsync(id, patchDoc);
         }
 
         /// <summary>
@@ -58,8 +57,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDtoV2>> PatchV2(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
         {
-            var updatedUser = await _userService.PatchUserAsyncV2(id, patchDoc);
-            return Ok(updatedUser);
+            return await _userService.PatchUserAsyncV2(id, patchDoc);
         }
 
         /// <summary>
@@ -73,8 +71,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PagedResponse<UserDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResponse<UserDto>>> Get([FromQuery] UserQueryParameters queryParameters)
         {
-            var pagedUsers = await _userService.GetUsersAsync(queryParameters);
-            return Ok(pagedUsers);
+            return await _userService.GetUsersAsync(queryParameters);
         }
 
         /// <summary>
@@ -88,8 +85,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PagedResponse<UserDtoV2>), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResponse<UserDtoV2>>> GetV2([FromQuery] UserQueryParameters queryParameters)
         {
-            var pagedUsers = await _userService.GetUsersAsyncV2(queryParameters);
-            return Ok(pagedUsers);
+            return await _userService.GetUsersAsyncV2(queryParameters);
         }
 
         /// <summary>
@@ -104,8 +100,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDto>> GetById(int id)
         {
-            var user = await _userService.GetUserByIdAsync(id);
-            return user;
+            return await _userService.GetUserByIdAsync(id);
         }
 
         /// <summary>
@@ -118,8 +113,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDtoV2>> GetByIdV2(int id)
         {
-            var user = await _userService.GetUserByIdAsyncV2(id);
-            return user;
+            return await _userService.GetUserByIdAsyncV2(id);
         }
 
         /// <summary>
@@ -169,8 +163,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDto>> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
-            var updatedUser = await _userService.UpdateUserAsync(id, updateUserRequest);
-            return Ok(updatedUser);
+            return await _userService.UpdateUserAsync(id, updateUserRequest);
         }
 
         /// <summary>
@@ -184,8 +177,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDtoV2>> PutV2(int id, [FromBody] UpdateUserRequestV2 updateUserRequest)
         {
-            var updatedUser = await _userService.UpdateUserAsyncV2(id, updateUserRequest);
-            return Ok(updatedUser);
+            return await _userService.UpdateUserAsyncV2(id, updateUserRequest);
         }
 
         /// <summary>
@@ -195,26 +187,11 @@ namespace Services.Controllers
         /// <returns>No content if the deletion is successful.</returns>
         /// <response code="204">The user was successfully deleted.</response>
         /// <response code="404">If the user is not found.</response>
-        [HttpDelete("{id}", Name = "DeleteUserV1")]
-        [MapToApiVersion("1.0")]
+        [HttpDelete("{id}", Name = "DeleteUser")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
-        {
-            await _userService.DeleteUserAsync(id);
-            return NoContent();
-        }
-
-        /// <summary>
-        /// Deletes a user. (v2)
-        /// </summary>
-        [HttpDelete("{id}", Name = "DeleteUserV2")]
-        [MapToApiVersion("2.0")]
-        [Authorize(Roles = "Admin")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteV2(int id)
         {
             await _userService.DeleteUserAsync(id);
             return NoContent();
