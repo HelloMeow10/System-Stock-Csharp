@@ -15,6 +15,7 @@ using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
 using Microsoft.AspNetCore.JsonPatch;
 using System.ComponentModel.DataAnnotations;
+using BusinessLogic.Mappers;
 
 namespace BusinessLogic.Services
 {
@@ -77,7 +78,7 @@ namespace BusinessLogic.Services
             return UserMapper.MapToUserDtoV2(usuario, personaDto)!;
         }
 
-        public async Task<PagedList<UserDto>> GetUsersAsync(UserQueryParameters queryParameters)
+        public async Task<PagedResponse<UserDto>> GetUsersAsync(UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userRepository.GetUsersAsync(queryParameters);
 
@@ -105,10 +106,10 @@ namespace BusinessLogic.Services
                 return userDto;
             }).ToList();
 
-            return new PagedList<UserDto>(userDtos, pagedUsers.TotalCount, pagedUsers.CurrentPage, pagedUsers.PageSize);
+            return pagedUsers.ToPagedResponse(userDtos);
         }
 
-        public async Task<PagedList<UserDtoV2>> GetUsersAsyncV2(UserQueryParameters queryParameters)
+        public async Task<PagedResponse<UserDtoV2>> GetUsersAsyncV2(UserQueryParameters queryParameters)
         {
             var pagedUsers = await _userRepository.GetUsersAsync(queryParameters);
 
@@ -129,7 +130,7 @@ namespace BusinessLogic.Services
                 return UserMapper.MapToUserDtoV2(u, persona)!;
             }).ToList();
 
-            return new PagedList<UserDtoV2>(userDtos, pagedUsers.TotalCount, pagedUsers.CurrentPage, pagedUsers.PageSize);
+            return pagedUsers.ToPagedResponse(userDtos);
         }
 
         public async Task<UserDto> UpdateUserAsync(int id, UpdateUserRequest updateUserRequest)

@@ -33,7 +33,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<PreguntaSeguridadDto>> GetAllQuestions()
         {
-            return _securityQuestionService.GetSecurityQuestions().ToList();
+            var questions = _securityQuestionService.GetSecurityQuestions();
+            return Ok(questions.ToList());
         }
 
         [HttpPost("{username}/answers")]
