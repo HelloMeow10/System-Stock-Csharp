@@ -39,14 +39,27 @@ namespace Presentation
 
                 if (loginResponse.Requires2fa)
                 {
-                    // Handle 2FA
-                    // This part needs to be adapted as the logic for 2FA might change with the API
+                    this.Hide();
+                    using (var twoFaForm = _serviceProvider.GetRequiredService<TwoFactorAuthForm>())
+                    {
+                        twoFaForm.Username = username; // Pass username to the 2FA form
+                        if (twoFaForm.ShowDialog() == DialogResult.OK)
+                        {
+                            // After successful 2FA, the 2FA form will handle showing the dashboard.
+                            // We just need to make sure the login form stays hidden.
+                            this.DialogResult = DialogResult.OK;
+                        }
+                        else
+                        {
+                            // If 2FA is cancelled or fails, show the login form again.
+                            this.Show();
+                        }
+                    }
                 }
                 else
                 {
-                    _apiClient.SetToken(loginResponse.Token);
-
-                    if (loginResponse.Rol.Equals("Administrador", StringComparison.OrdinalIgnoreCase))
+                    // No 2FA required, proceed to show dashboard
+                    if (loginResponse.Rol.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                     {
                         ShowDashboard(_serviceProvider.GetRequiredService<AdminForm>(), loginResponse.Username);
                     }
@@ -56,16 +69,14 @@ namespace Presentation
                     }
                 }
             }
+            catch (ApiException apiEx)
+            {
+                MessageBox.Show($"Error de autenticación: {apiEx.Message}", "Error de API", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error de autenticación: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Ocurrió un error inesperado: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void HandleChangePassword(AuthenticationResult authResult)
-        {
-            // This method needs to be adapted or removed, as password change logic will be handled differently.
-            // For now, we'll leave it as is, but it will likely need to be refactored.
         }
 
         private void ShowDashboard(Form dashboard, string username)

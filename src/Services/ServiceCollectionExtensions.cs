@@ -77,6 +77,16 @@ namespace Services
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
                     };
+
+                    // Extract token from cookie
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            context.Token = context.Request.Cookies["ums_auth"];
+                            return Task.CompletedTask;
+                        }
+                    };
                 })
                 .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthSchemeOptions.Scheme, null);
             return services;

@@ -38,10 +38,17 @@ namespace Presentation
 
         private static IHostBuilder CreateHostBuilder() =>
             Host.CreateDefaultBuilder()
+                .ConfigureAppConfiguration((context, builder) =>
+                {
+                    builder.SetBasePath(Directory.GetCurrentDirectory())
+                           .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                })
                 .ConfigureServices((context, services) =>
                 {
                     // Register ApiClient
-                    services.AddSingleton<ApiClient.ApiClient>();
+                    var apiBaseUrl = context.Configuration.GetSection("ApiSettings:BaseUrl").Value ??
+                                     throw new InvalidOperationException("API Base URL not found in configuration.");
+                    services.AddSingleton(new ApiClient.ApiClient(apiBaseUrl));
 
                     // Register Forms
                     services.AddTransient<LoginForm>();
