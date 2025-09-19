@@ -32,6 +32,13 @@ namespace Services
             services.AddScoped<ILinkFactory<UserDtoV2>, UserLinksFactoryV2>();
             services.AddScoped<ILinkFactory<PersonaDto>, PersonaLinksFactory>();
             services.AddScoped<ILinkFactory<PoliticaSeguridadDto>, PoliticaSeguridadLinksFactory>();
+            services.AddScoped<ILinkFactory<ProvinciaDto>, ProvinciaLinksFactory>();
+            services.AddScoped<ILinkFactory<PartidoDto>, PartidoLinksFactory>();
+            services.AddScoped<ILinkFactory<LocalidadDto>, LocalidadLinksFactory>();
+            services.AddScoped<ILinkFactory<TipoDocDto>, TipoDocLinksFactory>();
+            services.AddScoped<ILinkFactory<GeneroDto>, GeneroLinksFactory>();
+            services.AddScoped<ILinkFactory<RolDto>, RolLinksFactory>();
+            services.AddScoped<ILinkFactory<PreguntaSeguridadDto>, SecurityQuestionLinksFactory>();
 
             // Register the generic factory for paged responses by its concrete type
             services.AddScoped(typeof(PagedResponseLinksFactory<>));
