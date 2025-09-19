@@ -30,6 +30,17 @@ builder.Services.AddRouting(options =>
     options.LowercaseUrls = true;
 });
 
+// Configure Antiforgery
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "CSRF-TOKEN";
+    options.Cookie.HttpOnly = false; // Must be false to be read by client-side script
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
+
+
 builder.Services.AddControllers().AddNewtonsoftJson();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -62,6 +73,9 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Add Antiforgery middleware
+app.UseAntiforgery();
 
 app.MapControllers();
 

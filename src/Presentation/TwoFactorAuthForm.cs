@@ -8,20 +8,15 @@ namespace Presentation
     public partial class TwoFactorAuthForm : Form
     {
         private readonly ApiClient.ApiClient _apiClient;
-        private string _username = string.Empty;
+        private readonly IServiceProvider _serviceProvider;
+        public string Username { get; set; } = string.Empty;
 
-        public LoginResponse? AuthResult { get; private set; }
-
-        public TwoFactorAuthForm(ApiClient.ApiClient apiClient)
+        public TwoFactorAuthForm(ApiClient.ApiClient apiClient, IServiceProvider serviceProvider)
         {
             InitializeComponent();
             _apiClient = apiClient;
+            _serviceProvider = serviceProvider;
             btnVerificar.Click += BtnVerificar_Click;
-        }
-
-        public void Initialize(string username)
-        {
-            _username = username;
         }
 
         private async void BtnVerificar_Click(object? sender, EventArgs e)
@@ -36,17 +31,53 @@ namespace Presentation
             {
                 var request = new Validate2faRequest
                 {
-                    Username = _username,
+                    Username = this.Username,
                     Code = txtCodigo.Text.Trim()
                 };
-                AuthResult = await _apiClient.Validate2faAsync(request);
+                var loginResponse = await _apiClient.Validate2faAsync(request);
+
                 this.DialogResult = DialogResult.OK;
+                this.Hide();
+
+                if (loginResponse.Rol.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    ShowDashboard(_serviceProvider.GetRequiredService<AdminForm>(), loginResponse.Username);
+                }
+                else
+                {
+                    ShowDashboard(_serviceProvider.GetRequiredService<UserForm>(), loginResponse.Username);
+                }
+
                 this.Close();
+            }
+            catch (ApiException apiEx)
+            {
+                MessageBox.Show($"Error de verificación: {apiEx.Message}", "Error de API", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Ocurrió un error inesperado: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void ShowDashboard(Form dashboard, string username)
+        {
+            if (dashboard is AdminForm adminForm)
+            {
+                adminForm.Initialize(username);
+            }
+            else if (dashboard is UserForm userForm)
+            {
+                userForm.Initialize(username);
+            }
+
+            dashboard.FormClosed += (s, args) =>
+            {
+                // When the dashboard closes, the application should exit or show the login form.
+                // For simplicity, we can let the application exit if the login form is not visible.
+                Application.Exit();
+            };
+            dashboard.Show();
         }
 
         private void iconPictureBox5_Click(object sender, EventArgs e)

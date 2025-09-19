@@ -38,6 +38,7 @@ namespace Services.Controllers
         [HttpPatch("{id}", Name = "PatchUserV1")]
         [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -52,6 +53,7 @@ namespace Services.Controllers
         [HttpPatch("{id}", Name = "PatchUserV2")]
         [MapToApiVersion("2.0")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -124,6 +126,7 @@ namespace Services.Controllers
         [HttpPost(Name = "CreateUserV1")]
         [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<UserDto>> Post([FromBody] UserRequest userRequest)
@@ -138,6 +141,7 @@ namespace Services.Controllers
         [HttpPost(Name = "CreateUserV2")]
         [MapToApiVersion("2.0")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<UserDtoV2>> PostV2([FromBody] UserRequestV2 userRequest)
@@ -158,6 +162,7 @@ namespace Services.Controllers
         [HttpPut("{id}", Name = "UpdateUserV1")]
         [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -172,6 +177,7 @@ namespace Services.Controllers
         [HttpPut("{id}", Name = "UpdateUserV2")]
         [MapToApiVersion("2.0")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -188,10 +194,31 @@ namespace Services.Controllers
         /// <response code="204">The user was successfully deleted.</response>
         /// <response code="404">If the user is not found.</response>
         [HttpDelete("{id}", Name = "DeleteUser")]
+        [MapToApiVersion("1.0")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
+        {
+            await _userService.DeleteUserAsync(id);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Deletes a user. (v2)
+        /// </summary>
+        /// <param name="id">The ID of the user to delete.</param>
+        /// <returns>No content if the deletion is successful.</returns>
+        /// <response code="204">The user was successfully deleted.</response>
+        /// <response code="404">If the user is not found.</response>
+        [HttpDelete("{id}", Name = "DeleteUserV2")]
+        [MapToApiVersion("2.0")]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteV2(int id)
         {
             await _userService.DeleteUserAsync(id);
             return NoContent();

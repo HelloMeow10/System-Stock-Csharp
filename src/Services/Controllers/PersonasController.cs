@@ -42,6 +42,7 @@ namespace Services.Controllers
 
         [HttpPost(Name = "CreatePersona")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<PersonaDto>> Post([FromBody] PersonaRequest personaRequest)
@@ -52,6 +53,7 @@ namespace Services.Controllers
 
         [HttpPut("{id}", Name = "UpdatePersona")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -62,6 +64,7 @@ namespace Services.Controllers
 
         [HttpPatch("{id}", Name = "PatchPersona")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -79,6 +82,7 @@ namespace Services.Controllers
         /// <response code="404">If the persona is not found.</response>
         [HttpDelete("{id}", Name = "DeletePersona")]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)

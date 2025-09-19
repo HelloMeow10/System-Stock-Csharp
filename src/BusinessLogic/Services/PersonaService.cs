@@ -10,7 +10,6 @@ using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.JsonPatch;
 using System.ComponentModel.DataAnnotations;
-using BusinessLogic.Mappers;
 
 namespace BusinessLogic.Services
 {
