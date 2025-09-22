@@ -57,6 +57,7 @@ namespace Services.Controllers
             {
                 Username = user.Username,
                 Rol = user.Rol ?? "Unknown",
+                Token = token
             });
         }
 
@@ -85,6 +86,7 @@ namespace Services.Controllers
             {
                 Username = user.Username,
                 Rol = user.Rol ?? "Unknown",
+                Token = token
             });
         }
 

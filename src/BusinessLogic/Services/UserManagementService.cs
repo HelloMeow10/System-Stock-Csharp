@@ -94,7 +94,7 @@ namespace BusinessLogic.Services
                 }
             }
 
-            var userDtos = pagedUsers.Items.Select(u =>
+            return pagedUsers.ToPagedResponse(u =>
             {
                 var userDto = UserMapper.MapToUserDto(u)!;
                 if (personas.TryGetValue(u.IdPersona, out var persona))
@@ -104,9 +104,7 @@ namespace BusinessLogic.Services
                     userDto.Correo = persona.Correo;
                 }
                 return userDto;
-            }).ToList();
-
-            return pagedUsers.ToPagedResponse(userDtos);
+            });
         }
 
         public async Task<PagedResponse<UserDtoV2>> GetUsersAsyncV2(UserQueryParameters queryParameters)
@@ -124,13 +122,11 @@ namespace BusinessLogic.Services
                 }
             }
 
-            var userDtos = pagedUsers.Items.Select(u =>
+            return pagedUsers.ToPagedResponse(u =>
             {
                 personas.TryGetValue(u.IdPersona, out var persona);
                 return UserMapper.MapToUserDtoV2(u, persona)!;
-            }).ToList();
-
-            return pagedUsers.ToPagedResponse(userDtos);
+            });
         }
 
         public async Task<UserDto> UpdateUserAsync(int id, UpdateUserRequest updateUserRequest)

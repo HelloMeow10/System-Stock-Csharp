@@ -86,8 +86,7 @@ namespace BusinessLogic.Services
         public async Task<PagedResponse<PersonaDto>> GetPersonasAsync(PaginationParams paginationParams)
         {
             var pagedPersonas = await _personaRepository.GetPersonasAsync(paginationParams);
-            var personaDtos = pagedPersonas.Items.Select(p => PersonaMapper.MapToPersonaDto(p)!).ToList();
-            return pagedPersonas.ToPagedResponse(personaDtos);
+            return pagedPersonas.ToPagedResponse(PersonaMapper.MapToPersonaDto);
         }
 
         public async Task<PersonaDto> GetPersonaByIdAsync(int personaId)

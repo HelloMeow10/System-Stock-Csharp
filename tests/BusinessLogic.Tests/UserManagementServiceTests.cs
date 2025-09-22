@@ -167,9 +167,9 @@ namespace BusinessLogic.Tests
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(2, result.TotalCount);
-            Assert.Equal(2, result.Items.Count);
-            Assert.Equal(1, result.CurrentPage);
+            Assert.Equal(2, result.TotalRecords);
+            Assert.Equal(2, result.Items.Count());
+            Assert.Equal(1, result.PageNumber);
 
             var user1 = result.Items.First(u => u.Username == "user1");
             Assert.Equal("John", user1.Nombre);

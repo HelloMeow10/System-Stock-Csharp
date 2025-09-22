@@ -51,9 +51,9 @@ namespace Services.Tests
             // Arrange
             var mockUserService = new Mock<IUserService>();
             var users = new List<UserDto> { new UserDto { IdUsuario = 1, Username = "test" } };
-            var pagedList = new PagedList<UserDto>(users, 1, 1, 10);
+            var pagedResponse = new PagedResponse<UserDto>(users, 1, 10, 1);
             mockUserService.Setup(s => s.GetUsersAsync(It.IsAny<UserQueryParameters>()))
-                .ReturnsAsync(pagedList);
+                .ReturnsAsync(pagedResponse);
 
             var client = _factory.WithWebHostBuilder(builder =>
             {
