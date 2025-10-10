@@ -10,7 +10,7 @@ namespace Services.Tests
     public class CustomWebApplicationFactory<TProgram>
         : WebApplicationFactory<TProgram> where TProgram : class
     {
-        public Action<IServiceCollection> TestServices { get; set; }
+        public Action<IServiceCollection> TestServices { get; set; } = _ => { };
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
