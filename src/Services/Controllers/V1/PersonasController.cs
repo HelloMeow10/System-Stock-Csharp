@@ -11,7 +11,7 @@ using BusinessLogic.Exceptions;
 using Asp.Versioning;
 using AutoMapper;
 
-namespace Services.Controllers
+namespace Services.Controllers.V1
 {
     [ApiVersion("1.0")]
     public class PersonasController : BaseApiController
@@ -25,7 +25,7 @@ namespace Services.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet(Name = "GetPersonas")]
+        [HttpGet(Name = "GetPersonasV1")]
         [Authorize]
         [ProducesResponseType(typeof(PagedResponse<PersonaDto>), StatusCodes.Status200OK)]
         public Task<PagedResponse<PersonaDto>> Get([FromQuery] PaginationParams paginationParams)
@@ -33,7 +33,7 @@ namespace Services.Controllers
             return _personaService.GetPersonasAsync(paginationParams);
         }
 
-        [HttpGet("{id}", Name = "GetPersonaById")]
+        [HttpGet("{id}", Name = "GetPersonaByIdV1")]
         [Authorize]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -42,17 +42,17 @@ namespace Services.Controllers
             return _personaService.GetPersonaByIdAsync(id);
         }
 
-        [HttpPost(Name = "CreatePersona")]
+        [HttpPost(Name = "CreatePersonaV1")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<PersonaDto>> Post([FromBody] PersonaRequest personaRequest)
         {
             var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
-            return CreatedAtRoute("GetPersonaById", new { id = newPersona.IdPersona }, newPersona);
+            return CreatedAtRoute("GetPersonaByIdV1", new { id = newPersona.IdPersona, version = "1.0" }, newPersona);
         }
 
-        [HttpPut("{id}", Name = "UpdatePersona")]
+        [HttpPut("{id}", Name = "UpdatePersonaV1")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -62,7 +62,7 @@ namespace Services.Controllers
             return _personaService.UpdatePersonaAsync(id, personaDto);
         }
 
-        [HttpPatch("{id}", Name = "PatchPersona")]
+        [HttpPatch("{id}", Name = "PatchPersonaV1")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -84,7 +84,7 @@ namespace Services.Controllers
         /// <returns>No content if the deletion is successful.</returns>
         /// <response code="204">The persona was successfully deleted.</response>
         /// <response code="404">If the persona is not found.</response>
-        [HttpDelete("{id}", Name = "DeletePersona")]
+        [HttpDelete("{id}", Name = "DeletePersonaV1")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

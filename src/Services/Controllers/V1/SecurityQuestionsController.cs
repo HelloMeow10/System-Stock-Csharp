@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Asp.Versioning;
 using System.Linq;
 
-namespace Services.Controllers
+namespace Services.Controllers.V1
 {
     [ApiVersion("1.0")]
     public class SecurityQuestionsController : BaseApiController

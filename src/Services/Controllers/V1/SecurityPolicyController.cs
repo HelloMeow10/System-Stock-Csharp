@@ -8,7 +8,7 @@ using BusinessLogic.Exceptions;
 using Services.Authentication;
 using Asp.Versioning;
 
-namespace Services.Controllers
+namespace Services.Controllers.V1
 {
     [HasApiKey]
     [ApiVersion("1.0")]

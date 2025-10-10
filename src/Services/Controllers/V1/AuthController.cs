@@ -8,7 +8,7 @@ using BusinessLogic.Exceptions;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Http; // Added for CookieOptions
 
-namespace Services.Controllers
+namespace Services.Controllers.V1
 {
     [AllowAnonymous]
     [ApiVersion("1.0")]
