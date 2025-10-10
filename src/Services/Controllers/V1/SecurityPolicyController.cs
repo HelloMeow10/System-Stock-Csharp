@@ -1,16 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using Contracts;
-using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
-using Services.Hateoas;
-using BusinessLogic.Exceptions;
-using Services.Authentication;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Services.Controllers.V1
 {
-    [HasApiKey]
+    [Authorize(Roles = "Admin")]
     [ApiVersion("1.0")]
     public class SecurityPolicyController : BaseApiController
     {
@@ -21,14 +18,14 @@ namespace Services.Controllers.V1
             _securityPolicyService = securityPolicyService;
         }
 
-        [HttpGet(Name = "GetSecurityPolicy")]
+        [HttpGet(Name = "GetSecurityPolicyV1")]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
         public Task<PoliticaSeguridadDto> Get()
         {
             return _securityPolicyService.GetPoliticaSeguridadAsync();
         }
 
-        [HttpPut(Name = "UpdateSecurityPolicy")]
+        [HttpPut(Name = "UpdateSecurityPolicyV1")]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
         public Task<PoliticaSeguridadDto> Put([FromBody] UpdatePoliticaSeguridadRequest request)
         {

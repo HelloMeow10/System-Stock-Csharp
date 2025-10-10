@@ -6,8 +6,6 @@ using Session;
 using System.Threading.Tasks;
 using BusinessLogic.Exceptions;
 using Asp.Versioning;
-using Microsoft.AspNetCore.Http; // Added for CookieOptions
-
 namespace Services.Controllers.V1
 {
     [AllowAnonymous]
@@ -24,7 +22,7 @@ namespace Services.Controllers.V1
             _tokenService = tokenService;
         }
 
-        [HttpPost("login")]
+        [HttpPost("login", Name = "LoginV1")]
         [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
@@ -56,7 +54,7 @@ namespace Services.Controllers.V1
             });
         }
 
-        [HttpPost("validate-2fa")]
+        [HttpPost("validate-2fa", Name = "Validate2faV1")]
         [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
         public async Task<ActionResult<LoginResponse>> Validate2fa([FromBody] Validate2faRequest request)
         {
@@ -84,7 +82,7 @@ namespace Services.Controllers.V1
         }
 
         [Authorize]
-        [HttpPost("logout")]
+        [HttpPost("logout", Name = "LogoutV1")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Logout()
         {
