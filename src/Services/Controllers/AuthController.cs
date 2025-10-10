@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using BusinessLogic.Exceptions;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Http; // Added for CookieOptions
-using Microsoft.AspNetCore.Antiforgery; // Added for CSRF
 
 namespace Services.Controllers
 {
@@ -17,14 +16,12 @@ namespace Services.Controllers
     {
         private readonly IAuthenticationService _authService;
         private readonly ITokenService _tokenService;
-        private readonly IAntiforgery _antiforgery;
         private const string AuthCookieName = "ums_auth";
 
-        public AuthController(IAuthenticationService authService, ITokenService tokenService, IAntiforgery antiforgery)
+        public AuthController(IAuthenticationService authService, ITokenService tokenService)
         {
             _authService = authService;
             _tokenService = tokenService;
-            _antiforgery = antiforgery;
         }
 
         [HttpPost("login")]
@@ -88,17 +85,8 @@ namespace Services.Controllers
             });
         }
 
-        [HttpGet("csrf-token")]
-        [Authorize]
-        public IActionResult GetCsrfToken()
-        {
-            var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-            return Ok(new { token = tokens.RequestToken });
-        }
-
         [Authorize]
         [HttpPost("logout")]
-        [ValidateAntiForgeryToken]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Logout()
         {

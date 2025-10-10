@@ -31,7 +31,6 @@ namespace Services.Controllers
         }
 
         [HttpPut(Name = "UpdateSecurityPolicy")]
-        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<PoliticaSeguridadDto>> Put([FromBody] UpdatePoliticaSeguridadRequest request)
