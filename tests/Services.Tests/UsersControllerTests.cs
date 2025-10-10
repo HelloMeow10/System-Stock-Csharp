@@ -23,12 +23,12 @@ namespace Services.Tests
         }
 
         [Fact]
-        public async Task Get_User_By_Id_Returns_NotFound_When_Service_Throws_NotFoundException()
+        public async Task Get_User_By_Id_Returns_NotFound_When_Service_Throws_BusinessLogicException()
         {
             // Arrange
             var mockUserService = new Mock<IUserService>();
             mockUserService.Setup(s => s.GetUserByIdAsync<UserDto>(It.IsAny<int>()))
-                .ThrowsAsync(new NotFoundException("Resource not found"));
+                .ThrowsAsync(new BusinessLogicException("Resource not found"));
 
             var client = _factory.WithWebHostBuilder(builder =>
             {

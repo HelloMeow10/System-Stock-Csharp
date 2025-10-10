@@ -124,7 +124,7 @@ namespace BusinessLogic.Tests
             _userRepositoryMock.Setup(r => r.GetUsuarioByIdAsync(userId)).ReturnsAsync((Usuario?)null);
 
             // Act & Assert
-            await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateUserAsync<UpdateUserRequest, UserDto>(userId, request));
+            await Assert.ThrowsAsync<BusinessLogicException>(() => _sut.UpdateUserAsync<UpdateUserRequest, UserDto>(userId, request));
         }
 
         [Fact]

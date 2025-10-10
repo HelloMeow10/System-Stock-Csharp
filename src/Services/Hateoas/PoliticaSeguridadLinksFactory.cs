@@ -8,13 +8,15 @@ namespace Services.Hateoas
     {
         public void AddLinks(PoliticaSeguridadDto resource, IUrlHelper urlHelper)
         {
-            var selfLink = urlHelper.Link("GetSecurityPolicy", null);
+            var version = "1.0";
+
+            var selfLink = urlHelper.Link("GetSecurityPolicyV1", new { version });
             if (selfLink != null)
             {
                 resource.Links.Add(new LinkDto(selfLink, "self", "GET"));
             }
 
-            var updateLink = urlHelper.Link("UpdateSecurityPolicy", null);
+            var updateLink = urlHelper.Link("UpdateSecurityPolicyV1", new { version });
             if (updateLink != null)
             {
                 resource.Links.Add(new LinkDto(updateLink, "update-policy", "PUT"));

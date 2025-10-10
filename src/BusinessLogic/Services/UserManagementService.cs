@@ -55,7 +55,7 @@ namespace BusinessLogic.Services
             var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
             if (persona is null)
             {
-                throw new NotFoundException($"Persona with ID {usuario.IdPersona} not found after user creation.");
+                throw new BusinessLogicException($"Persona with ID {usuario.IdPersona} not found after user creation.");
             }
 
             await _emailService.SendWelcomeEmailAsync(persona.Correo!, usuario.UsuarioNombre, plainPassword);
@@ -72,13 +72,13 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
             {
-                throw new NotFoundException($"User with ID {id} not found.");
+                throw new BusinessLogicException($"User with ID {id} not found.");
             }
 
             var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
             if (persona == null)
             {
-                throw new NotFoundException($"Persona not found for user ID: {id}.");
+                throw new BusinessLogicException($"Persona not found for user ID: {id}.");
             }
 
             // Map the update request to the existing entities
@@ -100,13 +100,13 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
             {
-                throw new NotFoundException($"User with ID {id} not found.");
+                throw new BusinessLogicException($"User with ID {id} not found.");
             }
 
             var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
             if (persona == null)
             {
-                throw new NotFoundException($"Persona not found for user ID: {id}.");
+                throw new BusinessLogicException($"Persona not found for user ID: {id}.");
             }
 
             var userToPatch = _mapper.Map<TRequest>((usuario, persona));
@@ -161,7 +161,7 @@ namespace BusinessLogic.Services
             var user = await _userRepository.GetUsuarioByIdAsync(userId);
             if (user == null)
             {
-                throw new NotFoundException($"User with ID {userId} not found.");
+                throw new BusinessLogicException($"User with ID {userId} not found.");
             }
             await _userRepository.DeleteUsuarioAsync(userId);
         }
@@ -171,7 +171,7 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username);
             if (usuario == null)
             {
-                throw new NotFoundException($"User with username '{username}' not found.");
+                throw new BusinessLogicException($"User with username '{username}' not found.");
             }
 
             var persona = await _personaService.GetPersonaByIdAsync(usuario.IdPersona);
@@ -184,7 +184,7 @@ namespace BusinessLogic.Services
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
             {
-                throw new NotFoundException($"User with ID {id} not found.");
+                throw new BusinessLogicException($"User with ID {id} not found.");
             }
 
             var persona = await _personaService.GetPersonaByIdAsync(usuario.IdPersona);
