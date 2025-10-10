@@ -49,7 +49,7 @@ namespace Services.Controllers.V1
         public async Task<ActionResult<PersonaDto>> Post([FromBody] PersonaRequest personaRequest)
         {
             var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
-            return CreatedAtRoute("GetPersonaByIdV1", new { id = newPersona.IdPersona, version = "1.0" }, newPersona);
+            return CreatedAtAction(nameof(Get), new { id = newPersona.IdPersona, version = "1.0" }, newPersona);
         }
 
         [HttpPut("{id}", Name = "UpdatePersonaV1")]
