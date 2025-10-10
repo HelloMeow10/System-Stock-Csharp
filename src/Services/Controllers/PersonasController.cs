@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Services.Hateoas;
 using BusinessLogic.Exceptions;
-using BusinessLogic.Mappers;
 using Asp.Versioning;
+using AutoMapper;
 
 namespace Services.Controllers
 {
@@ -17,29 +17,29 @@ namespace Services.Controllers
     public class PersonasController : BaseApiController
     {
         private readonly IPersonaService _personaService;
+        private readonly IMapper _mapper;
 
-        public PersonasController(IPersonaService personaService)
+        public PersonasController(IPersonaService personaService, IMapper mapper)
         {
             _personaService = personaService;
+            _mapper = mapper;
         }
 
         [HttpGet(Name = "GetPersonas")]
         [Authorize]
         [ProducesResponseType(typeof(PagedResponse<PersonaDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<PagedResponse<PersonaDto>>> Get([FromQuery] PaginationParams paginationParams)
+        public Task<PagedResponse<PersonaDto>> Get([FromQuery] PaginationParams paginationParams)
         {
-            var personas = await _personaService.GetPersonasAsync(paginationParams);
-            return Ok(personas);
+            return _personaService.GetPersonasAsync(paginationParams);
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
         [Authorize]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<PersonaDto>> Get(int id)
+        public Task<PersonaDto> Get(int id)
         {
-            var persona = await _personaService.GetPersonaByIdAsync(id);
-            return Ok(persona);
+            return _personaService.GetPersonaByIdAsync(id);
         }
 
         [HttpPost(Name = "CreatePersona")]
@@ -57,10 +57,9 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<PersonaDto>> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
+        public Task<PersonaDto> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
-            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaDto);
-            return Ok(updatedPersona);
+            return _personaService.UpdatePersonaAsync(id, personaDto);
         }
 
         [HttpPatch("{id}", Name = "PatchPersona")]
@@ -68,22 +67,14 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<PersonaDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
+        public async Task<PersonaDto> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
             var persona = await _personaService.GetPersonaByIdAsync(id);
-            var personaToPatch = PersonaMapper.MapToUpdatePersonaRequest(persona);
+            var personaToPatch = _mapper.Map<UpdatePersonaRequest>(persona);
 
-            patchDoc.ApplyTo(personaToPatch, ModelState);
-            TryValidateModel(personaToPatch);
+            ApplyPatchAndValidate(patchDoc, personaToPatch);
 
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                throw new BusinessLogic.Exceptions.ValidationException(errors);
-            }
-
-            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaToPatch);
-            return Ok(updatedPersona);
+            return await _personaService.UpdatePersonaAsync(id, personaToPatch);
         }
 
         /// <summary>
