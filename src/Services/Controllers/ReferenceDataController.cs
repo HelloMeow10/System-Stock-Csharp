@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using BusinessLogic.Services;
 using Contracts;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Asp.Versioning;
-using System.Linq;
 
 namespace Services.Controllers
 {
@@ -21,44 +21,50 @@ namespace Services.Controllers
 
         [HttpGet("tiposdoc")]
         [ProducesResponseType(typeof(IEnumerable<TipoDocDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<TipoDocDto>> GetTiposDoc()
+        public async Task<ActionResult<IEnumerable<TipoDocDto>>> GetTiposDoc()
         {
-            return _referenceDataService.GetTiposDoc().ToList();
+            var data = await _referenceDataService.GetTiposDocAsync();
+            return Ok(data);
         }
 
         [HttpGet("provincias")]
         [ProducesResponseType(typeof(IEnumerable<ProvinciaDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<ProvinciaDto>> GetProvincias()
+        public async Task<ActionResult<IEnumerable<ProvinciaDto>>> GetProvincias()
         {
-            return _referenceDataService.GetProvincias().ToList();
+            var data = await _referenceDataService.GetProvinciasAsync();
+            return Ok(data);
         }
 
         [HttpGet("partidos/{provinciaId}")]
         [ProducesResponseType(typeof(IEnumerable<PartidoDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<PartidoDto>> GetPartidos(int provinciaId)
+        public async Task<ActionResult<IEnumerable<PartidoDto>>> GetPartidos(int provinciaId)
         {
-            return _referenceDataService.GetPartidosByProvinciaId(provinciaId).ToList();
+            var data = await _referenceDataService.GetPartidosByProvinciaIdAsync(provinciaId);
+            return Ok(data);
         }
 
         [HttpGet("localidades/{partidoId}")]
         [ProducesResponseType(typeof(IEnumerable<LocalidadDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<LocalidadDto>> GetLocalidades(int partidoId)
+        public async Task<ActionResult<IEnumerable<LocalidadDto>>> GetLocalidades(int partidoId)
         {
-            return _referenceDataService.GetLocalidadesByPartidoId(partidoId).ToList();
+            var data = await _referenceDataService.GetLocalidadesByPartidoIdAsync(partidoId);
+            return Ok(data);
         }
 
         [HttpGet("generos")]
         [ProducesResponseType(typeof(IEnumerable<GeneroDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<GeneroDto>> GetGeneros()
+        public async Task<ActionResult<IEnumerable<GeneroDto>>> GetGeneros()
         {
-            return _referenceDataService.GetGeneros().ToList();
+            var data = await _referenceDataService.GetGenerosAsync();
+            return Ok(data);
         }
 
         [HttpGet("roles")]
         [ProducesResponseType(typeof(IEnumerable<RolDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<RolDto>> GetRoles()
+        public async Task<ActionResult<IEnumerable<RolDto>>> GetRoles()
         {
-            return _referenceDataService.GetRoles().ToList();
+            var data = await _referenceDataService.GetRolesAsync();
+            return Ok(data);
         }
     }
 }

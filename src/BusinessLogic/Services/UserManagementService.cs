@@ -13,7 +13,6 @@ using BusinessLogic.Exceptions;
 using BusinessLogic.Security;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
-using Microsoft.AspNetCore.JsonPatch;
 using System.ComponentModel.DataAnnotations;
 using BusinessLogic.Mappers;
 
@@ -201,10 +200,14 @@ namespace BusinessLogic.Services
             await _userRepository.DeleteUsuarioAsync(userId);
         }
 
-        public async Task<UserDto?> GetUserByUsernameAsync(string username)
+        public async Task<UserDto> GetUserByUsernameAsync(string username)
         {
             var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username);
-            return UserMapper.MapToUserDto(usuario);
+            if (usuario == null)
+            {
+                throw new NotFoundException($"User with username '{username}' not found.");
+            }
+            return UserMapper.MapToUserDto(usuario)!;
         }
 
         public async Task<UserDto> GetUserByIdAsync(int id)
@@ -226,24 +229,6 @@ namespace BusinessLogic.Services
             }
 
             return userDto;
-        }
-
-        public async Task<UserDto> PatchUserAsync(int id, JsonPatchDocument<UpdateUserRequest> patchDoc)
-        {
-            var user = await GetUserByIdAsync(id);
-            var userToPatch = UserMapper.MapToUpdateUserRequest(user);
-
-            patchDoc.ApplyTo(userToPatch);
-
-            var validationResults = new List<ValidationResult>();
-            var validationContext = new ValidationContext(userToPatch, null, null);
-            if (!Validator.TryValidateObject(userToPatch, validationContext, validationResults, true))
-            {
-                var errors = validationResults.Select(r => r.ErrorMessage!);
-                throw new BusinessLogic.Exceptions.ValidationException(errors);
-            }
-
-            return await UpdateUserAsync(id, userToPatch);
         }
 
         public async Task<UserDtoV2> GetUserByIdAsyncV2(int id)
@@ -317,32 +302,6 @@ namespace BusinessLogic.Services
             await _userRepository.UpdateUsuarioAsync(usuario);
 
             return await GetUserByIdAsyncV2(id);
-        }
-
-        public async Task<UserDtoV2> PatchUserAsyncV2(int id, JsonPatchDocument<UpdateUserRequestV2> patchDoc)
-        {
-            var userV2 = await GetUserByIdAsyncV2(id);
-            var userToPatch = new UpdateUserRequestV2
-            {
-                FullName = userV2.FullName,
-                Correo = userV2.Correo,
-                IdRol = userV2.IdRol,
-                CambioContrasenaObligatorio = userV2.CambioContrasenaObligatorio,
-                FechaExpiracion = userV2.FechaExpiracion,
-                Habilitado = userV2.Habilitado
-            };
-
-            patchDoc.ApplyTo(userToPatch);
-
-            var validationResults = new List<ValidationResult>();
-            var validationContext = new ValidationContext(userToPatch, null, null);
-            if (!Validator.TryValidateObject(userToPatch, validationContext, validationResults, true))
-            {
-                var errors = validationResults.Select(r => r.ErrorMessage!);
-                throw new BusinessLogic.Exceptions.ValidationException(errors);
-            }
-
-            return await UpdateUserAsyncV2(id, userToPatch);
         }
     }
 }

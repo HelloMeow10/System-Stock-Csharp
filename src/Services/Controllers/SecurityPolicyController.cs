@@ -27,7 +27,7 @@ namespace Services.Controllers
         public async Task<ActionResult<PoliticaSeguridadDto>> Get()
         {
             var policy = await _securityPolicyService.GetPoliticaSeguridadAsync();
-            return policy;
+            return Ok(policy);
         }
 
         [HttpPut(Name = "UpdateSecurityPolicy")]
@@ -36,7 +36,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<PoliticaSeguridadDto>> Put([FromBody] UpdatePoliticaSeguridadRequest request)
         {
-            return await _securityPolicyService.UpdatePoliticaSeguridadAsync(request);
+            var updatedPolicy = await _securityPolicyService.UpdatePoliticaSeguridadAsync(request);
+            return Ok(updatedPolicy);
         }
     }
 }

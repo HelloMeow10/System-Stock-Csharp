@@ -57,7 +57,14 @@ namespace BusinessLogic.Services
                     return await HandleTwoFactorAuthentication(username, usuario!.IdPersona);
                 }
 
-                return CreateSuccessfulAuthenticationResult(usuario!);
+                var userResponse = new UserResponse
+                {
+                    Username = usuario!.UsuarioNombre,
+                    Rol = usuario.Rol?.Nombre,
+                    CambioContrasenaObligatorio = usuario.CambioContrasenaObligatorio,
+                    IdPersona = usuario.IdPersona
+                };
+                return AuthenticationResult.Succeeded(userResponse);
             }, "authenticating user");
         }
 
@@ -106,20 +113,6 @@ namespace BusinessLogic.Services
             return AuthenticationResult.TwoFactorRequired();
         }
 
-        private AuthenticationResult CreateSuccessfulAuthenticationResult(DataAccess.Entities.Usuario usuario)
-        {
-            var userResponse = new UserResponse
-            {
-                Username = usuario.UsuarioNombre,
-                Rol = usuario.Rol?.Nombre,
-                CambioContrasenaObligatorio = usuario.CambioContrasenaObligatorio,
-                IdPersona = usuario.IdPersona
-            };
-
-            var nextAction = DetermineNextAction(userResponse);
-            return AuthenticationResult.Succeeded(userResponse, nextAction);
-        }
-
         public async Task<AuthenticationResult> Validate2faAsync(string username, string code)
         {
             return await ExecuteServiceOperationAsync(async () =>
@@ -145,23 +138,8 @@ namespace BusinessLogic.Services
                     CambioContrasenaObligatorio = usuario.CambioContrasenaObligatorio,
                     IdPersona = usuario.IdPersona
                 };
-
-                var nextAction = DetermineNextAction(userResponse);
-                return AuthenticationResult.Succeeded(userResponse, nextAction);
+                return AuthenticationResult.Succeeded(userResponse);
             }, "validating 2FA");
-        }
-
-        private PostLoginAction DetermineNextAction(UserResponse user)
-        {
-            if (user.CambioContrasenaObligatorio)
-            {
-                return PostLoginAction.ChangePassword;
-            }
-            if (user.Rol == AdminRole)
-            {
-                return PostLoginAction.ShowAdminDashboard;
-            }
-            return PostLoginAction.ShowUserDashboard;
         }
 
         private async Task<T> ExecuteServiceOperationAsync<T>(Func<Task<T>> operation, string operationName)

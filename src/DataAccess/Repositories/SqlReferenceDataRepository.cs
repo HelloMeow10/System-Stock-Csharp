@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading.Tasks;
 using DataAccess.Entities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -18,106 +19,106 @@ namespace DataAccess.Repositories
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private T ExecuteReader<T>(string sql, Func<SqlDataReader, T> map, Action<SqlParameterCollection>? addParameters = null, CommandType commandType = CommandType.Text)
+        private async Task<T> ExecuteReaderAsync<T>(string sql, Func<SqlDataReader, Task<T>> map, Action<SqlParameterCollection>? addParameters = null, CommandType commandType = CommandType.Text)
         {
             using (var connection = (SqlConnection)_connectionFactory.CreateConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = sql;
                     command.CommandType = commandType;
                     addParameters?.Invoke(command.Parameters);
 
-                    using (var reader = command.ExecuteReader())
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        return map(reader);
+                        return await map(reader);
                     }
                 }
             }
         }
 
-        public List<TipoDoc> GetAllTiposDoc() => ExecuteReader("SELECT id_tipo_doc, tipo_doc FROM tipo_doc;", reader =>
+        public Task<List<TipoDoc>> GetAllTiposDocAsync() => ExecuteReaderAsync("SELECT id_tipo_doc, tipo_doc FROM tipo_doc;", async reader =>
         {
             var list = new List<TipoDoc>();
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
                 list.Add(new TipoDoc { IdTipoDoc = (int)reader["id_tipo_doc"], Nombre = (string)reader["tipo_doc"] });
             }
             return list;
         });
 
-        public List<Genero> GetAllGeneros() => ExecuteReader("SELECT id_genero, genero FROM generos;", reader =>
+        public Task<List<Genero>> GetAllGenerosAsync() => ExecuteReaderAsync("SELECT id_genero, genero FROM generos;", async reader =>
         {
             var list = new List<Genero>();
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
                 list.Add(new Genero { IdGenero = (int)reader["id_genero"], Nombre = (string)reader["genero"] });
             }
             return list;
         });
 
-        public List<Rol> GetAllRoles() => ExecuteReader("SELECT id_rol, rol FROM roles;", reader =>
+        public Task<List<Rol>> GetAllRolesAsync() => ExecuteReaderAsync("SELECT id_rol, rol FROM roles;", async reader =>
         {
             var list = new List<Rol>();
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
                 list.Add(new Rol { IdRol = (int)reader["id_rol"], Nombre = (string)reader["rol"] });
             }
             return list;
         });
 
-        public List<Provincia> GetAllProvincias() => ExecuteReader("SELECT id_provincia, provincia FROM provincias;", reader =>
+        public Task<List<Provincia>> GetAllProvinciasAsync() => ExecuteReaderAsync("SELECT id_provincia, provincia FROM provincias;", async reader =>
         {
             var list = new List<Provincia>();
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
                 list.Add(new Provincia { IdProvincia = (int)reader["id_provincia"], Nombre = (string)reader["provincia"] });
             }
             return list;
         });
 
-        public List<Partido> GetPartidosByProvinciaId(int provinciaId) => ExecuteReader("SELECT id_partido, partido, id_provincia FROM partidos WHERE id_provincia = @id_provincia;", reader =>
+        public Task<List<Partido>> GetPartidosByProvinciaIdAsync(int provinciaId) => ExecuteReaderAsync("SELECT id_partido, partido, id_provincia FROM partidos WHERE id_provincia = @id_provincia;", async reader =>
         {
             var list = new List<Partido>();
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
                 list.Add(new Partido { IdPartido = (int)reader["id_partido"], Nombre = (string)reader["partido"], IdProvincia = (int)reader["id_provincia"] });
             }
             return list;
         }, p => p.AddWithValue("@id_provincia", provinciaId));
 
-        public List<Localidad> GetLocalidadesByPartidoId(int partidoId) => ExecuteReader("SELECT id_localidad, localidad, id_partido FROM localidades WHERE id_partido = @id_partido;", reader =>
+        public Task<List<Localidad>> GetLocalidadesByPartidoIdAsync(int partidoId) => ExecuteReaderAsync("SELECT id_localidad, localidad, id_partido FROM localidades WHERE id_partido = @id_partido;", async reader =>
         {
             var list = new List<Localidad>();
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
                 list.Add(new Localidad { IdLocalidad = (int)reader["id_localidad"], Nombre = (string)reader["localidad"], IdPartido = (int)reader["id_partido"] });
             }
             return list;
         }, p => p.AddWithValue("@id_partido", partidoId));
 
-        public TipoDoc? GetTipoDocByNombre(string nombre) => ExecuteReader("SELECT id_tipo_doc, tipo_doc FROM tipo_doc WHERE tipo_doc = @nombre;", reader =>
+        public Task<TipoDoc?> GetTipoDocByNombreAsync(string nombre) => ExecuteReaderAsync("SELECT id_tipo_doc, tipo_doc FROM tipo_doc WHERE tipo_doc = @nombre;", async reader =>
         {
-            if (!reader.Read()) return null;
+            if (!await reader.ReadAsync()) return null;
             return new TipoDoc { IdTipoDoc = (int)reader["id_tipo_doc"], Nombre = (string)reader["tipo_doc"] };
         }, p => p.AddWithValue("@nombre", nombre));
 
-        public Localidad? GetLocalidadByNombre(string nombre) => ExecuteReader("SELECT id_localidad, localidad, id_partido FROM localidades WHERE localidad = @nombre;", reader =>
+        public Task<Localidad?> GetLocalidadByNombreAsync(string nombre) => ExecuteReaderAsync("SELECT id_localidad, localidad, id_partido FROM localidades WHERE localidad = @nombre;", async reader =>
         {
-            if (!reader.Read()) return null;
+            if (!await reader.ReadAsync()) return null;
             return new Localidad { IdLocalidad = (int)reader["id_localidad"], Nombre = (string)reader["localidad"], IdPartido = (int)reader["id_partido"] };
         }, p => p.AddWithValue("@nombre", nombre));
 
-        public Genero? GetGeneroByNombre(string nombre) => ExecuteReader("SELECT id_genero, genero FROM generos WHERE genero = @nombre;", reader =>
+        public Task<Genero?> GetGeneroByNombreAsync(string nombre) => ExecuteReaderAsync("SELECT id_genero, genero FROM generos WHERE genero = @nombre;", async reader =>
         {
-            if (!reader.Read()) return null;
+            if (!await reader.ReadAsync()) return null;
             return new Genero { IdGenero = (int)reader["id_genero"], Nombre = (string)reader["genero"] };
         }, p => p.AddWithValue("@nombre", nombre));
 
-        public Rol? GetRolByNombre(string nombre) => ExecuteReader("SELECT id_rol, rol FROM roles WHERE rol = @nombre;", reader =>
+        public Task<Rol?> GetRolByNombreAsync(string nombre) => ExecuteReaderAsync("SELECT id_rol, rol FROM roles WHERE rol = @nombre;", async reader =>
         {
-            if (!reader.Read()) return null;
+            if (!await reader.ReadAsync()) return null;
             return new Rol { IdRol = (int)reader["id_rol"], Nombre = (string)reader["rol"] };
         }, p => p.AddWithValue("@nombre", nombre));
     }

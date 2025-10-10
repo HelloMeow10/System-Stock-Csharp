@@ -55,7 +55,7 @@ namespace BusinessLogic.Services
             var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona)
                 ?? throw new ValidationException("Persona no encontrada");
 
-            var respuestasGuardadas = _securityRepository.GetRespuestasSeguridadByUsuarioId(usuario.IdUsuario)
+            var respuestasGuardadas = await _securityRepository.GetRespuestasSeguridadByUsuarioIdAsync(usuario.IdUsuario)
                 ?? throw new ValidationException("No se han configurado las preguntas de seguridad.");
 
             if (respuestasGuardadas.Count != politica.CantPreguntas)

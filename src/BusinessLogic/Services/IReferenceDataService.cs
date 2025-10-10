@@ -1,15 +1,16 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Contracts;
 
 namespace BusinessLogic.Services
 {
     public interface IReferenceDataService
     {
-        List<TipoDocDto> GetTiposDoc();
-        List<ProvinciaDto> GetProvincias();
-        List<PartidoDto> GetPartidosByProvinciaId(int provinciaId);
-        List<LocalidadDto> GetLocalidadesByPartidoId(int partidoId);
-        List<GeneroDto> GetGeneros();
-        List<RolDto> GetRoles();
+        Task<List<TipoDocDto>> GetTiposDocAsync();
+        Task<List<ProvinciaDto>> GetProvinciasAsync();
+        Task<List<PartidoDto>> GetPartidosByProvinciaIdAsync(int provinciaId);
+        Task<List<LocalidadDto>> GetLocalidadesByPartidoIdAsync(int partidoId);
+        Task<List<GeneroDto>> GetGenerosAsync();
+        Task<List<RolDto>> GetRolesAsync();
     }
 }

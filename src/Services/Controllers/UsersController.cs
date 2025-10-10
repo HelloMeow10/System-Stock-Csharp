@@ -44,7 +44,20 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            return await _userService.PatchUserAsync(id, patchDoc);
+            var user = await _userService.GetUserByIdAsync(id);
+            var userToPatch = UserMapper.MapToUpdateUserRequest(user);
+
+            patchDoc.ApplyTo(userToPatch, ModelState);
+            TryValidateModel(userToPatch);
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                throw new BusinessLogic.Exceptions.ValidationException(errors);
+            }
+
+            var updatedUser = await _userService.UpdateUserAsync(id, userToPatch);
+            return Ok(updatedUser);
         }
 
         /// <summary>
@@ -59,7 +72,28 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDtoV2>> PatchV2(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
         {
-            return await _userService.PatchUserAsyncV2(id, patchDoc);
+            var userV2 = await _userService.GetUserByIdAsyncV2(id);
+            var userToPatch = new UpdateUserRequestV2
+            {
+                FullName = userV2.FullName,
+                Correo = userV2.Correo,
+                IdRol = userV2.IdRol,
+                CambioContrasenaObligatorio = userV2.CambioContrasenaObligatorio,
+                FechaExpiracion = userV2.FechaExpiracion,
+                Habilitado = userV2.Habilitado
+            };
+
+            patchDoc.ApplyTo(userToPatch, ModelState);
+            TryValidateModel(userToPatch);
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                throw new BusinessLogic.Exceptions.ValidationException(errors);
+            }
+
+            var updatedUser = await _userService.UpdateUserAsyncV2(id, userToPatch);
+            return Ok(updatedUser);
         }
 
         /// <summary>
@@ -73,7 +107,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PagedResponse<UserDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResponse<UserDto>>> Get([FromQuery] UserQueryParameters queryParameters)
         {
-            return await _userService.GetUsersAsync(queryParameters);
+            var users = await _userService.GetUsersAsync(queryParameters);
+            return Ok(users);
         }
 
         /// <summary>
@@ -87,7 +122,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PagedResponse<UserDtoV2>), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResponse<UserDtoV2>>> GetV2([FromQuery] UserQueryParameters queryParameters)
         {
-            return await _userService.GetUsersAsyncV2(queryParameters);
+            var users = await _userService.GetUsersAsyncV2(queryParameters);
+            return Ok(users);
         }
 
         /// <summary>
@@ -102,7 +138,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDto>> GetById(int id)
         {
-            return await _userService.GetUserByIdAsync(id);
+            var user = await _userService.GetUserByIdAsync(id);
+            return Ok(user);
         }
 
         /// <summary>
@@ -115,7 +152,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDtoV2>> GetByIdV2(int id)
         {
-            return await _userService.GetUserByIdAsyncV2(id);
+            var user = await _userService.GetUserByIdAsyncV2(id);
+            return Ok(user);
         }
 
         /// <summary>
@@ -168,7 +206,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDto>> Put(int id, [FromBody] UpdateUserRequest updateUserRequest)
         {
-            return await _userService.UpdateUserAsync(id, updateUserRequest);
+            var updatedUser = await _userService.UpdateUserAsync(id, updateUserRequest);
+            return Ok(updatedUser);
         }
 
         /// <summary>
@@ -183,7 +222,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDtoV2>> PutV2(int id, [FromBody] UpdateUserRequestV2 updateUserRequest)
         {
-            return await _userService.UpdateUserAsyncV2(id, updateUserRequest);
+            var updatedUser = await _userService.UpdateUserAsyncV2(id, updateUserRequest);
+            return Ok(updatedUser);
         }
 
         /// <summary>

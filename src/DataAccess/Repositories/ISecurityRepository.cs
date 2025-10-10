@@ -7,10 +7,10 @@ namespace DataAccess.Repositories
     {
         Task<PoliticaSeguridad?> GetPoliticaSeguridadAsync();
         Task UpdatePoliticaSeguridadAsync(PoliticaSeguridad politica);
-        List<PreguntaSeguridad> GetPreguntasSeguridad();
-        List<PreguntaSeguridad> GetPreguntasSeguridadByIds(List<int> ids);
-        List<RespuestaSeguridad>? GetRespuestasSeguridadByUsuarioId(int idUsuario);
-        void AddRespuestaSeguridad(RespuestaSeguridad respuesta);
-        void DeleteRespuestasSeguridadByUsuarioId(int usuarioId);
+        Task<List<PreguntaSeguridad>> GetPreguntasSeguridadAsync();
+        Task<List<PreguntaSeguridad>> GetPreguntasSeguridadByIdsAsync(List<int> ids);
+        Task<List<RespuestaSeguridad>?> GetRespuestasSeguridadByUsuarioIdAsync(int idUsuario);
+        Task AddRespuestaSeguridadAsync(RespuestaSeguridad respuesta);
+        Task DeleteRespuestasSeguridadByUsuarioIdAsync(int usuarioId);
     }
 }
