@@ -21,7 +21,6 @@ namespace Services.Controllers.V1
 
         [HttpGet("{username}")]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IEnumerable<PreguntaSeguridadDto>> GetUserQuestions(string username)
         {
             return await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
@@ -38,8 +37,6 @@ namespace Services.Controllers.V1
         [HttpPost("{username}/answers")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SaveAnswers(string username, [FromBody] Dictionary<int, string> answers)
         {
             await _securityQuestionService.SaveSecurityAnswersAsync(username, answers);

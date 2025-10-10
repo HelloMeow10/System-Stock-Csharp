@@ -26,7 +26,6 @@ namespace Services.Controllers.V1
 
         [HttpPost("login")]
         [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
             var authResult = await _authService.AuthenticateAsync(request.Username, request.Password);
@@ -59,7 +58,6 @@ namespace Services.Controllers.V1
 
         [HttpPost("validate-2fa")]
         [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<LoginResponse>> Validate2fa([FromBody] Validate2faRequest request)
         {
             var authResult = await _authService.Validate2faAsync(request.Username, request.Code);
