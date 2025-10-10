@@ -17,7 +17,7 @@ namespace Services.Controllers.V1
             _passwordService = passwordService;
         }
 
-        [HttpPost("change")]
+        [HttpPost("change", Name = "ChangePasswordV1")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
@@ -33,7 +33,7 @@ namespace Services.Controllers.V1
         /// If the user exists and the answers are correct, a password recovery email will be sent.
         /// For security reasons, this endpoint will return a successful response even if the user does not exist or the answers are incorrect.
         /// </remarks>
-        [HttpPost("recover")]
+        [HttpPost("recover", Name = "RecoverPasswordV1")]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request)

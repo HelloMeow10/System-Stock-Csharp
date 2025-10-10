@@ -19,42 +19,42 @@ namespace Services.Controllers.V1
             _referenceDataService = referenceDataService;
         }
 
-        [HttpGet("tiposdoc")]
+        [HttpGet("tiposdoc", Name = "GetTiposDocV1")]
         [ProducesResponseType(typeof(IEnumerable<TipoDocDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<TipoDocDto>> GetTiposDoc()
         {
             return await _referenceDataService.GetTiposDocAsync();
         }
 
-        [HttpGet("provincias")]
+        [HttpGet("provincias", Name = "GetProvinciasV1")]
         [ProducesResponseType(typeof(IEnumerable<ProvinciaDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<ProvinciaDto>> GetProvincias()
         {
             return await _referenceDataService.GetProvinciasAsync();
         }
 
-        [HttpGet("partidos/{provinciaId}")]
+        [HttpGet("partidos/{provinciaId}", Name = "GetPartidosByProvinciaV1")]
         [ProducesResponseType(typeof(IEnumerable<PartidoDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<PartidoDto>> GetPartidos(int provinciaId)
         {
             return await _referenceDataService.GetPartidosByProvinciaIdAsync(provinciaId);
         }
 
-        [HttpGet("localidades/{partidoId}")]
+        [HttpGet("localidades/{partidoId}", Name = "GetLocalidadesByPartidoV1")]
         [ProducesResponseType(typeof(IEnumerable<LocalidadDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<LocalidadDto>> GetLocalidades(int partidoId)
         {
             return await _referenceDataService.GetLocalidadesByPartidoIdAsync(partidoId);
         }
 
-        [HttpGet("generos")]
+        [HttpGet("generos", Name = "GetGenerosV1")]
         [ProducesResponseType(typeof(IEnumerable<GeneroDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<GeneroDto>> GetGeneros()
         {
             return await _referenceDataService.GetGenerosAsync();
         }
 
-        [HttpGet("roles")]
+        [HttpGet("roles", Name = "GetRolesV1")]
         [ProducesResponseType(typeof(IEnumerable<RolDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<RolDto>> GetRoles()
         {

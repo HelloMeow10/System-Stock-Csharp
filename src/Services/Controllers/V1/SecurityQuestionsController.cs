@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 using Asp.Versioning;
-using System.Linq;
 
 namespace Services.Controllers.V1
 {
@@ -19,14 +18,14 @@ namespace Services.Controllers.V1
             _securityQuestionService = securityQuestionService;
         }
 
-        [HttpGet("{username}")]
+        [HttpGet("{username}", Name = "GetUserSecurityQuestionsV1")]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<PreguntaSeguridadDto>> GetUserQuestions(string username)
         {
             return await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
         }
 
-        [HttpGet]
+        [HttpGet(Name = "GetAllSecurityQuestionsV1")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         public async Task<IEnumerable<PreguntaSeguridadDto>> GetAllQuestions()
@@ -34,7 +33,7 @@ namespace Services.Controllers.V1
             return await _securityQuestionService.GetSecurityQuestionsAsync();
         }
 
-        [HttpPost("{username}/answers")]
+        [HttpPost("{username}/answers", Name = "SaveUserSecurityAnswersV1")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> SaveAnswers(string username, [FromBody] Dictionary<int, string> answers)
