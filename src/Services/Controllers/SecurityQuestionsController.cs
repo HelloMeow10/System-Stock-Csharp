@@ -22,19 +22,17 @@ namespace Services.Controllers
         [HttpGet("{username}")]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetUserQuestions(string username)
+        public async Task<IEnumerable<PreguntaSeguridadDto>> GetUserQuestions(string username)
         {
-            var questions = await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
-            return Ok(questions);
+            return await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
         }
 
         [HttpGet]
         [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetAllQuestions()
+        public async Task<IEnumerable<PreguntaSeguridadDto>> GetAllQuestions()
         {
-            var questions = await _securityQuestionService.GetSecurityQuestionsAsync();
-            return Ok(questions);
+            return await _securityQuestionService.GetSecurityQuestionsAsync();
         }
 
         [HttpPost("{username}/answers")]

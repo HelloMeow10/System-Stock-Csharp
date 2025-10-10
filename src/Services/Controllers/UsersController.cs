@@ -23,6 +23,18 @@ namespace Services.Controllers
             _mapper = mapper;
         }
 
+        private async Task<TResponse> PatchUserAsync<TRequest, TResponse>(int id, JsonPatchDocument<TRequest> patchDoc)
+            where TRequest : class
+            where TResponse : class
+        {
+            var user = await _userService.GetUserByIdAsync<TResponse>(id);
+            var userToPatch = _mapper.Map<TRequest>(user);
+
+            ApplyPatchAndValidate(patchDoc, userToPatch);
+
+            return await _userService.UpdateUserAsync<TRequest, TResponse>(id, userToPatch);
+        }
+
         /// <summary>
         /// Partially updates an existing user.
         /// </summary>
@@ -32,14 +44,9 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<UserDto> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
+        public Task<UserDto> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            var user = await _userService.GetUserByIdAsync<UserDto>(id);
-            var userToPatch = _mapper.Map<UpdateUserRequest>(user);
-
-            ApplyPatchAndValidate(patchDoc, userToPatch);
-
-            return await _userService.UpdateUserAsync<UpdateUserRequest, UserDto>(id, userToPatch);
+            return PatchUserAsync<UpdateUserRequest, UserDto>(id, patchDoc);
         }
 
         /// <summary>
@@ -51,14 +58,9 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<UserDtoV2> PatchV2(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
+        public Task<UserDtoV2> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
         {
-            var userV2 = await _userService.GetUserByIdAsync<UserDtoV2>(id);
-            var userToPatch = _mapper.Map<UpdateUserRequestV2>(userV2);
-
-            ApplyPatchAndValidate(patchDoc, userToPatch);
-
-            return await _userService.UpdateUserAsync<UpdateUserRequestV2, UserDtoV2>(id, userToPatch);
+            return PatchUserAsync<UpdateUserRequestV2, UserDtoV2>(id, patchDoc);
         }
 
         /// <summary>
@@ -70,18 +72,16 @@ namespace Services.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PagedResponse<UserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(PagedResponse<UserDtoV2>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Get([FromQuery] UserQueryParameters queryParameters)
+        public async Task<object> Get([FromQuery] UserQueryParameters queryParameters)
         {
             var requestedVersion = HttpContext.GetRequestedApiVersion();
 
             if (requestedVersion?.MajorVersion == 2)
             {
-                var users = await _userService.GetUsersAsync<UserDtoV2>(queryParameters);
-                return Ok(users);
+                return await _userService.GetUsersAsync<UserDtoV2>(queryParameters);
             }
 
-            var usersV1 = await _userService.GetUsersAsync<UserDto>(queryParameters);
-            return Ok(usersV1);
+            return await _userService.GetUsersAsync<UserDto>(queryParameters);
         }
 
         /// <summary>
@@ -94,18 +94,16 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<object> GetById(int id)
         {
             var requestedVersion = HttpContext.GetRequestedApiVersion();
 
             if (requestedVersion?.MajorVersion == 2)
             {
-                var user = await _userService.GetUserByIdAsync<UserDtoV2>(id);
-                return Ok(user);
+                return await _userService.GetUserByIdAsync<UserDtoV2>(id);
             }
 
-            var userV1 = await _userService.GetUserByIdAsync<UserDto>(id);
-            return Ok(userV1);
+            return await _userService.GetUserByIdAsync<UserDto>(id);
         }
 
         /// <summary>
@@ -119,7 +117,8 @@ namespace Services.Controllers
         public async Task<ActionResult<UserDto>> Post([FromBody] UserRequest userRequest)
         {
             var newUser = await _userService.CreateUserAsync<UserRequest, UserDto>(userRequest);
-            return CreatedAtRoute("GetUserById", new { id = newUser.IdUsuario, version = "1.0" }, newUser);
+            var apiVersion = HttpContext.GetRequestedApiVersion()?.ToString() ?? "1.0";
+            return CreatedAtRoute("GetUserById", new { id = newUser.IdUsuario, version = apiVersion }, newUser);
         }
 
         /// <summary>
@@ -130,10 +129,11 @@ namespace Services.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<UserDtoV2>> PostV2([FromBody] UserRequestV2 userRequest)
+        public async Task<ActionResult<UserDtoV2>> Post([FromBody] UserRequestV2 userRequest)
         {
-            var newUserV2 = await _userService.CreateUserAsync<UserRequestV2, UserDtoV2>(userRequest);
-            return CreatedAtRoute("GetUserById", new { id = newUserV2.IdUsuario, version = "2.0" }, newUserV2);
+            var newUser = await _userService.CreateUserAsync<UserRequestV2, UserDtoV2>(userRequest);
+            var apiVersion = HttpContext.GetRequestedApiVersion()?.ToString() ?? "2.0";
+            return CreatedAtRoute("GetUserById", new { id = newUser.IdUsuario, version = apiVersion }, newUser);
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public Task<UserDtoV2> PutV2(int id, [FromBody] UpdateUserRequestV2 updateUserRequest)
+        public Task<UserDtoV2> Put(int id, [FromBody] UpdateUserRequestV2 updateUserRequest)
         {
             return _userService.UpdateUserAsync<UpdateUserRequestV2, UserDtoV2>(id, updateUserRequest);
         }
