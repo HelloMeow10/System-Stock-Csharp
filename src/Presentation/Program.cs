@@ -40,7 +40,8 @@ namespace Presentation
             Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration((context, builder) =>
                 {
-                    builder.SetBasePath(Directory.GetCurrentDirectory())
+                    var baseDir = AppContext.BaseDirectory;
+                    builder.SetBasePath(baseDir)
                            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
                 })
                 .ConfigureServices((context, services) =>

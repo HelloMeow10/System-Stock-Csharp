@@ -57,7 +57,7 @@ namespace Presentation
             btnNavigateConfiguracion.Click += (s, e) => ShowPanel(panelConfiguracion);
             btnMiPerfil.Click += async (s, e) =>
             {
-                var user = await _apiClient.GetUserByUsernameAsync(_username);
+                var user = await _apiClient.GetCurrentUserAsync();
                 if (user != null)
                 {
                     var persona = await _apiClient.GetPersonaAsync(user.IdPersona);
@@ -209,7 +209,18 @@ namespace Presentation
             _politica.MinCaracteres = minChars;
             _politica.CantPreguntas = cantPreg;
 
-            await _apiClient.UpdateSecurityPolicyAsync(_politica);
+            var updatePolicy = new UpdatePoliticaSeguridadRequest
+            {
+                MayusYMinus = _politica.MayusYMinus,
+                LetrasYNumeros = _politica.LetrasYNumeros,
+                CaracterEspecial = _politica.CaracterEspecial,
+                Autenticacion2FA = _politica.Autenticacion2FA,
+                NoRepetirAnteriores = _politica.NoRepetirAnteriores,
+                SinDatosPersonales = _politica.SinDatosPersonales,
+                MinCaracteres = _politica.MinCaracteres,
+                CantPreguntas = _politica.CantPreguntas
+            };
+            await _apiClient.UpdateSecurityPolicyAsync(updatePolicy);
             MessageBox.Show("Configuración guardada correctamente.", "Info");
         }
 
@@ -414,7 +425,24 @@ namespace Presentation
                     var personasToUpdate = personas.Where(p => _dirtyPersonaIds.Contains(p.IdPersona)).ToList();
                     foreach (var persona in personasToUpdate)
                     {
-                        await _apiClient.UpdatePersonaAsync(persona.IdPersona, persona);
+                        var update = new UpdatePersonaRequest
+                        {
+                            Nombre = persona.Nombre,
+                            Apellido = persona.Apellido,
+                            IdTipoDoc = persona.IdTipoDoc,
+                            NumDoc = persona.NumDoc,
+                            FechaNacimiento = persona.FechaNacimiento,
+                            Cuil = persona.Cuil,
+                            Calle = persona.Calle,
+                            Altura = persona.Altura,
+                            IdLocalidad = persona.IdLocalidad,
+                            IdPartido = persona.IdPartido,
+                            IdProvincia = persona.IdProvincia,
+                            IdGenero = persona.IdGenero,
+                            Correo = persona.Correo,
+                            Celular = persona.Celular
+                        };
+                        await _apiClient.UpdatePersonaAsync(persona.IdPersona, update);
                     }
 
                     if (personasToUpdate.Any())

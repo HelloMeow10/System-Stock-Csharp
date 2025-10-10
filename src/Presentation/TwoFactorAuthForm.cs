@@ -2,6 +2,8 @@ using System;
 using System.Windows.Forms;
 using Contracts;
 using Presentation.ApiClient;
+using Microsoft.Extensions.DependencyInjection;
+using Presentation.Exceptions;
 
 namespace Presentation
 {
@@ -39,13 +41,15 @@ namespace Presentation
                 this.DialogResult = DialogResult.OK;
                 this.Hide();
 
-                if (loginResponse.Rol.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                var userRole = loginResponse.Rol ?? string.Empty;
+                var nextUsername = loginResponse.Username ?? this.Username;
+                if (userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                 {
-                    ShowDashboard(_serviceProvider.GetRequiredService<AdminForm>(), loginResponse.Username);
+                    ShowDashboard(_serviceProvider.GetRequiredService<AdminForm>(), nextUsername);
                 }
                 else
                 {
-                    ShowDashboard(_serviceProvider.GetRequiredService<UserForm>(), loginResponse.Username);
+                    ShowDashboard(_serviceProvider.GetRequiredService<UserForm>(), nextUsername);
                 }
 
                 this.Close();

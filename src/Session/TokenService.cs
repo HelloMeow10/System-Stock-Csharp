@@ -16,7 +16,7 @@ namespace Session
             _configuration = configuration;
         }
 
-        public string GenerateJwtToken(string username)
+        public string GenerateJwtToken(string username, string? role = null)
         {
             if (string.IsNullOrWhiteSpace(username))
             {
@@ -24,9 +24,14 @@ namespace Session
             }
 
             var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured."));
+            var claims = new List<Claim> { new Claim(ClaimTypes.Name, username) };
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };

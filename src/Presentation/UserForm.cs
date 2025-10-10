@@ -2,6 +2,7 @@ using System;
 using System.Windows.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Presentation.ApiClient;
+using Presentation.Exceptions;
 
 namespace Presentation
 {
@@ -49,7 +50,7 @@ namespace Presentation
 
         private async void BtnMiPerfil_Click(object? sender, EventArgs e)
         {
-            var user = await _apiClient.GetUserByUsernameAsync(_username);
+            var user = await _apiClient.GetCurrentUserAsync();
             if (user != null)
             {
                 var persona = await _apiClient.GetPersonaAsync(user.IdPersona);

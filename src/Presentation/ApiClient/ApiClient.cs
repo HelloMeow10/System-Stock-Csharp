@@ -8,6 +8,9 @@ using Contracts;
 using System.Collections.Generic;
 using Presentation.Exceptions; // Add this using directive
 using System.Linq;
+using SharedKernel;
+using Presentation.Helpers;
+using System.Net;
 
 namespace Presentation.ApiClient
 {
@@ -33,15 +36,56 @@ namespace Presentation.ApiClient
         private async Task HandleFailedResponse(HttpResponseMessage response)
         {
             var content = await response.Content.ReadAsStringAsync();
-            var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            string message = errorResponse?.Message ?? "An unknown error occurred.";
-            if (errorResponse?.Errors != null && errorResponse.Errors.Any())
+            if (string.IsNullOrWhiteSpace(content))
             {
-                message = string.Join(Environment.NewLine, errorResponse.Errors);
+                // No content provided; construct a reasonable message from status code
+                throw new ApiException($"{(int)response.StatusCode} {response.ReasonPhrase}", response.StatusCode);
             }
 
-            throw new ApiException(message, response.StatusCode, errorResponse?.Errors);
+            try
+            {
+                // Try our standard error contract first
+                var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (errorResponse != null)
+                {
+                    string message = errorResponse.Message;
+                    if (errorResponse.Errors != null && errorResponse.Errors.Any())
+                    {
+                        message = string.Join(Environment.NewLine, errorResponse.Errors);
+                    }
+                    if (!string.IsNullOrWhiteSpace(message))
+                    {
+                        throw new ApiException(message, response.StatusCode, errorResponse.Errors);
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Fall through to try ProblemDetails or raw content
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(content);
+                if (doc.RootElement.TryGetProperty("title", out var title))
+                {
+                    var detail = doc.RootElement.TryGetProperty("detail", out var det) ? det.GetString() : null;
+                    var titleStr = title.GetString();
+                    var msg = string.IsNullOrWhiteSpace(detail) ? titleStr : $"{titleStr}: {detail}";
+                    throw new ApiException(msg ?? "API error", response.StatusCode);
+                }
+            }
+            catch (JsonException)
+            {
+                // Content is not JSON; use raw text
+            }
+
+            var fallbackMsg = content.Trim();
+            if (string.IsNullOrWhiteSpace(fallbackMsg))
+            {
+                fallbackMsg = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+            }
+            throw new ApiException(fallbackMsg, response.StatusCode);
         }
 
         private async Task<T> GetAsync<T>(string requestUri)
@@ -52,7 +96,12 @@ namespace Presentation.ApiClient
                 await HandleFailedResponse(response);
             }
             var content = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var result = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (result is null)
+            {
+                throw new ApiException("Unexpected empty response from API.", HttpStatusCode.InternalServerError);
+            }
+            return result;
         }
 
         private async Task<T> PostAsync<T>(string requestUri, object data)
@@ -70,7 +119,12 @@ namespace Presentation.ApiClient
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<T>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var result = JsonSerializer.Deserialize<T>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (result is null)
+            {
+                throw new ApiException("Unexpected empty response from API.", HttpStatusCode.InternalServerError);
+            }
+            return result;
         }
 
         private async Task PostAsync(string requestUri, object data)
@@ -142,17 +196,12 @@ namespace Presentation.ApiClient
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
             var response = await PostAsync<LoginResponse>("api/v1/auth/login", request);
-            if (!response.Requires2fa)
-            {
-                await FetchAndStoreCsrfTokenAsync();
-            }
             return response;
         }
 
         public async Task<LoginResponse> Validate2faAsync(Validate2faRequest request)
         {
             var response = await PostAsync<LoginResponse>("api/v1/auth/validate-2fa", request);
-            await FetchAndStoreCsrfTokenAsync();
             return response;
         }
 
@@ -176,6 +225,20 @@ namespace Presentation.ApiClient
 
         // Users
         public async Task<PagedResponse<UserDto>> GetUsersAsync(UserQueryParameters queryParams) => await GetAsync<PagedResponse<UserDto>>($"api/v1/users?{queryParams.ToQueryString()}");
+        // Convenience overload used in UI when no params are provided
+        public async Task<List<UserDto>> GetUsersAsync()
+        {
+            var paged = await GetUsersAsync(new UserQueryParameters());
+            return paged.Items?.ToList() ?? new List<UserDto>();
+        }
+        // Helper to get a single user by username via filtering users endpoint
+        public async Task<UserDto?> GetUserByUsernameAsync(string username)
+        {
+            var result = await GetUsersAsync(new UserQueryParameters { Username = username, PageSize = 1, PageNumber = 1 });
+            return result.Items?.FirstOrDefault(u => string.Equals(u.Username, username, StringComparison.OrdinalIgnoreCase));
+        }
+        // Current user (non-admin friendly)
+        public async Task<UserDto> GetCurrentUserAsync() => await GetAsync<UserDto>("api/v1/users/me");
         public async Task<UserDto> GetUserByIdAsync(int id) => await GetAsync<UserDto>($"api/v1/users/{id}");
         public async Task CreateUserAsync(UserRequest request) => await PostAsync("api/v1/users", request);
         public async Task UpdateUserAsync(int id, UpdateUserRequest user) => await PutAsync($"api/v1/users/{id}", user);
@@ -184,6 +247,12 @@ namespace Presentation.ApiClient
 
         // Personas
         public async Task<PagedResponse<PersonaDto>> GetPersonasAsync(PaginationParams paginationParams) => await GetAsync<PagedResponse<PersonaDto>>($"api/v1/personas?{paginationParams.ToQueryString()}");
+        // Convenience overload used in UI
+        public async Task<List<PersonaDto>> GetPersonasAsync()
+        {
+            var paged = await GetPersonasAsync(new PaginationParams());
+            return paged.Items?.ToList() ?? new List<PersonaDto>();
+        }
         public async Task<PersonaDto> GetPersonaAsync(int id) => await GetAsync<PersonaDto>($"api/v1/personas/{id}");
         public async Task CreatePersonaAsync(PersonaRequest request) => await PostAsync("api/v1/personas", request);
         public async Task UpdatePersonaAsync(int id, UpdatePersonaRequest persona) => await PutAsync($"api/v1/personas/{id}", persona);
@@ -191,8 +260,8 @@ namespace Presentation.ApiClient
         public async Task DeletePersonaAsync(int id) => await DeleteAsync($"api/v1/personas/{id}");
 
         // Security Policy
-        public async Task<PoliticaSeguridadDto> GetSecurityPolicyAsync() => await GetAsync<PoliticaSeguridadDto>("api/v1/securitypolicy");
-        public async Task UpdateSecurityPolicyAsync(UpdatePoliticaSeguridadRequest policy) => await PutAsync("api/v1/securitypolicy", policy);
+    public async Task<PoliticaSeguridadDto> GetSecurityPolicyAsync() => await GetAsync<PoliticaSeguridadDto>("api/v1/securitypolicy");
+    public async Task UpdateSecurityPolicyAsync(UpdatePoliticaSeguridadRequest policy) => await PutAsync("api/v1/securitypolicy", policy);
 
         // Reference Data
         public async Task<List<TipoDocDto>> GetTiposDocAsync() => await GetAsync<List<TipoDocDto>>("api/v1/referencedata/tiposdoc");

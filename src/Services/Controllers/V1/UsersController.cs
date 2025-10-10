@@ -45,6 +45,19 @@ namespace Services.Controllers.V1
         }
 
         /// <summary>
+        /// Gets the current authenticated user (by username from JWT).
+        /// </summary>
+        [HttpGet("me", Name = "GetCurrentUserV1")]
+        [Authorize]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        public async Task<UserDto> GetCurrent()
+        {
+            var username = User?.Identity?.Name ?? throw new UnauthorizedAccessException("No user identity available.");
+            var user = await _userService.GetUserByUsernameAsync(username);
+            return user;
+        }
+
+        /// <summary>
         /// Creates a new user.
         /// </summary>
         [HttpPost(Name = "CreateUserV1")]

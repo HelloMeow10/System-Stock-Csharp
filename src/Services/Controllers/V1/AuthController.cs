@@ -46,13 +46,14 @@ namespace Services.Controllers.V1
             }
 
             var user = authResult.User;
-            var token = _tokenService.GenerateJwtToken(user.Username);
+            var normalizedRole = NormalizeRole(user.Rol);
+            var token = _tokenService.GenerateJwtToken(user.Username, normalizedRole);
             SetAuthCookie(token);
 
             return Ok(new LoginResponse
             {
                 Username = user.Username,
-                Rol = user.Rol ?? "Unknown",
+                Rol = normalizedRole ?? "Unknown",
             });
         }
 
@@ -73,13 +74,14 @@ namespace Services.Controllers.V1
             }
 
             var user = authResult.User;
-            var token = _tokenService.GenerateJwtToken(user.Username);
+            var normalizedRole = NormalizeRole(user.Rol);
+            var token = _tokenService.GenerateJwtToken(user.Username, normalizedRole);
             SetAuthCookie(token);
 
             return Ok(new LoginResponse
             {
                 Username = user.Username,
-                Rol = user.Rol ?? "Unknown",
+                Rol = normalizedRole ?? "Unknown",
             });
         }
 
@@ -91,7 +93,7 @@ namespace Services.Controllers.V1
             Response.Cookies.Delete(AuthCookieName, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // Ensure this is true in production
+                Secure = false, // set false for HTTP in development
                 SameSite = SameSiteMode.Strict,
             });
             return NoContent();
@@ -102,11 +104,28 @@ namespace Services.Controllers.V1
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // Should be true in production
+                Secure = false, // false for HTTP during development
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTime.UtcNow.AddDays(7) // Example expiration
             };
             Response.Cookies.Append(AuthCookieName, token, cookieOptions);
+        }
+
+        private static string? NormalizeRole(string? role)
+        {
+            if (string.IsNullOrWhiteSpace(role)) return role;
+            // Map Spanish DB roles to API roles used in [Authorize(Roles = "Admin")]
+            if (string.Equals(role, "Administrador", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Admin";
+            }
+            if (string.Equals(role, "Usuario", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(role, "User", StringComparison.OrdinalIgnoreCase))
+            {
+                return "User";
+            }
+            return role; // leave as-is for other roles
         }
     }
 }

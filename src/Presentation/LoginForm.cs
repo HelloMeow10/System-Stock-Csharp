@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Presentation.ApiClient;
+using Presentation.Exceptions;
 
 namespace Presentation
 {
@@ -59,13 +60,15 @@ namespace Presentation
                 else
                 {
                     // No 2FA required, proceed to show dashboard
-                    if (loginResponse.Rol.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                    var userRole = loginResponse.Rol ?? string.Empty;
+                    var nextUsername = loginResponse.Username ?? username;
+                    if (userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                     {
-                        ShowDashboard(_serviceProvider.GetRequiredService<AdminForm>(), loginResponse.Username);
+                        ShowDashboard(_serviceProvider.GetRequiredService<AdminForm>(), nextUsername);
                     }
                     else
                     {
-                        ShowDashboard(_serviceProvider.GetRequiredService<UserForm>(), loginResponse.Username);
+                        ShowDashboard(_serviceProvider.GetRequiredService<UserForm>(), nextUsername);
                     }
                 }
             }

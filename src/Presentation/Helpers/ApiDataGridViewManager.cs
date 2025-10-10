@@ -39,7 +39,17 @@ namespace Presentation.Helpers
             var usersToUpdate = _allUsers.Where(u => _dirtyUserIds.Contains(u.IdUsuario)).ToList();
             foreach (var user in usersToUpdate)
             {
-                await _apiClient.UpdateUserAsync(user.IdUsuario, user);
+                var update = new UpdateUserRequest
+                {
+                    Nombre = user.Nombre,
+                    Apellido = user.Apellido,
+                    Correo = user.Correo,
+                    IdRol = user.IdRol,
+                    CambioContrasenaObligatorio = user.CambioContrasenaObligatorio,
+                    FechaExpiracion = user.FechaExpiracion,
+                    Habilitado = user.Habilitado
+                };
+                await _apiClient.UpdateUserAsync(user.IdUsuario, update);
             }
             _dirtyUserIds.Clear();
             await LoadUsers();
