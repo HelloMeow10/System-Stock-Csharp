@@ -25,16 +25,16 @@ namespace Services.Controllers
         public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetUserQuestions(string username)
         {
             var questions = await _securityQuestionService.GetUserSecurityQuestionsAsync(username);
-            return questions.ToList();
+            return Ok(questions);
         }
 
         [HttpGet]
         [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<PreguntaSeguridadDto>), StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<PreguntaSeguridadDto>> GetAllQuestions()
+        public async Task<ActionResult<IEnumerable<PreguntaSeguridadDto>>> GetAllQuestions()
         {
-            var questions = _securityQuestionService.GetSecurityQuestions();
-            return Ok(questions.ToList());
+            var questions = await _securityQuestionService.GetSecurityQuestionsAsync();
+            return Ok(questions);
         }
 
         [HttpPost("{username}/answers")]

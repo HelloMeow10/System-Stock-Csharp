@@ -7,6 +7,7 @@ using BusinessLogic.Security;
 using DataAccess.Entities;
 using DataAccess.Repositories;
 using BusinessLogic.Exceptions;
+using System.Threading.Tasks;
 
 namespace BusinessLogic.Factories
 {
@@ -57,7 +58,7 @@ namespace BusinessLogic.Factories
                 Genero = "Otro",
                 FechaIngreso = DateTime.Now
             };
-            var persona = _personaFactory.Create(personaRequest);
+            var persona = await _personaFactory.CreateAsync(personaRequest);
             await _personaRepository.AddPersonaAsync(persona);
 
             // 2. Create Usuario, linking to the new persona
@@ -89,7 +90,7 @@ namespace BusinessLogic.Factories
 
             string passwordToUse = await GenerateRandomPasswordAsync(request.Username, persona);
             var passwordHash = _passwordHasher.Hash(request.Username, passwordToUse);
-            var rolId = _referenceDataRepository.GetRolByNombre(request.Rol)?.IdRol ?? throw new ValidationException("Rol no encontrado");
+            var rolId = (await _referenceDataRepository.GetRolByNombreAsync(request.Rol))?.IdRol ?? throw new ValidationException("Rol no encontrado");
             var politica = await _securityRepository.GetPoliticaSeguridadAsync();
 
             var usuario = new Usuario(request.Username, passwordHash, personaId, rolId, politica?.IdPolitica);

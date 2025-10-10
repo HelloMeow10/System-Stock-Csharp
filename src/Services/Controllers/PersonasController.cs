@@ -28,7 +28,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(PagedResponse<PersonaDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResponse<PersonaDto>>> Get([FromQuery] PaginationParams paginationParams)
         {
-            return await _personaService.GetPersonasAsync(paginationParams);
+            var personas = await _personaService.GetPersonasAsync(paginationParams);
+            return Ok(personas);
         }
 
         [HttpGet("{id}", Name = "GetPersonaById")]
@@ -37,7 +38,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<PersonaDto>> Get(int id)
         {
-            return await _personaService.GetPersonaByIdAsync(id);
+            var persona = await _personaService.GetPersonaByIdAsync(id);
+            return Ok(persona);
         }
 
         [HttpPost(Name = "CreatePersona")]
@@ -59,7 +61,8 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<PersonaDto>> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
-            return await _personaService.UpdatePersonaAsync(id, personaDto);
+            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaDto);
+            return Ok(updatedPersona);
         }
 
         [HttpPatch("{id}", Name = "PatchPersona")]
@@ -70,7 +73,20 @@ namespace Services.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<PersonaDto>> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
-            return await _personaService.PatchPersonaAsync(id, patchDoc);
+            var persona = await _personaService.GetPersonaByIdAsync(id);
+            var personaToPatch = PersonaMapper.MapToUpdatePersonaRequest(persona);
+
+            patchDoc.ApplyTo(personaToPatch, ModelState);
+            TryValidateModel(personaToPatch);
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                throw new BusinessLogic.Exceptions.ValidationException(errors);
+            }
+
+            var updatedPersona = await _personaService.UpdatePersonaAsync(id, personaToPatch);
+            return Ok(updatedPersona);
         }
 
         /// <summary>

@@ -35,14 +35,14 @@ namespace BusinessLogic.Tests
             // Arrange
             var personaRequest = new PersonaRequest { Nombre = "Test", Apellido = "Person" };
             var persona = new Persona(1, "Test", "Person", 1, "12345678", System.DateTime.Now, "20123456789", "Test Street", "123", 1, 1, "test@example.com", "1234567890", System.DateTime.Now);
-            _personaFactoryMock.Setup(f => f.Create(personaRequest)).Returns(persona);
+            _personaFactoryMock.Setup(f => f.CreateAsync(personaRequest)).ReturnsAsync(persona);
             _personaRepositoryMock.Setup(r => r.AddPersonaAsync(persona)).Returns(Task.CompletedTask);
 
             // Act
             await _sut.CreatePersonaAsync(personaRequest);
 
             // Assert
-            _personaFactoryMock.Verify(f => f.Create(personaRequest), Times.Once);
+            _personaFactoryMock.Verify(f => f.CreateAsync(personaRequest), Times.Once);
             _personaRepositoryMock.Verify(r => r.AddPersonaAsync(persona), Times.Once);
         }
     }

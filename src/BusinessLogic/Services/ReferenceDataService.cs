@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using BusinessLogic.Exceptions;
 using Contracts;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
-using System;
-using BusinessLogic.Exceptions;
 
 namespace BusinessLogic.Services
 {
@@ -19,11 +20,11 @@ namespace BusinessLogic.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private T ExecuteServiceOperation<T>(Func<T> operation, string operationName)
+        private async Task<T> ExecuteServiceOperationAsync<T>(Func<Task<T>> operation, string operationName)
         {
             try
             {
-                return operation();
+                return await operation();
             }
             catch (Exception ex)
             {
@@ -32,28 +33,40 @@ namespace BusinessLogic.Services
             }
         }
 
-        public List<TipoDocDto> GetTiposDoc() => ExecuteServiceOperation(() =>
-            _referenceDataRepository.GetAllTiposDoc().Select(t => new TipoDocDto { IdTipoDoc = t.IdTipoDoc, Nombre = t.Nombre }).ToList(),
-            "getting all document types");
+        public async Task<List<TipoDocDto>> GetTiposDocAsync() => await ExecuteServiceOperationAsync(async () =>
+        {
+            var data = await _referenceDataRepository.GetAllTiposDocAsync();
+            return data.Select(t => new TipoDocDto { IdTipoDoc = t.IdTipoDoc, Nombre = t.Nombre }).ToList();
+        }, "getting all document types");
 
-        public List<ProvinciaDto> GetProvincias() => ExecuteServiceOperation(() =>
-            _referenceDataRepository.GetAllProvincias().Select(p => new ProvinciaDto { IdProvincia = p.IdProvincia, Nombre = p.Nombre }).ToList(),
-            "getting all provinces");
+        public async Task<List<ProvinciaDto>> GetProvinciasAsync() => await ExecuteServiceOperationAsync(async () =>
+        {
+            var data = await _referenceDataRepository.GetAllProvinciasAsync();
+            return data.Select(p => new ProvinciaDto { IdProvincia = p.IdProvincia, Nombre = p.Nombre }).ToList();
+        }, "getting all provinces");
 
-        public List<PartidoDto> GetPartidosByProvinciaId(int provinciaId) => ExecuteServiceOperation(() =>
-            _referenceDataRepository.GetPartidosByProvinciaId(provinciaId).Select(p => new PartidoDto { IdPartido = p.IdPartido, Nombre = p.Nombre, IdProvincia = p.IdProvincia }).ToList(),
-            "getting partidos by provincia");
+        public async Task<List<PartidoDto>> GetPartidosByProvinciaIdAsync(int provinciaId) => await ExecuteServiceOperationAsync(async () =>
+        {
+            var data = await _referenceDataRepository.GetPartidosByProvinciaIdAsync(provinciaId);
+            return data.Select(p => new PartidoDto { IdPartido = p.IdPartido, Nombre = p.Nombre, IdProvincia = p.IdProvincia }).ToList();
+        }, "getting partidos by provincia");
 
-        public List<LocalidadDto> GetLocalidadesByPartidoId(int partidoId) => ExecuteServiceOperation(() =>
-            _referenceDataRepository.GetLocalidadesByPartidoId(partidoId).Select(l => new LocalidadDto { IdLocalidad = l.IdLocalidad, Nombre = l.Nombre, IdPartido = l.IdPartido }).ToList(),
-            "getting localidades by partido");
+        public async Task<List<LocalidadDto>> GetLocalidadesByPartidoIdAsync(int partidoId) => await ExecuteServiceOperationAsync(async () =>
+        {
+            var data = await _referenceDataRepository.GetLocalidadesByPartidoIdAsync(partidoId);
+            return data.Select(l => new LocalidadDto { IdLocalidad = l.IdLocalidad, Nombre = l.Nombre, IdPartido = l.IdPartido }).ToList();
+        }, "getting localidades by partido");
 
-        public List<GeneroDto> GetGeneros() => ExecuteServiceOperation(() =>
-            _referenceDataRepository.GetAllGeneros().Select(g => new GeneroDto { IdGenero = g.IdGenero, Nombre = g.Nombre }).ToList(),
-            "getting all genders");
+        public async Task<List<GeneroDto>> GetGenerosAsync() => await ExecuteServiceOperationAsync(async () =>
+        {
+            var data = await _referenceDataRepository.GetAllGenerosAsync();
+            return data.Select(g => new GeneroDto { IdGenero = g.IdGenero, Nombre = g.Nombre }).ToList();
+        }, "getting all genders");
 
-        public List<RolDto> GetRoles() => ExecuteServiceOperation(() =>
-            _referenceDataRepository.GetAllRoles().Select(r => new RolDto { IdRol = r.IdRol, Nombre = r.Nombre }).ToList(),
-            "getting all roles");
+        public async Task<List<RolDto>> GetRolesAsync() => await ExecuteServiceOperationAsync(async () =>
+        {
+            var data = await _referenceDataRepository.GetAllRolesAsync();
+            return data.Select(r => new RolDto { IdRol = r.IdRol, Nombre = r.Nombre }).ToList();
+        }, "getting all roles");
     }
 }

@@ -1,10 +1,11 @@
 using Contracts;
 using DataAccess.Entities;
+using System.Threading.Tasks;
 
 namespace BusinessLogic.Factories
 {
     public interface IPersonaFactory
     {
-        Persona Create(PersonaRequest request);
+        Task<Persona> CreateAsync(PersonaRequest request);
     }
 }

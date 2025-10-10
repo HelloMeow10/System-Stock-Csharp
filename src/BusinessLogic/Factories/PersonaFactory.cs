@@ -4,6 +4,7 @@ using DataAccess.Repositories;
 using BusinessLogic.Exceptions;
 using System.Text.RegularExpressions;
 using System;
+using System.Threading.Tasks;
 
 namespace BusinessLogic.Factories
 {
@@ -16,7 +17,7 @@ namespace BusinessLogic.Factories
             _referenceDataRepository = referenceDataRepository;
         }
 
-        public Persona Create(PersonaRequest request)
+        public async Task<Persona> CreateAsync(PersonaRequest request)
         {
             ValidatePersonaRequest(request);
 
@@ -29,9 +30,9 @@ namespace BusinessLogic.Factories
                 throw new ValidationException("El ID de localidad no es válido.");
             }
 
-            var idTipoDoc = _referenceDataRepository.GetTipoDocByNombre(request.TipoDoc)?.IdTipoDoc
+            var idTipoDoc = (await _referenceDataRepository.GetTipoDocByNombreAsync(request.TipoDoc))?.IdTipoDoc
                 ?? throw new ValidationException("Tipo de documento no encontrado");
-            var idGenero = _referenceDataRepository.GetGeneroByNombre(request.Genero)?.IdGenero
+            var idGenero = (await _referenceDataRepository.GetGeneroByNombreAsync(request.Genero))?.IdGenero
                 ?? throw new ValidationException("Género no encontrado");
 
             return new Persona(

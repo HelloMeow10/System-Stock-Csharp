@@ -1,6 +1,8 @@
+using SharedKernel;
+
 namespace Contracts
 {
-    public class PartidoDto
+    public class PartidoDto : ResourceDto
     {
         public int IdPartido { get; set; }
         public string Nombre { get; set; } = null!;

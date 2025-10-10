@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Contracts;
-using Microsoft.AspNetCore.JsonPatch;
 using SharedKernel;
 
 namespace BusinessLogic.Services
@@ -13,6 +12,5 @@ namespace BusinessLogic.Services
         Task DeletePersonaAsync(int personaId);
         Task<PagedResponse<PersonaDto>> GetPersonasAsync(PaginationParams paginationParams);
         Task<PersonaDto> GetPersonaByIdAsync(int personaId);
-        Task<PersonaDto> PatchPersonaAsync(int id, JsonPatchDocument<UpdatePersonaRequest> patchDoc);
     }
 }

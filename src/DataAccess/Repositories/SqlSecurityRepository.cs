@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 using DataAccess.Entities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -18,48 +19,6 @@ namespace DataAccess.Repositories
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        private T ExecuteReader<T>(string sql, Func<SqlDataReader, T> map, Action<SqlParameterCollection>? addParameters = null, CommandType commandType = CommandType.Text)
-        {
-            using (var connection = (SqlConnection)_connectionFactory.CreateConnection())
-            {
-                connection.Open();
-                using (var command = connection.CreateCommand())
-                {
-                    command.CommandText = sql;
-                    command.CommandType = commandType;
-                    addParameters?.Invoke(command.Parameters);
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        return map(reader);
-                    }
-                }
-            }
-        }
-
-        private void ExecuteNonQuery(string sql, Action<SqlParameterCollection> addParameters, CommandType commandType = CommandType.StoredProcedure)
-        {
-            try
-            {
-                using (var connection = (SqlConnection)_connectionFactory.CreateConnection())
-                {
-                    connection.Open();
-                    using (var command = connection.CreateCommand())
-                    {
-                        command.CommandText = sql;
-                        command.CommandType = commandType;
-                        addParameters(command.Parameters);
-                        command.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (SqlException ex)
-            {
-                _logger.LogError(ex, "Ocurrió un error de SQL al ejecutar ExecuteNonQuery para el comando: {sql}", sql);
-                throw new DataAccessLayerException($"Ocurrió un error de SQL al ejecutar {sql}", ex);
-            }
         }
 
         private async Task<T> ExecuteReaderAsync<T>(string sql, Func<SqlDataReader, Task<T>> map, Action<SqlParameterCollection>? addParameters = null, CommandType commandType = CommandType.Text)
@@ -81,7 +40,7 @@ namespace DataAccess.Repositories
             }
         }
 
-        private async Task ExecuteNonQueryAsync(string sql, Action<SqlParameterCollection> addParameters, CommandType commandType = CommandType.StoredProcedure)
+        private async Task ExecuteNonQueryAsync(string sql, Action<SqlParameterCollection> addParameters, CommandType commandType = CommandType.Text)
         {
             try
             {
@@ -131,19 +90,19 @@ namespace DataAccess.Repositories
             p.AddWithValue("@autenticacion_2fa", (object)politica.Autenticacion2FA ?? DBNull.Value);
             p.AddWithValue("@no_repetir_anteriores", (object)politica.NoRepetirAnteriores ?? DBNull.Value);
             p.AddWithValue("@sin_datos_personales", (object)politica.SinDatosPersonales ?? DBNull.Value);
-        });
+        }, CommandType.StoredProcedure);
 
-        public List<PreguntaSeguridad> GetPreguntasSeguridad() => ExecuteReader("SELECT id_pregunta, pregunta FROM preguntas_seguridad;", reader =>
+        public async Task<List<PreguntaSeguridad>> GetPreguntasSeguridadAsync() => await ExecuteReaderAsync("SELECT id_pregunta, pregunta FROM preguntas_seguridad;", async reader =>
         {
             var list = new List<PreguntaSeguridad>();
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
                 list.Add(new PreguntaSeguridad { IdPregunta = (int)reader["id_pregunta"], Pregunta = (string)reader["pregunta"] });
             }
             return list;
         });
 
-        public List<PreguntaSeguridad> GetPreguntasSeguridadByIds(List<int> ids)
+        public async Task<List<PreguntaSeguridad>> GetPreguntasSeguridadByIdsAsync(List<int> ids)
         {
             if (ids == null || !ids.Any())
             {
@@ -166,10 +125,10 @@ namespace DataAccess.Repositories
                 }
             };
 
-            return ExecuteReader(sql, reader =>
+            return await ExecuteReaderAsync(sql, async reader =>
             {
                 var list = new List<PreguntaSeguridad>();
-                while (reader.Read())
+                while (await reader.ReadAsync())
                 {
                     list.Add(new PreguntaSeguridad { IdPregunta = (int)reader["id_pregunta"], Pregunta = (string)reader["pregunta"] });
                 }
@@ -177,24 +136,24 @@ namespace DataAccess.Repositories
             }, addParametersAction, CommandType.Text);
         }
 
-        public List<RespuestaSeguridad>? GetRespuestasSeguridadByUsuarioId(int idUsuario) => ExecuteReader("SELECT id_usuario, id_pregunta, respuesta FROM respuestas_seguridad WHERE id_usuario = @id_usuario;", reader =>
+        public async Task<List<RespuestaSeguridad>?> GetRespuestasSeguridadByUsuarioIdAsync(int idUsuario) => await ExecuteReaderAsync("SELECT id_usuario, id_pregunta, respuesta FROM respuestas_seguridad WHERE id_usuario = @id_usuario;", async reader =>
         {
             var list = new List<RespuestaSeguridad>();
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
                 list.Add(new RespuestaSeguridad { IdUsuario = (int)reader["id_usuario"], IdPregunta = (int)reader["id_pregunta"], Respuesta = (string)reader["respuesta"] });
             }
             return list;
         }, p => p.AddWithValue("@id_usuario", idUsuario));
 
-        public void AddRespuestaSeguridad(RespuestaSeguridad respuesta) => ExecuteNonQuery("sp_insert_respuesta_seguridad", p =>
+        public async Task AddRespuestaSeguridadAsync(RespuestaSeguridad respuesta) => await ExecuteNonQueryAsync("sp_insert_respuesta_seguridad", p =>
         {
             p.AddWithValue("@id_usuario", respuesta.IdUsuario);
             p.AddWithValue("@id_pregunta", respuesta.IdPregunta);
             p.AddWithValue("@respuesta", respuesta.Respuesta);
-        });
+        }, CommandType.StoredProcedure);
 
-        public void DeleteRespuestasSeguridadByUsuarioId(int usuarioId) => ExecuteNonQuery(
+        public async Task DeleteRespuestasSeguridadByUsuarioIdAsync(int usuarioId) => await ExecuteNonQueryAsync(
             "DELETE FROM respuestas_seguridad WHERE id_usuario = @id_usuario",
             p => p.AddWithValue("@id_usuario", usuarioId),
             CommandType.Text

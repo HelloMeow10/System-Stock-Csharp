@@ -1,6 +1,8 @@
+using SharedKernel;
+
 namespace Contracts
 {
-    public class TipoDocDto
+    public class TipoDocDto : ResourceDto
     {
         public int IdTipoDoc { get; set; }
         public string Nombre { get; set; } = null!;
