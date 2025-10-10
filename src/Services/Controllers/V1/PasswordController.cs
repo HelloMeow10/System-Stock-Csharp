@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Asp.Versioning;
 
-namespace Services.Controllers
+namespace Services.Controllers.V1
 {
     [ApiVersion("1.0")]
     public class PasswordController : BaseApiController
