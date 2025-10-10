@@ -9,7 +9,6 @@ using SharedKernel;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
-using BusinessLogic.Mappers;
 
 namespace BusinessLogic.Services
 {

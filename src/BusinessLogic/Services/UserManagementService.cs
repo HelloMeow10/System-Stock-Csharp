@@ -14,7 +14,8 @@ using BusinessLogic.Security;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
 using System.ComponentModel.DataAnnotations;
-using BusinessLogic.Mappers;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace BusinessLogic.Services
 {
@@ -27,6 +28,7 @@ namespace BusinessLogic.Services
         private readonly IUsuarioFactory _usuarioFactory;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IPersonaService _personaService;
+        private readonly IMapper _mapper;
 
 
         public UserManagementService(
@@ -36,7 +38,8 @@ namespace BusinessLogic.Services
             ILogger<UserManagementService> logger,
             IUsuarioFactory usuarioFactory,
             IPasswordHasher passwordHasher,
-            IPersonaService personaService)
+            IPersonaService personaService,
+            IMapper mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _personaRepository = personaRepository ?? throw new ArgumentNullException(nameof(personaRepository));
@@ -45,6 +48,7 @@ namespace BusinessLogic.Services
             _usuarioFactory = usuarioFactory ?? throw new ArgumentNullException(nameof(usuarioFactory));
             _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
             _personaService = personaService ?? throw new ArgumentNullException(nameof(personaService));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
 
@@ -54,11 +58,17 @@ namespace BusinessLogic.Services
 
             await _userRepository.AddUsuarioAsync(usuario);
 
-            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona)!;
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            if (persona is null)
+            {
+                throw new NotFoundException($"Persona with ID {usuario.IdPersona} not found after user creation.");
+            }
 
             await _emailService.SendWelcomeEmailAsync(persona.Correo!, usuario.UsuarioNombre, plainPassword);
 
-            return UserMapper.MapToUserDto(usuario)!;
+            var personaDto = await _personaService.GetPersonaByIdAsync(usuario.IdPersona);
+
+            return _mapper.Map<UserDto>((usuario, personaDto));
         }
 
         public async Task<UserDtoV2> CreateUserAsyncV2(UserRequestV2 request)
@@ -68,47 +78,20 @@ namespace BusinessLogic.Services
             // The factory already adds the persona, so we just need to add the user
             await _userRepository.AddUsuarioAsync(usuario);
 
-            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona)!;
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            if (persona is null)
+            {
+                throw new NotFoundException($"Persona with ID {usuario.IdPersona} not found after user creation.");
+            }
 
             await _emailService.SendWelcomeEmailAsync(persona.Correo!, usuario.UsuarioNombre, plainPassword);
 
             var personaDto = await _personaService.GetPersonaByIdAsync(persona.IdPersona);
 
-            return UserMapper.MapToUserDtoV2(usuario, personaDto)!;
+            return _mapper.Map<UserDtoV2>((usuario, personaDto));
         }
 
-        public async Task<PagedResponse<UserDto>> GetUsersAsync(UserQueryParameters queryParameters)
-        {
-            var pagedUsers = await _userRepository.GetUsersAsync(queryParameters);
-
-            // Get Personas only for the users in the current page for efficiency
-            var personaIds = pagedUsers.Items.Select(u => u.IdPersona).Distinct();
-            var personas = new Dictionary<int, PersonaDto>();
-            foreach (var id in personaIds)
-            {
-                var persona = await _personaService.GetPersonaByIdAsync(id);
-                if (persona != null)
-                {
-                    personas[id] = persona;
-                }
-            }
-
-            var userDtos = pagedUsers.Items.Select(u =>
-            {
-                var userDto = UserMapper.MapToUserDto(u)!;
-                if (personas.TryGetValue(u.IdPersona, out var persona))
-                {
-                    userDto.Nombre = persona.Nombre;
-                    userDto.Apellido = persona.Apellido;
-                    userDto.Correo = persona.Correo;
-                }
-                return userDto;
-            }).ToList();
-
-            return pagedUsers.ToPagedResponse(userDtos);
-        }
-
-        public async Task<PagedResponse<UserDtoV2>> GetUsersAsyncV2(UserQueryParameters queryParameters)
+        public async Task<PagedResponse<T>> GetUsersAsync<T>(UserQueryParameters queryParameters) where T : class
         {
             var pagedUsers = await _userRepository.GetUsersAsync(queryParameters);
 
@@ -126,7 +109,7 @@ namespace BusinessLogic.Services
             var userDtos = pagedUsers.Items.Select(u =>
             {
                 personas.TryGetValue(u.IdPersona, out var persona);
-                return UserMapper.MapToUserDtoV2(u, persona)!;
+                return _mapper.Map<T>((u, persona));
             }).ToList();
 
             return pagedUsers.ToPagedResponse(userDtos);
@@ -181,13 +164,9 @@ namespace BusinessLogic.Services
 
             await _userRepository.UpdateUsuarioAsync(usuario);
 
-            var updatedDto = UserMapper.MapToUserDto(usuario);
-            var updatedPersona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
-            updatedDto.Nombre = updatedPersona.Nombre;
-            updatedDto.Apellido = updatedPersona.Apellido;
-            updatedDto.Correo = updatedPersona.Correo;
+            var updatedPersonaDto = await _personaService.GetPersonaByIdAsync(usuario.IdPersona);
 
-            return updatedDto;
+            return _mapper.Map<UserDto>((usuario, updatedPersonaDto));
         }
 
         public async Task DeleteUserAsync(int userId)
@@ -207,31 +186,13 @@ namespace BusinessLogic.Services
             {
                 throw new NotFoundException($"User with username '{username}' not found.");
             }
-            return UserMapper.MapToUserDto(usuario)!;
+
+            var persona = await _personaService.GetPersonaByIdAsync(usuario.IdPersona);
+
+            return _mapper.Map<UserDto>((usuario, persona));
         }
 
-        public async Task<UserDto> GetUserByIdAsync(int id)
-        {
-            var usuario = await _userRepository.GetUsuarioByIdAsync(id);
-            if (usuario == null)
-            {
-                throw new NotFoundException($"User with ID {id} not found.");
-            }
-
-            var userDto = UserMapper.MapToUserDto(usuario)!;
-
-            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
-            if (persona != null)
-            {
-                userDto.Nombre = persona.Nombre;
-                userDto.Apellido = persona.Apellido;
-                userDto.Correo = persona.Correo;
-            }
-
-            return userDto;
-        }
-
-        public async Task<UserDtoV2> GetUserByIdAsyncV2(int id)
+        public async Task<T> GetUserByIdAsync<T>(int id) where T : class
         {
             var usuario = await _userRepository.GetUsuarioByIdAsync(id);
             if (usuario == null)
@@ -242,10 +203,11 @@ namespace BusinessLogic.Services
             var persona = await _personaService.GetPersonaByIdAsync(usuario.IdPersona);
             if (persona == null)
             {
-                throw new NotFoundException($"Persona not found for user ID: {id}.");
+                // Depending on requirements, you might throw or just proceed with a null persona
+                _logger.LogWarning("Persona not found for user ID: {UserId}", id);
             }
 
-            return UserMapper.MapToUserDtoV2(usuario, persona)!;
+            return _mapper.Map<T>((usuario, persona));
         }
 
         public async Task<UserDtoV2> UpdateUserAsyncV2(int id, UpdateUserRequestV2 updateUserRequest)
@@ -301,7 +263,7 @@ namespace BusinessLogic.Services
 
             await _userRepository.UpdateUsuarioAsync(usuario);
 
-            return await GetUserByIdAsyncV2(id);
+            return await GetUserByIdAsync<UserDtoV2>(id);
         }
     }
 }

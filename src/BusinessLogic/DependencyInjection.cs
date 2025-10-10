@@ -11,6 +11,9 @@ namespace BusinessLogic
     {
         public static IServiceCollection AddBusinessLogic(this IServiceCollection services, IConfiguration configuration)
         {
+            // Register AutoMapper
+            services.AddAutoMapper(typeof(DependencyInjection).Assembly);
+
             // Register configuration
             services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
 

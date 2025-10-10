@@ -27,7 +27,7 @@ namespace Services.Tests
         {
             // Arrange
             var mockUserService = new Mock<IUserService>();
-            mockUserService.Setup(s => s.GetUserByIdAsync(It.IsAny<int>()))
+            mockUserService.Setup(s => s.GetUserByIdAsync<UserDto>(It.IsAny<int>()))
                 .ThrowsAsync(new NotFoundException("Resource not found"));
 
             var client = _factory.WithWebHostBuilder(builder =>
@@ -52,7 +52,7 @@ namespace Services.Tests
             var mockUserService = new Mock<IUserService>();
             var users = new List<UserDto> { new UserDto { IdUsuario = 1, Username = "test" } };
             var pagedResponse = new PagedResponse<UserDto>(users, 1, 10, 1);
-            mockUserService.Setup(s => s.GetUsersAsync(It.IsAny<UserQueryParameters>()))
+            mockUserService.Setup(s => s.GetUsersAsync<UserDto>(It.IsAny<UserQueryParameters>()))
                 .ReturnsAsync(pagedResponse);
 
             var client = _factory.WithWebHostBuilder(builder =>
