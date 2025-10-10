@@ -29,7 +29,7 @@ namespace Services.Hateoas
                 resource.Links.Add(new LinkDto(patchLink, "partially-update-user", "PATCH"));
             }
 
-            var deleteLink = urlHelper.Link("DeleteUser", new { id = userId, version });
+            var deleteLink = urlHelper.Link("DeleteUserV1", new { id = userId, version });
             if (deleteLink != null)
             {
                 resource.Links.Add(new LinkDto(deleteLink, "delete-user", "DELETE"));

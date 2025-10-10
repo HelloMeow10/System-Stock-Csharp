@@ -50,7 +50,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para actualizar.", id);
-                throw new NotFoundException($"Persona with ID {id} not found.");
+                throw new BusinessLogicException($"Persona with ID {id} not found.");
             }
 
             _mapper.Map(request, persona);
@@ -65,7 +65,7 @@ namespace BusinessLogic.Services
             var persona = await _personaRepository.GetPersonaByIdAsync(id);
             if (persona == null)
             {
-                throw new NotFoundException($"Persona with ID {id} not found.");
+                throw new BusinessLogicException($"Persona with ID {id} not found.");
             }
 
             var personaToPatch = _mapper.Map<UpdatePersonaRequest>(persona);
@@ -92,7 +92,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId} para eliminar.", personaId);
-                throw new NotFoundException($"Persona with ID {personaId} not found.");
+                throw new BusinessLogicException($"Persona with ID {personaId} not found.");
             }
             await _personaRepository.DeletePersonaAsync(personaId);
         }
@@ -110,7 +110,7 @@ namespace BusinessLogic.Services
             if (persona == null)
             {
                 _logger.LogWarning("No se encontró la persona con ID: {PersonaId}.", personaId);
-                throw new NotFoundException($"Persona with ID {personaId} not found.");
+                throw new BusinessLogicException($"Persona with ID {personaId} not found.");
             }
             return _mapper.Map<PersonaDto>(persona);
         }
