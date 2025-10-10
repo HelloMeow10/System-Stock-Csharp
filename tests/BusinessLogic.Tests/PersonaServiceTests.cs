@@ -3,10 +3,16 @@ using Moq;
 using System.Threading.Tasks;
 using BusinessLogic.Services;
 using Contracts;
+using Xunit;
+using Moq;
+using System.Threading.Tasks;
+using BusinessLogic.Services;
+using Contracts;
 using BusinessLogic.Factories;
 using DataAccess.Repositories;
 using DataAccess.Entities;
 using Microsoft.Extensions.Logging;
+using AutoMapper;
 
 namespace BusinessLogic.Tests
 {
@@ -15,6 +21,7 @@ namespace BusinessLogic.Tests
         private readonly Mock<IPersonaRepository> _personaRepositoryMock;
         private readonly Mock<ILogger<PersonaService>> _loggerMock;
         private readonly Mock<IPersonaFactory> _personaFactoryMock;
+        private readonly Mock<IMapper> _mapperMock;
         private readonly PersonaService _sut;
 
         public PersonaServiceTests()
@@ -22,10 +29,12 @@ namespace BusinessLogic.Tests
             _personaRepositoryMock = new Mock<IPersonaRepository>();
             _loggerMock = new Mock<ILogger<PersonaService>>();
             _personaFactoryMock = new Mock<IPersonaFactory>();
+            _mapperMock = new Mock<IMapper>();
             _sut = new PersonaService(
                 _personaRepositoryMock.Object,
                 _loggerMock.Object,
-                _personaFactoryMock.Object
+                _personaFactoryMock.Object,
+                _mapperMock.Object
             );
         }
 

@@ -1,15 +1,16 @@
 using AutoMapper;
-using AutoMapper;
 using BusinessLogic.Exceptions;
 using BusinessLogic.Factories;
 using BusinessLogic.Mappers;
 using BusinessLogic.Services;
 using Contracts;
 using DataAccess.Repositories;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.Extensions.Logging;
 using SharedKernel;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -83,6 +84,45 @@ namespace BusinessLogic.Services
             // Map the update request to the existing entities
             _mapper.Map(request, usuario);
             _mapper.Map(request, persona);
+
+            await _personaRepository.UpdatePersonaAsync(persona);
+            await _userRepository.UpdateUsuarioAsync(usuario);
+
+            var updatedPersonaDto = await _personaService.GetPersonaByIdAsync(usuario.IdPersona);
+
+            return _mapper.Map<TResponse>((usuario, updatedPersonaDto));
+        }
+
+        public async Task<TResponse> PatchUserAsync<TRequest, TResponse>(int id, JsonPatchDocument<TRequest> patchDoc)
+            where TRequest : class
+            where TResponse : class
+        {
+            var usuario = await _userRepository.GetUsuarioByIdAsync(id);
+            if (usuario == null)
+            {
+                throw new NotFoundException($"User with ID {id} not found.");
+            }
+
+            var persona = await _personaRepository.GetPersonaByIdAsync(usuario.IdPersona);
+            if (persona == null)
+            {
+                throw new NotFoundException($"Persona not found for user ID: {id}.");
+            }
+
+            var userToPatch = _mapper.Map<TRequest>((usuario, persona));
+
+            patchDoc.ApplyTo(userToPatch);
+
+            var validationContext = new ValidationContext(userToPatch, serviceProvider: null, items: null);
+            var validationResults = new List<ValidationResult>();
+            if (!Validator.TryValidateObject(userToPatch, validationContext, validationResults, validateAllProperties: true))
+            {
+                var errors = validationResults.Select(r => r.ErrorMessage ?? "Validation error");
+                throw new BusinessLogic.Exceptions.ValidationException(errors);
+            }
+
+            _mapper.Map(userToPatch, usuario);
+            _mapper.Map(userToPatch, persona);
 
             await _personaRepository.UpdatePersonaAsync(persona);
             await _userRepository.UpdateUsuarioAsync(usuario);

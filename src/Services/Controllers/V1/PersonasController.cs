@@ -67,14 +67,9 @@ namespace Services.Controllers.V1
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<PersonaDto> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
+        public Task<PersonaDto> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
-            var persona = await _personaService.GetPersonaByIdAsync(id);
-            var personaToPatch = _mapper.Map<UpdatePersonaRequest>(persona);
-
-            ApplyPatchAndValidate(patchDoc, personaToPatch);
-
-            return await _personaService.UpdatePersonaAsync(id, personaToPatch);
+            return _personaService.PatchPersonaAsync(id, patchDoc);
         }
 
         /// <summary>

@@ -83,6 +83,22 @@ namespace BusinessLogic.Mappers
                     }
                 })
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // Mappings for Persona
+            CreateMap<Persona, PersonaDto>()
+                .ForMember(dest => dest.NombreCompleto, opt => opt.MapFrom(src => $"{src.Nombre} {src.Apellido}"))
+                .ForMember(dest => dest.TipoDocNombre, opt => opt.MapFrom(src => src.TipoDoc.Nombre))
+                .ForMember(dest => dest.LocalidadNombre, opt => opt.MapFrom(src => src.Localidad.Nombre))
+                .ForMember(dest => dest.GeneroNombre, opt => opt.MapFrom(src => src.Genero.Nombre))
+                .ForMember(dest => dest.PartidoNombre, opt => opt.MapFrom(src => src.Localidad.Partido.Nombre))
+                .ForMember(dest => dest.IdPartido, opt => opt.MapFrom(src => src.Localidad.IdPartido))
+                .ForMember(dest => dest.ProvinciaNombre, opt => opt.MapFrom(src => src.Localidad.Partido.Provincia.Nombre))
+                .ForMember(dest => dest.IdProvincia, opt => opt.MapFrom(src => src.Localidad.Partido.IdProvincia));
+
+            CreateMap<UpdatePersonaRequest, Persona>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<Persona, UpdatePersonaRequest>();
         }
     }
 }
