@@ -8,6 +8,7 @@ using System.Collections;
 using System.Linq;
 using System.Reflection;
 using Contracts;
+using Microsoft.AspNetCore.Http;
 
 namespace Services.Hateoas
 {
@@ -26,11 +27,27 @@ namespace Services.Hateoas
 
         public void OnActionExecuted(ActionExecutedContext context)
         {
-            if (context.Result is ObjectResult objectResult &&
-                objectResult.Value != null &&
-                objectResult.StatusCode.HasValue &&
-                objectResult.StatusCode.Value >= 200 &&
-                objectResult.StatusCode.Value < 300)
+            if (context.Result is not ObjectResult objectResult || objectResult.Value == null)
+            {
+                return;
+            }
+
+            int? statusCode = objectResult.StatusCode;
+
+            if (!statusCode.HasValue)
+            {
+                switch (context.Result)
+                {
+                    case CreatedAtActionResult _:
+                        statusCode = StatusCodes.Status201Created;
+                        break;
+                    case OkObjectResult _:
+                        statusCode = StatusCodes.Status200OK;
+                        break;
+                }
+            }
+
+            if (statusCode.HasValue && statusCode.Value >= 200 && statusCode.Value < 300)
             {
                 var urlHelper = _urlHelperFactory.GetUrlHelper(context);
                 ProcessHateoas(objectResult.Value, urlHelper);

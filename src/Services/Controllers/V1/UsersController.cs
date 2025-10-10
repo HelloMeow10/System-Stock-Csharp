@@ -79,14 +79,9 @@ namespace Services.Controllers.V1
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<UserDto> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
+        public Task<UserDto> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequest> patchDoc)
         {
-            var user = await _userService.GetUserByIdAsync<UserDto>(id);
-            var userToPatch = _mapper.Map<UpdateUserRequest>(user);
-
-            ApplyPatchAndValidate(patchDoc, userToPatch);
-
-            return await _userService.UpdateUserAsync<UpdateUserRequest, UserDto>(id, userToPatch);
+            return _userService.PatchUserAsync<UpdateUserRequest, UserDto>(id, patchDoc);
         }
 
         /// <summary>
