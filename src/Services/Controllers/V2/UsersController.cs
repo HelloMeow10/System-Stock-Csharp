@@ -39,7 +39,6 @@ namespace Services.Controllers.V2
         [HttpGet("{id}", Name = "GetUserByIdV2")]
         [Authorize]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public Task<UserDtoV2> GetById(int id)
         {
             return _userService.GetUserByIdAsync<UserDtoV2>(id);
@@ -51,7 +50,6 @@ namespace Services.Controllers.V2
         [HttpPost(Name = "CreateUserV2")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<UserDtoV2>> Post([FromBody] UserRequestV2 userRequest)
         {
             var newUser = await _userService.CreateUserAsync<UserRequestV2, UserDtoV2>(userRequest);
@@ -64,8 +62,6 @@ namespace Services.Controllers.V2
         [HttpPut("{id}", Name = "UpdateUserV2")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public Task<UserDtoV2> Put(int id, [FromBody] UpdateUserRequestV2 updateUserRequest)
         {
             return _userService.UpdateUserAsync<UpdateUserRequestV2, UserDtoV2>(id, updateUserRequest);
@@ -77,16 +73,9 @@ namespace Services.Controllers.V2
         [HttpPatch("{id}", Name = "PatchUserV2")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(UserDtoV2), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<UserDtoV2> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
+        public Task<UserDtoV2> Patch(int id, [FromBody] JsonPatchDocument<UpdateUserRequestV2> patchDoc)
         {
-            var user = await _userService.GetUserByIdAsync<UserDtoV2>(id);
-            var userToPatch = _mapper.Map<UpdateUserRequestV2>(user);
-
-            ApplyPatchAndValidate(patchDoc, userToPatch);
-
-            return await _userService.UpdateUserAsync<UpdateUserRequestV2, UserDtoV2>(id, userToPatch);
+            return _userService.PatchUserAsync<UpdateUserRequestV2, UserDtoV2>(id, patchDoc);
         }
 
         /// <summary>
@@ -95,7 +84,6 @@ namespace Services.Controllers.V2
         [HttpDelete("{id}", Name = "DeleteUserV2")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
             await _userService.DeleteUserAsync(id);

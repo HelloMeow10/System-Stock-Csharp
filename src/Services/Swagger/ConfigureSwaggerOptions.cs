@@ -26,6 +26,8 @@ namespace Services.Swagger
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             options.IncludeXmlComments(xmlPath);
 
+            options.OperationFilter<ErrorResponseOperationFilter>();
+
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,

@@ -36,7 +36,6 @@ namespace Services.Controllers.V1
         [HttpGet("{id}", Name = "GetPersonaByIdV1")]
         [Authorize]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public Task<PersonaDto> Get(int id)
         {
             return _personaService.GetPersonaByIdAsync(id);
@@ -45,7 +44,6 @@ namespace Services.Controllers.V1
         [HttpPost(Name = "CreatePersonaV1")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<PersonaDto>> Post([FromBody] PersonaRequest personaRequest)
         {
             var newPersona = await _personaService.CreatePersonaAsync(personaRequest);
@@ -55,8 +53,6 @@ namespace Services.Controllers.V1
         [HttpPut("{id}", Name = "UpdatePersonaV1")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public Task<PersonaDto> Put(int id, [FromBody] UpdatePersonaRequest personaDto)
         {
             return _personaService.UpdatePersonaAsync(id, personaDto);
@@ -65,8 +61,6 @@ namespace Services.Controllers.V1
         [HttpPatch("{id}", Name = "PatchPersonaV1")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PersonaDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public Task<PersonaDto> Patch(int id, [FromBody] JsonPatchDocument<UpdatePersonaRequest> patchDoc)
         {
             return _personaService.PatchPersonaAsync(id, patchDoc);
@@ -78,11 +72,9 @@ namespace Services.Controllers.V1
         /// <param name="id">The ID of the persona to delete.</param>
         /// <returns>No content if the deletion is successful.</returns>
         /// <response code="204">The persona was successfully deleted.</response>
-        /// <response code="404">If the persona is not found.</response>
         [HttpDelete("{id}", Name = "DeletePersonaV1")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
             await _personaService.DeletePersonaAsync(id);

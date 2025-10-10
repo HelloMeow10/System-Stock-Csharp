@@ -23,7 +23,6 @@ namespace Services.Controllers.V1
 
         [HttpGet(Name = "GetSecurityPolicy")]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public Task<PoliticaSeguridadDto> Get()
         {
             return _securityPolicyService.GetPoliticaSeguridadAsync();
@@ -31,7 +30,6 @@ namespace Services.Controllers.V1
 
         [HttpPut(Name = "UpdateSecurityPolicy")]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public Task<PoliticaSeguridadDto> Put([FromBody] UpdatePoliticaSeguridadRequest request)
         {
             return _securityPolicyService.UpdatePoliticaSeguridadAsync(request);
