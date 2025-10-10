@@ -1,16 +1,17 @@
+using AutoMapper;
+using BusinessLogic.Exceptions;
+using BusinessLogic.Factories;
 using BusinessLogic.Services;
-using BusinessLogic.Security;
+using Contracts;
+using DataAccess.Entities;
 using DataAccess.Repositories;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Contracts;
 using SharedKernel;
-using DataAccess.Entities;
-using System.Threading.Tasks;
-using BusinessLogic.Factories;
-using BusinessLogic.Exceptions;
+using System;
+using System.Collections.Generic;
 using System.Linq;
-using AutoMapper;
+using System.Threading.Tasks;
 
 namespace BusinessLogic.Tests
 {
@@ -20,7 +21,6 @@ namespace BusinessLogic.Tests
         private readonly Mock<IPersonaRepository> _personaRepositoryMock;
         private readonly Mock<IEmailService> _emailServiceMock;
         private readonly Mock<ILogger<UserManagementService>> _loggerMock;
-        private readonly Mock<IPasswordHasher> _passwordHasherMock;
         private readonly Mock<IUsuarioFactory> _usuarioFactoryMock;
         private readonly Mock<IPersonaService> _personaServiceMock;
         private readonly Mock<IMapper> _mapperMock;
@@ -32,7 +32,6 @@ namespace BusinessLogic.Tests
             _personaRepositoryMock = new Mock<IPersonaRepository>();
             _emailServiceMock = new Mock<IEmailService>();
             _loggerMock = new Mock<ILogger<UserManagementService>>();
-            _passwordHasherMock = new Mock<IPasswordHasher>();
             _usuarioFactoryMock = new Mock<IUsuarioFactory>();
             _personaServiceMock = new Mock<IPersonaService>();
             _mapperMock = new Mock<IMapper>();
@@ -43,14 +42,13 @@ namespace BusinessLogic.Tests
                 _emailServiceMock.Object,
                 _loggerMock.Object,
                 _usuarioFactoryMock.Object,
-                _passwordHasherMock.Object,
                 _personaServiceMock.Object,
                 _mapperMock.Object
             );
         }
 
         [Fact]
-        public async Task CrearUsuarioAsync_WithValidData_ShouldCallAddUsuarioAndSendEmail()
+        public async Task CreateUserAsync_WithValidData_ShouldCallAddUsuarioAndSendEmail()
         {
             // Arrange
             var userRequest = new UserRequest { PersonaId = "1", Username = "testuser", Rol = "Usuario" };
@@ -60,16 +58,15 @@ namespace BusinessLogic.Tests
             var personaDto = new PersonaDto();
             var userDto = new UserDto();
 
-            _usuarioFactoryMock.Setup(f => f.Create(userRequest)).ReturnsAsync((usuario, plainPassword));
+            _usuarioFactoryMock.Setup(f => f.CreateAsync<UserRequest>(userRequest)).ReturnsAsync((usuario, plainPassword));
             _personaRepositoryMock.Setup(r => r.GetPersonaByIdAsync(1)).ReturnsAsync(persona);
             _userRepositoryMock.Setup(r => r.AddUsuarioAsync(usuario)).Returns(Task.CompletedTask);
             _emailServiceMock.Setup(s => s.SendWelcomeEmailAsync(persona.Correo!, usuario.UsuarioNombre, plainPassword)).Returns(Task.CompletedTask);
             _personaServiceMock.Setup(s => s.GetPersonaByIdAsync(1)).ReturnsAsync(personaDto);
             _mapperMock.Setup(m => m.Map<UserDto>(It.IsAny<(Usuario, PersonaDto)>())).Returns(userDto);
 
-
             // Act
-            await _sut.CreateUserAsync(userRequest);
+            await _sut.CreateUserAsync<UserRequest, UserDto>(userRequest);
 
             // Assert
             _userRepositoryMock.Verify(r => r.AddUsuarioAsync(usuario), Times.Once);
@@ -105,23 +102,14 @@ namespace BusinessLogic.Tests
             _personaServiceMock.Setup(s => s.GetPersonaByIdAsync(personaId)).ReturnsAsync(personaDto);
             _mapperMock.Setup(m => m.Map<UserDto>(It.IsAny<(Usuario, PersonaDto)>())).Returns(expectedDto);
 
-
             // Act
-            var result = await _sut.UpdateUserAsync(userId, request);
+            var result = await _sut.UpdateUserAsync<UpdateUserRequest, UserDto>(userId, request);
 
             // Assert
-            _userRepositoryMock.Verify(r => r.UpdateUsuarioAsync(It.Is<Usuario>(u =>
-                u.IdUsuario == userId &&
-                u.IdRol == request.IdRol &&
-                u.CambioContrasenaObligatorio == request.CambioContrasenaObligatorio &&
-                u.FechaExpiracion == request.FechaExpiracion
-            )), Times.Once);
-
-            _personaRepositoryMock.Verify(r => r.UpdatePersonaAsync(It.Is<Persona>(p =>
-                p.Nombre == request.Nombre &&
-                p.Apellido == request.Apellido &&
-                p.Correo == request.Correo
-            )), Times.Once);
+            _mapperMock.Verify(m => m.Map(request, usuario), Times.Once);
+            _mapperMock.Verify(m => m.Map(request, persona), Times.Once);
+            _userRepositoryMock.Verify(r => r.UpdateUsuarioAsync(usuario), Times.Once);
+            _personaRepositoryMock.Verify(r => r.UpdatePersonaAsync(persona), Times.Once);
 
             Assert.NotNull(result);
             Assert.Equal("testuser", result.Username);
@@ -136,7 +124,7 @@ namespace BusinessLogic.Tests
             _userRepositoryMock.Setup(r => r.GetUsuarioByIdAsync(userId)).ReturnsAsync((Usuario?)null);
 
             // Act & Assert
-            await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateUserAsync(userId, request));
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateUserAsync<UpdateUserRequest, UserDto>(userId, request));
         }
 
         [Fact]
@@ -180,7 +168,6 @@ namespace BusinessLogic.Tests
 
             _mapperMock.Setup(m => m.Map<UserDto>(It.Is<(Usuario, PersonaDto)>(t => t.Item1.UsuarioNombre == "user1"))).Returns(user1Dto);
             _mapperMock.Setup(m => m.Map<UserDto>(It.Is<(Usuario, PersonaDto)>(t => t.Item1.UsuarioNombre == "user2"))).Returns(user2Dto);
-
 
             // Act
             var result = await _sut.GetUsersAsync<UserDto>(queryParameters);

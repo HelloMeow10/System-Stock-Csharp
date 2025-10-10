@@ -36,7 +36,22 @@ namespace BusinessLogic.Factories
             _personaFactory = personaFactory;
         }
 
-        public async Task<(Usuario Usuario, string PlainPassword)> CreateV2(UserRequestV2 request)
+        public async Task<(Usuario Usuario, string PlainPassword)> CreateAsync<TRequest>(TRequest request) where TRequest : class
+        {
+            if (request is UserRequest userRequest)
+            {
+                return await CreateFromUserRequest(userRequest);
+            }
+
+            if (request is UserRequestV2 userRequestV2)
+            {
+                return await CreateFromUserRequestV2(userRequestV2);
+            }
+
+            throw new NotSupportedException($"Request type {typeof(TRequest).Name} is not supported by UsuarioFactory.");
+        }
+
+        private async Task<(Usuario Usuario, string PlainPassword)> CreateFromUserRequestV2(UserRequestV2 request)
         {
             // 1. Create Persona from V2 request
             var nameParts = request.FullName?.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
@@ -70,10 +85,10 @@ namespace BusinessLogic.Factories
                 Rol = request.Rol
             };
 
-            return await Create(userRequest);
+            return await CreateFromUserRequest(userRequest);
         }
 
-        public async Task<(Usuario Usuario, string PlainPassword)> Create(UserRequest request)
+        private async Task<(Usuario Usuario, string PlainPassword)> CreateFromUserRequest(UserRequest request)
         {
             if (!int.TryParse(request.PersonaId, out int personaId))
             {
