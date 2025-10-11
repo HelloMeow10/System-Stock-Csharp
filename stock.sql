@@ -1,10 +1,12 @@
 -- ============================================
 -- TABLAS BASE
 -- ============================================
-
-CREATE TABLE motivoScrap (
-    id_motivoScrap INT PRIMARY KEY IDENTITY(1,1),
-    descripcion VARCHAR(100) NOT NULL
+CREATE TABLE MotivoScrap (
+    id_motivoScrap INT IDENTITY(1,1) PRIMARY KEY,
+    dano BIT DEFAULT 0,
+    vencido BIT DEFAULT 0,
+    obsoleto BIT DEFAULT 0,
+    malaCalidad BIT DEFAULT 0
 );
 
 CREATE TABLE FormaPago (
@@ -12,14 +14,19 @@ CREATE TABLE FormaPago (
     descripcion VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE estadoCompras (
-    id_estadoCompras INT PRIMARY KEY IDENTITY(1,1),
-    descripcion VARCHAR(50) NOT NULL
+CREATE TABLE EstadoCompras (
+    id_estadoCompras INT IDENTITY(1,1) PRIMARY KEY,
+    pendiente BIT DEFAULT 0,
+    aprobada BIT DEFAULT 0,
+    recibida BIT DEFAULT 0,
+    cancelada BIT DEFAULT 0
 );
 
 CREATE TABLE EstadoVentas (
-    id_estadoVentas INT PRIMARY KEY IDENTITY(1,1),
-    descripcion VARCHAR(50) NOT NULL
+    id_estadoVentas INT IDENTITY(1,1) PRIMARY KEY,
+    facturada BIT DEFAULT 0,
+    entregada BIT DEFAULT 0,  
+    cancelada BIT DEFAULT 0
 );
 
 CREATE TABLE MarcasProducto (
@@ -31,34 +38,28 @@ CREATE TABLE MarcasProducto (
 CREATE TABLE CategoriasProducto (
     id_categoria INT PRIMARY KEY IDENTITY(1,1),
     categoria VARCHAR(100) NOT NULL,
-    descripcion VARCHAR(200)
-);
-
--- ============================================
--- TABLA USUARIOS (referida en varias tablas)
--- ============================================
-CREATE TABLE Usuarios (
-    id_usuario INT PRIMARY KEY IDENTITY(1,1),
-    nombre VARCHAR(100) NOT NULL
+    descripcion VARCHAR(100),
+    estado VARCHAR(15) DEFAULT 'Habilitado' 
 );
 
 -- ============================================
 -- PRODUCTOS
 -- ============================================
+
 CREATE TABLE Productos (
     id_producto INT PRIMARY KEY IDENTITY(1,1),
-    codigo VARCHAR(50) NOT NULL,
-    codBarras VARCHAR(50),
-    nombre VARCHAR(100) NOT NULL,
-    descripcion VARCHAR(255),
+    codigo VARCHAR(20) NOT NULL,
+    codBarras VARCHAR(20),
+    nombre VARCHAR(50) NOT NULL,
+    descripcion VARCHAR(200),
     id_marca INT,
     precioCompra DECIMAL(18,2),
     precioVenta DECIMAL(18,2),
-    estado VARCHAR(50),
+    estado VARCHAR(25),
     ubicacion VARCHAR(100),
     habilitado BIT,
     id_categoria INT,
-    FOREIGN KEY (id_marca) REFERENCES Marcas(id_marca),
+    FOREIGN KEY (id_marca) REFERENCES MarcasProducto(id_marca)
     FOREIGN KEY (id_categoria) REFERENCES CategoriasProducto(id_categoria)
 );
 
@@ -67,9 +68,9 @@ CREATE TABLE Productos (
 -- ============================================
 CREATE TABLE Proveedores (
     id_proveedor INT PRIMARY KEY IDENTITY(1,1),
-    codigo VARCHAR(50),
-    nombre VARCHAR(100),
-    razonSocial VARCHAR(150),
+    codigo VARCHAR(20),
+    nombre VARCHAR(50),
+    razonSocial VARCHAR(100),
     CUIT VARCHAR(20),
     TiempoEntrega INT,
     Descuento DECIMAL(5,2),
@@ -90,10 +91,10 @@ CREATE TABLE ProveedorTelefonos (
 CREATE TABLE ProveedorUbicacion (
     id_ubicacionProveedor INT PRIMARY KEY IDENTITY(1,1),
     id_proveedor INT,
-    direccion VARCHAR(150),
-    localidad VARCHAR(100),
-    provincia VARCHAR(100),
-    tipo VARCHAR(50), -- Sucursal / Depósito
+    direccion VARCHAR(100),
+    localidad VARCHAR(50),
+    provincia VARCHAR(50),
+    tipo VARCHAR(20), -- Sucursal / Depósito
     FOREIGN KEY (id_proveedor) REFERENCES Proveedores(id_proveedor)
 );
 
@@ -116,8 +117,8 @@ CREATE TABLE Compras (
     id_compra INT PRIMARY KEY IDENTITY(1,1),
     id_proveedor INT,
     fecha DATE,
-    tipoDocumento VARCHAR(50), -- presupuesto / ordenCompra / Factura / notaDébito / notaCrédito
-    numeroDocumento VARCHAR(50),
+    tipoDocumento VARCHAR(30), -- presupuesto / ordenCompra / Factura / notaDébito / notaCrédito
+    numeroDocumento VARCHAR(20),
     montoTotal DECIMAL(18,2),
     id_estadoCompras INT,
     FOREIGN KEY (id_proveedor) REFERENCES Proveedores(id_proveedor),
@@ -140,14 +141,14 @@ CREATE TABLE DetalleCompras (
 -- ============================================
 CREATE TABLE Clientes (
     id_cliente INT PRIMARY KEY IDENTITY(1,1),
-    codigo VARCHAR(50),
-    nombre VARCHAR(100),
-    razonSocial VARCHAR(150),
+    codigo VARCHAR(20),
+    nombre VARCHAR(50),
+    razonSocial VARCHAR(100),
     CUIT_DNI VARCHAR(20),
     formaPago VARCHAR(50),
     limiteCredito DECIMAL(18,2),
     descuento DECIMAL(5,2),
-    estado VARCHAR(50)
+    estado VARCHAR(45)
 );
 
 CREATE TABLE ClienteContactos (
@@ -155,7 +156,7 @@ CREATE TABLE ClienteContactos (
     id_cliente INT,
     telefono VARCHAR(20),
     sector VARCHAR(50),
-    horario VARCHAR(50),
+    horario VARCHAR(20),
     email VARCHAR(100),
     FOREIGN KEY (id_cliente) REFERENCES Clientes(id_cliente)
 );
@@ -163,10 +164,10 @@ CREATE TABLE ClienteContactos (
 CREATE TABLE ClienteDirecciones (
     id_direccion INT PRIMARY KEY IDENTITY(1,1),
     id_cliente INT,
-    direccion VARCHAR(150),
-    localidad VARCHAR(100),
-    provincia VARCHAR(100),
-    tipo VARCHAR(50), -- Sucursal / Depósito
+    direccion VARCHAR(100),
+    localidad VARCHAR(45),
+    provincia VARCHAR(45),
+    tipo VARCHAR(20), -- Sucursal / Depósito
     FOREIGN KEY (id_cliente) REFERENCES Clientes(id_cliente)
 );
 
@@ -219,7 +220,7 @@ CREATE TABLE Stock (
     stockMinimo INT,
     stockIdeal INT,
     stockMaximo INT,
-    tipoStock VARCHAR(50), -- Existencia o JIT
+    tipoStock VARCHAR(20), -- Existencia o JIT
     puntoReposicion INT,
     fechaVencimiento DATE,
     estadoHabilitaciones VARCHAR(50),
@@ -232,12 +233,14 @@ CREATE TABLE Stock (
 -- ============================================
 -- SCRAP / BAJAS DE STOCK
 -- ============================================
-CREATE TABLE Scrap (
-    id_scrap INT PRIMARY KEY IDENTITY(1,1),
-    id_usuario INT,
-    fecha DATE,
-    id_motivoScrap INT,
+CREATE TABLE ScrapProducto (
+    id_scrapProducto INT IDENTITY(1,1) PRIMARY KEY,
+    id_producto INT NOT NULL, 
+    cantidad INT NOT NULL,
+    id_usuario INT NOT NULL,
+    fecha DATE NOT NULL DEFAULT GETDATE(),
+    id_motivoScrap INT NOT NULL,
+    FOREIGN KEY (id_producto) REFERENCES Productos(id_producto),
     FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario),
-    FOREIGN KEY (id_motivoScrap) REFERENCES motivoScrap(id_motivoScrap)
+    FOREIGN KEY (id_motivoScrap) REFERENCES MotivoScrap(id_motivoScrap)
 );
-
