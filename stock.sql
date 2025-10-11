@@ -22,9 +22,10 @@ CREATE TABLE EstadoVentas (
     descripcion VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE Marcas (
-    id_marca INT PRIMARY KEY IDENTITY(1,1),
-    nombre VARCHAR(100) NOT NULL
+CREATE TABLE MarcasProducto (
+    id_marca INT IDENTITY(1,1) PRIMARY KEY,
+    estado VARCHAR(15) DEFAULT 'Habilitado',
+    marca VARCHAR(45) NOT NULL
 );
 
 CREATE TABLE CategoriasProducto (
