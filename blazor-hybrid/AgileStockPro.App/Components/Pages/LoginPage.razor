@@ -1,0 +1,55 @@
+@page "/"
+@layout EmptyLayout
+@using AgileStockPro.App.Components.Layout
+@using Microsoft.FluentUI.AspNetCore.Components
+@inject NavigationManager NavigationManager
+
+<div class="login-container">
+    <FluentCard class="login-card">
+        <div class="logo-container">
+            <img src="/logo.png" alt="AgileStockPro Logo" />
+            <h1>AgileStockPro</h1>
+            <p>Sistema de Gestión de Inventario</p>
+        </div>
+
+        <EditForm Model="@_loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <FluentTextField @bind-Value="_loginModel.Email" type="email" Id="email" Placeholder="usuario@ejemplo.com" Style="width: 100%;" />
+                <ValidationMessage For="@(() => _loginModel.Email)" />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <FluentTextField @bind-Value="_loginModel.Password" type="password" Id="password" Style="width: 100%;" />
+                <ValidationMessage For="@(() => _loginModel.Password)" />
+            </div>
+
+            <FluentButton Appearance="Appearance.Accent" Style="width: 100%;">
+                Iniciar Sesión
+            </FluentButton>
+        </EditForm>
+    </FluentCard>
+</div>
+
+@code {
+    private readonly LoginModel _loginModel = new();
+
+    private void HandleLogin()
+    {
+        // TODO: Implementar lógica de autenticación
+        NavigationManager.NavigateTo("/dashboard");
+    }
+
+    public class LoginModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "El email es requerido.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "El formato del email no es válido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "La contraseña es requerida.")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

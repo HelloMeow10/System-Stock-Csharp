@@ -1,0 +1,53 @@
+.stats-card {
+    padding: 1rem;
+}
+
+.card-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    color: white;
+}
+
+.icon-container.default { background-color: var(--accent-fill-rest); }
+.icon-container.warning { background-color: #f59e0b; }
+.icon-container.success { background-color: #10b981; }
+.icon-container.info { background-color: #3b82f6; }
+
+.text-content {
+    flex-grow: 1;
+}
+
+.title {
+    font-size: 0.875rem;
+    color: var(--neutral-foreground-rest);
+}
+
+.value {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.trend {
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.trend.positive {
+    color: #10b981;
+}
+
+.trend.negative {
+    color: #ef4444;
+}

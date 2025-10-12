@@ -1,0 +1,44 @@
+@page "/compras/proveedores"
+@using AgileStockPro.App.Models
+@using AgileStockPro.App.Services
+@inject ISupplierService SupplierService
+
+<PageTitle>Proveedores</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="title-section">
+            <h2>Gestión de Proveedores</h2>
+            <p>Administración de proveedores y condiciones comerciales.</p>
+        </div>
+        <FluentButton Appearance="Appearance.Accent">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Add())" Slot="start" />
+            Nuevo Proveedor
+        </FluentButton>
+    </div>
+
+    @if (suppliers is null)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+    <FluentDataGrid Items="@suppliers?.AsQueryable()" GridTemplateColumns="1fr 2fr 1.5fr 2fr 1.5fr 1fr" TGridItem="Supplier">
+            <PropertyColumn Property="@(s => s.Id)" Sortable="true" Title="ID" />
+            <PropertyColumn Property="@(s => s.Name)" Sortable="true" Title="Nombre" />
+            <PropertyColumn Property="@(s => s.Cuit)" Sortable="true" Title="CUIT" />
+            <PropertyColumn Property="@(s => s.Email)" Sortable="true" Title="Email" />
+            <PropertyColumn Property="@(s => s.Phone)" Sortable="true" Title="Teléfono" />
+            <PropertyColumn Property="@(s => s.DeliveryTime)" Sortable="true" Title="Entrega" />
+        </FluentDataGrid>
+    }
+</div>
+
+@code {
+    private List<Supplier>? suppliers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        suppliers = await SupplierService.GetSuppliersAsync();
+    }
+}

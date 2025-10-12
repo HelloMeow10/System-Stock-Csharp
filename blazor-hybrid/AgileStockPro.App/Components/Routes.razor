@@ -1,0 +1,19 @@
+﻿@using Microsoft.FluentUI.AspNetCore.Components
+@using AgileStockPro.App.Components.Pages
+
+<FluentProvider>
+    <ThemeProvider>
+        <Router AppAssembly="@typeof(MauiProgram).Assembly">
+            <Found Context="routeData">
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            </Found>
+            <NotFound>
+                <LayoutView Layout="@typeof(Layout.MainLayout)">
+                    <NotFound />
+                </LayoutView>
+            </NotFound>
+        </Router>
+    </ThemeProvider>
+    <StyleProvider />
+</FluentProvider>

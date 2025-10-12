@@ -1,0 +1,36 @@
+@using AgileStockPro.App.Models.Dashboard
+
+<FluentCard class="alerts-widget">
+    <div class="card-header">
+        <FluentLabel Type="LabelType.H5">Alertas de Stock</FluentLabel>
+    </div>
+    <div class="card-content">
+        @if (Alerts is not null && Alerts.Any())
+        {
+            <FluentDataGrid Items="@Alerts?.AsQueryable()" GridTemplateColumns="2fr 1fr 1fr 1fr 1fr" TGridItem="AlertModel">
+                <TemplateColumn Title="Producto">
+                    <FluentLabel Type="LabelType.P">@context.ProductName</FluentLabel>
+                    <FluentLabel Type="LabelType.P" Class="sku-label">@context.Sku</FluentLabel>
+                </TemplateColumn>
+                <PropertyColumn Property="@(c => c.CurrentStock)" Title="Stock Actual" Align="Align.End" />
+                <PropertyColumn Property="@(c => c.MinimumStock)" Title="Stock Mínimo" Align="Align.End" />
+                <TemplateColumn Title="Estado" Align="Align.End">
+                    <FluentBadge Appearance="Appearance.Stealth"
+                                 BackgroundColor="@(context.Status == "Sin Stock" ? "var(--error-fill-rest)" : "var(--warning-fill-rest)")"
+                                 Color="var(--neutral-foreground-rest)">
+                        @context.Status
+                    </FluentBadge>
+                </TemplateColumn>
+            </FluentDataGrid>
+        }
+        else
+        {
+            <p>No hay alertas de stock en este momento.</p>
+        }
+    </div>
+</FluentCard>
+
+@code {
+    [Parameter]
+    public IEnumerable<AlertModel>? Alerts { get; set; }
+}

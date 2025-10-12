@@ -1,0 +1,12 @@
+@page "/404"
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+
+<PageTitle>Página no encontrada</PageTitle>
+
+<div style="text-align: center; margin-top: 5rem;">
+    <FluentIcon Value="@(new Icons.Regular.Size48.ErrorCircle())" Style="width: 48px; height: 48px;" />
+    <h1 style="font-size: 2rem; margin-top: 1rem;">404 - Página no encontrada</h1>
+    <p style="margin-top: 0.5rem;">Lo sentimos, la página que estás buscando no existe.</p>
+    <FluentAnchor Href="/" Appearance="Appearance.Hypertext">Volver al Dashboard</FluentAnchor>
+</div>

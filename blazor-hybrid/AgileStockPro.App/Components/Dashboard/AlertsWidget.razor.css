@@ -1,0 +1,24 @@
+:host ::deep .fluent-card {
+    height: 100%;
+}
+
+.alerts-widget {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--neutral-stroke-divider-rest);
+}
+
+.card-content {
+    padding: 16px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.sku-label {
+    font-size: 12px;
+    color: var(--neutral-foreground-rest);
+}

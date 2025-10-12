@@ -1,0 +1,152 @@
+@page "/stock"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@inject IAppDataService Data
+@inject Microsoft.JSInterop.IJSRuntime JS
+
+<PageHeader Title="Stock">
+    <Actions>
+        <button class="btn" @onclick="ExportCsv" disabled="@(TotalCount == 0)">Exportar CSV</button>
+    </Actions>
+</PageHeader>
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<div class="toolbar" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; justify-content:flex-start; margin:.75rem 0;">
+		<input class="search" placeholder="Buscar por producto o almacén..." @bind-value="search" @bind-value:event="oninput" />
+		<select class="select" style="min-width:200px" @bind="selectedWarehouse">
+			<option value="">Todos los almacenes</option>
+			@foreach (var w in Warehouses)
+			{
+				<option value="@w">@w</option>
+			}
+		</select>
+		<div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+			<label style="opacity:.8;">Tamaño página</label>
+			<select class="select" style="width:100px" @bind="pageSize">
+				<option value="10">10</option>
+				<option value="25">25</option>
+				<option value="50">50</option>
+				<option value="100">100</option>
+			</select>
+		</div>
+	</div>
+	<table>
+		<thead>
+			<tr>
+				<th>Producto</th>
+				<th>Almacén</th>
+				<th>Cantidad</th>
+				<th>Mín</th>
+				<th>Máx</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var s in PagedView)
+		{
+			<tr>
+				<td>@s.Product</td>
+				<td>@s.Warehouse</td>
+				<td>@s.Quantity</td>
+				<td>@s.Min</td>
+				<td>@s.Max</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+	<div class="pager" style="display:flex; align-items:center; gap:.75rem; justify-content:space-between; margin-top:.75rem;">
+		<div style="opacity:.8;">Mostrando @StartItem–@EndItem de @TotalCount</div>
+		<div style="display:flex; align-items:center; gap:.5rem;">
+			<button class="btn" @onclick="PrevPage" disabled="@(pageIndex <= 1)">Anterior</button>
+			<span style="min-width:110px; text-align:center">Página @pageIndex de @PageCount</span>
+			<button class="btn" @onclick="NextPage" disabled="@(pageIndex >= PageCount)">Siguiente</button>
+		</div>
+	</div>
+}
+
+@code {
+	private IReadOnlyList<StockItem>? items;
+	
+	string _search = string.Empty;
+	string search
+	{
+		get => _search;
+		set { if (_search != value) { _search = value; pageIndex = 1; } }
+	}
+	string? _selectedWarehouse;
+	string? selectedWarehouse
+	{
+		get => _selectedWarehouse;
+		set { if (_selectedWarehouse != value) { _selectedWarehouse = value; pageIndex = 1; } }
+	}
+	int pageIndex = 1;
+	int _pageSize = 10;
+	int pageSize
+	{
+		get => _pageSize;
+		set
+		{
+			var v = value <= 0 ? 10 : value;
+			if (_pageSize != v) { _pageSize = v; pageIndex = 1; }
+		}
+	}
+
+	IEnumerable<StockItem> BaseView => ApplyFilter(ApplySearch(items ?? Array.Empty<StockItem>()));
+	IEnumerable<StockItem> SortedView => BaseView.OrderBy(s => s.Product).ThenBy(s => s.Warehouse);
+	IEnumerable<StockItem> PagedView => SortedView.Skip((pageIndex - 1) * pageSize).Take(pageSize);
+	int TotalCount => SortedView.Count();
+	int PageCount => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)pageSize));
+	int StartItem => TotalCount == 0 ? 0 : ((pageIndex - 1) * pageSize) + 1;
+	int EndItem => Math.Min(pageIndex * pageSize, TotalCount);
+	IEnumerable<string> Warehouses => items?.Select(i => i.Warehouse).Where(w => !string.IsNullOrWhiteSpace(w)).Distinct().OrderBy(w => w) ?? Enumerable.Empty<string>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		items = await Data.GetStockAsync();
+	}
+
+	IEnumerable<StockItem> ApplySearch(IEnumerable<StockItem> source)
+	{
+		if (string.IsNullOrWhiteSpace(search)) return source;
+		var term = search.Trim().ToLowerInvariant();
+		return source.Where(s => (s.Product?.ToLowerInvariant().Contains(term) ?? false)
+			|| (s.Warehouse?.ToLowerInvariant().Contains(term) ?? false));
+	}
+
+	IEnumerable<StockItem> ApplyFilter(IEnumerable<StockItem> source)
+	{
+		if (string.IsNullOrWhiteSpace(selectedWarehouse)) return source;
+		return source.Where(s => string.Equals(s.Warehouse, selectedWarehouse, StringComparison.OrdinalIgnoreCase));
+	}
+
+	void PrevPage() { if (pageIndex > 1) pageIndex--; }
+	void NextPage() { if (pageIndex < PageCount) pageIndex++; }
+
+	async Task ExportCsv()
+	{
+		var rows = SortedView; // export vista filtrada completa
+		var sb = new System.Text.StringBuilder();
+		void Add(string s)
+		{
+			if (s is null) s = string.Empty;
+			var needsQuotes = s.Contains('"') || s.Contains(',') || s.Contains('\n') || s.Contains('\r');
+			s = s.Replace("\"", "\"\"");
+			if (needsQuotes) s = $"\"{s}\"";
+			sb.Append(s);
+		}
+		sb.AppendLine("Producto,Almacén,Cantidad,Mín,Máx");
+		foreach (var s in rows)
+		{
+			Add(s.Product ?? ""); sb.Append(',');
+			Add(s.Warehouse ?? ""); sb.Append(',');
+			Add(s.Quantity.ToString()); sb.Append(',');
+			Add(s.Min.ToString()); sb.Append(',');
+			Add(s.Max.ToString()); sb.AppendLine();
+		}
+		await JS.InvokeVoidAsync("app.downloadFile", "stock.csv", sb.ToString(), "text/csv;charset=utf-8");
+	}
+}

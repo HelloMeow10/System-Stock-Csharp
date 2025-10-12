@@ -1,0 +1,107 @@
+.page-container {
+    padding: 2rem;
+    color: var(--neutral-foreground-rest);
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+    .page-header h2 {
+        font-size: 1.875rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+    }
+
+    .page-header p {
+        color: var(--neutral-foreground-hint);
+    }
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .settings-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .settings-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.setting-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+
+.setting-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+    .setting-card-header .fluent-icon {
+        color: var(--accent-fill-rest);
+    }
+
+.setting-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.setting-card-description {
+    color: var(--neutral-foreground-hint);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.setting-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.user-item, .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid var(--neutral-stroke-divider-rest);
+    border-radius: var(--control-corner-radius);
+}
+
+.user-name {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.user-role {
+    font-size: 0.75rem;
+    color: var(--neutral-foreground-hint);
+}
+
+.info-item label, .info-item span {
+    font-size: 0.875rem;
+}
+
+.info-item strong {
+    font-weight: 600;
+}

@@ -1,0 +1,67 @@
+:host {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: var(--neutral-layer-1);
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+}
+
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.logo-container img {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+}
+
+.logo-container h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--neutral-foreground-rest);
+}
+
+.logo-container p {
+    color: var(--neutral-foreground-hint);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--neutral-foreground-rest);
+}
+
+.validation-message {
+    color: var(--error);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.fluent-button {
+    height: 40px;
+    font-size: 1rem;
+}

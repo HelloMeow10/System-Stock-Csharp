@@ -1,0 +1,133 @@
+@page "/configuracion"
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1>Configuración</h1>
+            <p>Parámetros del sistema y opciones avanzadas</p>
+        </div>
+        <FluentBadge Appearance="Appearance.Neutral" BackgroundColor="var(--error)" Color="var(--white)">
+            Solo Administrador
+        </FluentBadge>
+    </div>
+
+    <div class="settings-grid">
+    @* Card: Base de Datos *@
+        <FluentCard class="setting-card">
+            <div class="setting-card-header">
+                <FluentIcon Value="@(new Icons.Regular.Size20.Database())" />
+                <h4>Base de Datos</h4>
+            </div>
+            <p class="setting-card-description">Configuración de conexión y respaldos</p>
+            <div class="setting-card-content">
+                <FluentTextField @bind-Value="@dbServer" Label="Servidor" />
+                <FluentTextField @bind-Value="@dbName" Label="Base de Datos" />
+                <FluentTextField @bind-Value="@backupPath" Label="Ruta de Respaldos" />
+                <div class="button-group">
+                    <FluentButton Appearance="Appearance.Accent" style="width: 100%;">Probar Conexión</FluentButton>
+                    <FluentButton Appearance="Appearance.Outline" style="width: 100%;">Crear Respaldo</FluentButton>
+                </div>
+            </div>
+        </FluentCard>
+
+    @* Card: Alertas y Notificaciones *@
+        <FluentCard class="setting-card">
+            <div class="setting-card-header">
+                <FluentIcon Value="@(new Icons.Regular.Size20.AlertUrgent())" />
+                <h4>Alertas y Notificaciones</h4>
+            </div>
+            <p class="setting-card-description">Configurar umbrales y notificaciones</p>
+            <div class="setting-card-content">
+                <FluentNumberField @bind-Value="@alertDays" Label="Días de Alerta Vencimiento" />
+                <FluentTextField @bind-Value="@alertEmail" Label="Email Notificaciones" Type="InputType.Email" />
+                <FluentSwitch @bind-Value="@notifyCriticalStock" Label="Notificar Stock Crítico" />
+                <FluentSwitch @bind-Value="@notifyExpiredProducts" Label="Notificar Productos Vencidos" />
+                <FluentButton Appearance="Appearance.Accent" style="width: 100%; margin-top: 1rem;">Guardar Configuración</FluentButton>
+            </div>
+        </FluentCard>
+
+    @* Card: Usuarios y Permisos *@
+        <FluentCard class="setting-card">
+            <div class="setting-card-header">
+                <FluentIcon Value="@(new Icons.Regular.Size20.People())" />
+                <h4>Usuarios y Permisos</h4>
+            </div>
+             <p class="setting-card-description">Gestión de usuarios del sistema</p>
+            <div class="setting-card-content">
+                @* Placeholder for user list *@
+                <p>Lista de usuarios aquí...</p>
+                <FluentButton Appearance="Appearance.Outline" style="width: 100%; margin-top: 1rem;">
+                    <FluentIcon Value="@(new Icons.Regular.Size16.People())" Slot="start" />
+                    Administrar Usuarios
+                </FluentButton>
+            </div>
+        </FluentCard>
+
+    @* Card: Documentación *@
+        <FluentCard class="setting-card">
+            <div class="setting-card-header">
+                <FluentIcon Value="@(new Icons.Regular.Size20.Document())" />
+                <h4>Documentación</h4>
+            </div>
+            <p class="setting-card-description">Configuración de comprobantes y reportes</p>
+            <div class="setting-card-content">
+                <FluentTextField @bind-Value="@companyName" Label="Razón Social" />
+                <FluentTextField @bind-Value="@companyCuit" Label="CUIT" />
+                <FluentTextField @bind-Value="@invoicePrefix" Label="Prefijo Factura" />
+                <FluentTextField @bind-Value="@logoPath" Label="Ruta Logo Empresa" />
+                <FluentButton Appearance="Appearance.Accent" style="width: 100%; margin-top: 1rem;">Guardar Configuración</FluentButton>
+            </div>
+        </FluentCard>
+
+    @* Card: Sistema *@
+        <FluentCard class="setting-card">
+            <div class="setting-card-header">
+                <FluentIcon Value="@(new Icons.Regular.Size20.Settings())" />
+                <h4>Sistema</h4>
+            </div>
+            <p class="setting-card-description">Información y mantenimiento</p>
+            <div class="setting-card-content">
+                @* Placeholder for system info *@
+                <p>Información del sistema aquí...</p>
+                <FluentButton Appearance="Appearance.Outline" style="width: 100%; margin-top: 1rem;">Optimizar Base de Datos</FluentButton>
+                <FluentButton Appearance="Appearance.Outline" style="width: 100%;">Limpiar Logs del Sistema</FluentButton>
+            </div>
+        </FluentCard>
+
+    @* Card: Seguridad *@
+        <FluentCard class="setting-card">
+            <div class="setting-card-header">
+                <FluentIcon Value="@(new Icons.Regular.Size20.Shield())" />
+                <h4>Seguridad</h4>
+            </div>
+            <p class="setting-card-description">Opciones de seguridad del sistema</p>
+            <div class="setting-card-content">
+                <FluentSwitch @bind-Value="@requireStrongPassword" Label="Requerir Contraseña Fuerte" />
+                <FluentNumberField @bind-Value="@sessionTimeout" Label="Sesión Automática (mins)" />
+                <FluentSwitch @bind-Value="@enableAuditLog" Label="Registrar Auditoría" />
+                <FluentButton Appearance="Appearance.Accent" style="width: 100%; margin-top: 1rem;">Guardar Configuración</FluentButton>
+                <FluentButton Appearance="Appearance.Accent" style="width: 100%;">Cambiar Contraseña Admin</FluentButton>
+            </div>
+        </FluentCard>
+    </div>
+</div>
+
+@code {
+    // Data-binding properties for the form fields
+    private string dbServer = @"localhost\SQLEXPRESS";
+    private string dbName = "StockProDB";
+    private string backupPath = @"C:\StockPro\Backups";
+    private int alertDays = 30;
+    private string alertEmail = "admin@stockpro.com";
+    private bool notifyCriticalStock = true;
+    private bool notifyExpiredProducts = true;
+    private string companyName = "StockPro SA";
+    private string companyCuit = "30-12345678-9";
+    private string invoicePrefix = "FC-";
+    private string logoPath = @"C:\StockPro\Assets\logo.png";
+    private bool requireStrongPassword = true;
+    private int sessionTimeout = 30;
+    private bool enableAuditLog = true;
+}

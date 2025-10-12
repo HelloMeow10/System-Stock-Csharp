@@ -1,0 +1,47 @@
+@page "/movimientos"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@inject IAppDataService Data
+
+<PageHeader Title="Movimientos" />
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>Fecha</th>
+				<th>Tipo</th>
+				<th>Producto</th>
+				<th>Cantidad</th>
+				<th>Desde</th>
+				<th>Hacia</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var m in items)
+		{
+			<tr>
+				<td>@m.Date.ToString("dd/MM/yyyy HH:mm")</td>
+				<td>@m.Type</td>
+				<td>@m.Product</td>
+				<td>@m.Quantity</td>
+				<td>@m.From</td>
+				<td>@m.To</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+@code {
+	private IReadOnlyList<Movimiento>? items;
+	protected override async Task OnInitializedAsync()
+	{
+		items = await Data.GetMovementsAsync();
+	}
+}

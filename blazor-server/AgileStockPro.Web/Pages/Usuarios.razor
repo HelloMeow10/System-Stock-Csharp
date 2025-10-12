@@ -1,0 +1,176 @@
+@page "/usuarios"
+@using AgileStockPro.Web.Models
+@inject AgileStockPro.Web.Services.IUserStore Store
+@inject AgileStockPro.Web.Services.IAuthService Auth
+@inject Microsoft.JSInterop.IJSRuntime JS
+
+<PageHeader Title="Usuarios">
+    <Actions>
+        <button class="btn btn-primary" @onclick="Nuevo">Nuevo usuario</button>
+    </Actions>
+</PageHeader>
+
+@if (user is null || user.IsAdmin == false)
+{
+    <div class="panel">
+        <div class="panel-header">Acceso restringido</div>
+        <p>Esta sección es solo para administradores. <a href="/login">Iniciar sesión</a></p>
+    </div>
+}
+else if (list is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Admin</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var u in list)
+        {
+            <tr>
+                <td>@u.Username</td>
+                <td>@u.Name @u.LastName</td>
+                <td>@u.Email</td>
+                <td>@(u.IsAdmin ? "Sí" : "No")</td>
+                <td style="text-align:right">
+                    <button class="btn" @onclick="() => Edit(u)">Editar</button>
+                    <button class="btn" @onclick="() => Delete(u)">Eliminar</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@if (editing != null)
+{
+    <div class="panel" style="margin-top:1rem;">
+        <div class="panel-header">@(editing.Id == Guid.Empty ? "Nuevo usuario" : $"Editar: {editing.Username}")</div>
+        <div style="display:grid; grid-template-columns: 160px 1fr; gap:.5rem; align-items:center;">
+            <label>Usuario</label>
+            <input class="input" @bind-value="editing.Username" />
+            <label>Nombre</label>
+            <input class="input" @bind-value="editing.Name" />
+            <label>Apellido</label>
+            <input class="input" @bind-value="editing.LastName" />
+            <label>Email</label>
+            <input class="input" @bind-value="editing.Email" />
+            <label>Admin</label>
+            <input type="checkbox" @bind="editing.IsAdmin" />
+        </div>
+
+        <div class="panel-header" style="margin-top:1rem;">Preguntas de seguridad</div>
+        @for (int i = 0; i < policy.QuestionsCount; i++)
+        {
+            var q = (i < editing.SecurityQuestions.Count) ? editing.SecurityQuestions[i] : new SecurityQuestion();
+            if (i >= editing.SecurityQuestions.Count) editing.SecurityQuestions.Add(q);
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.5rem; margin-bottom:.5rem;">
+                <select class="input" @bind="q.Question">
+                    @foreach (var item in SecurityQuestionsCatalog.Default)
+                    {
+                        <option value="@item">@item</option>
+                    }
+                </select>
+                <input class="input" type="password" placeholder="Respuesta" @oninput="@(async (ChangeEventArgs e) => await SetAnswerHash(q, e))" />
+            </div>
+        }
+
+        <div style="display:flex; gap:.5rem; margin-top:.75rem;">
+            <button class="btn btn-primary" @onclick="Guardar">Guardar</button>
+            <button class="btn" @onclick="Cancelar">Cancelar</button>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(tempPassInfo))
+        {
+            <div class="muted" style="margin-top:.5rem">@tempPassInfo</div>
+        }
+    </div>
+}
+
+@code {
+    private List<AppUser>? list;
+    private AppUser? editing;
+    private SecurityPolicy policy = new();
+    private string? tempPassInfo;
+    private AppUser? user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await Auth.GetCurrentUserAsync();
+        policy = await Store.GetPolicyAsync();
+        if (user?.IsAdmin == true)
+        {
+            list = (await Store.GetAllAsync()).ToList();
+        }
+    }
+
+    private void Nuevo()
+    {
+        editing = new AppUser { Id = Guid.NewGuid(), MustChangePassword = true };
+        tempPassInfo = null;
+    }
+
+    private void Edit(AppUser u)
+    {
+        editing = new AppUser
+        {
+            Id = u.Id,
+            Username = u.Username,
+            Name = u.Name,
+            LastName = u.LastName,
+            Email = u.Email,
+            IsAdmin = u.IsAdmin,
+            PasswordHash = u.PasswordHash,
+            MustChangePassword = u.MustChangePassword,
+            SecurityQuestions = u.SecurityQuestions.Select(q => new SecurityQuestion { Question = q.Question, AnswerHash = q.AnswerHash }).ToList(),
+            PasswordHistory = u.PasswordHistory.ToList()
+        };
+        tempPassInfo = null;
+    }
+
+    private async Task Guardar()
+    {
+        if (editing == null) return;
+        // If creating, generate first random password and hash username+password
+        if (string.IsNullOrWhiteSpace(editing.PasswordHash))
+        {
+            var first = GenerateTempPassword();
+            var hash = await JS.InvokeAsync<string>("app.sha256", editing.Username + first);
+            editing.PasswordHash = hash;
+            editing.MustChangePassword = true;
+            tempPassInfo = $"Contraseña inicial: {first} (deberá cambiarla al ingresar)";
+        }
+        await Store.SaveAsync(editing);
+        list = (await Store.GetAllAsync()).ToList();
+        editing = null;
+    }
+
+    private async Task Delete(AppUser u)
+    {
+        await Store.DeleteAsync(u.Id);
+        list = (await Store.GetAllAsync()).ToList();
+    }
+
+    private void Cancelar() { editing = null; }
+
+    private static string GenerateTempPassword()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*";
+        var rnd = Random.Shared;
+        return new string(Enumerable.Range(0, 10).Select(_ => chars[rnd.Next(chars.Length)]).ToArray());
+    }
+
+    private async Task SetAnswerHash(SecurityQuestion q, ChangeEventArgs e)
+    {
+        var txt = e?.Value?.ToString() ?? string.Empty;
+        q.AnswerHash = await JS.InvokeAsync<string>("app.sha256", txt);
+    }
+}

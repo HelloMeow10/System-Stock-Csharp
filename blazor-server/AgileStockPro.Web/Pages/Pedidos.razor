@@ -1,0 +1,45 @@
+@page "/pedidos"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@inject IAppDataService Data
+
+<PageHeader Title="Pedidos" />
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>Cliente</th>
+				<th>Fecha</th>
+				<th>Total</th>
+				<th>Estado</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var p in items)
+		{
+			<tr>
+				<td>@p.Id</td>
+				<td>@p.Customer</td>
+				<td>@p.Date.ToString("dd/MM/yyyy")</td>
+				<td>$@p.Total</td>
+				<td>@p.Status</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+@code {
+	private IReadOnlyList<Pedido>? items;
+	protected override async Task OnInitializedAsync()
+	{
+		items = await Data.GetOrdersAsync();
+	}
+}

@@ -1,0 +1,43 @@
+@page "/alertas"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@inject IAppDataService Data
+
+<PageHeader Title="Alertas" />
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>Fecha</th>
+				<th>Mensaje</th>
+				<th>Severidad</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var a in items)
+		{
+			<tr>
+				<td>@a.Date.ToString("dd/MM/yyyy HH:mm")</td>
+				<td>@a.Message</td>
+				<td>
+					<span class="badge @(a.Severity == "danger" ? "danger" : a.Severity == "warning" ? "warning" : "success")">@a.Severity</span>
+				</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+@code {
+	private IReadOnlyList<Alerta>? items;
+	protected override async Task OnInitializedAsync()
+	{
+		items = await Data.GetAlertsAsync();
+	}
+}

@@ -1,0 +1,32 @@
+@using AgileStockPro.Web.Models
+
+<div class="stat-card @AccentClass">
+  <div class="stat-card-header">
+    <div class="stat-title">@Model.Title</div>
+    @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+    {
+        <div class="stat-subtitle">@Model.Subtitle</div>
+    }
+  </div>
+  <div class="stat-value">@Model.Value</div>
+  @if (!string.IsNullOrWhiteSpace(Model.Delta))
+  {
+    var isUp = !Model.Delta.TrimStart().StartsWith("-");
+    <div class="stat-delta @(isUp ? "up" : "down")" aria-label="@Model.DeltaAria">
+        <span class="arrow">@(isUp ? "▲" : "▼")</span>
+        <span>@Model.Delta</span>
+    </div>
+  }
+</div>
+
+@code {
+    [Parameter] public StatsCardModel Model { get; set; } = new();
+
+    private string AccentClass => Model.Accent switch
+    {
+        "success" => "accent-success",
+        "warning" => "accent-warning",
+        "danger" => "accent-danger",
+        _ => "accent-accent"
+    };
+}

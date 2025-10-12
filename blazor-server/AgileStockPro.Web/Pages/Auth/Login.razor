@@ -1,0 +1,104 @@
+@page "/login"
+@inject NavigationManager Nav
+@inject AgileStockPro.Web.Services.IAuthService Auth
+
+<PageHeader Title="Ingreso" />
+
+<EditForm Model="model" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <div class="panel">
+        <div class="panel-header">Credenciales</div>
+        <div style="display:grid; grid-template-columns: 160px 1fr; gap:.5rem; align-items:center;">
+            <label>Usuario</label>
+            <InputText class="input" @bind-Value="model.Username" />
+            <label>Contraseña</label>
+            <InputText type="password" class="input" @bind-Value="model.Password" />
+        </div>
+        <div style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
+            <button class="btn btn-primary" disabled="@busy">Ingresar</button>
+            <a href="/forgot-password" class="btn">Olvidé mi contraseña</a>
+        </div>
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="error" style="margin-top:.5rem; color:var(--danger-foreground)">@error</div>
+        }
+    </div>
+</EditForm>
+
+@if (require2FA)
+{
+    <div class="panel" style="margin-top:1rem;">
+        <div class="panel-header">Autenticación en dos pasos</div>
+        <div style="display:flex; gap:.5rem; align-items:center;">
+            <input class="input" placeholder="Código de verificación" @bind-value="twoFactorCode" />
+            <button class="btn btn-primary" @onclick="VerifyCode">Verificar</button>
+        </div>
+        <div class="muted" style="margin-top:.5rem">Se envió un código al correo (simulado). Revisa la consola para verlo en esta demo.</div>
+        @if (!string.IsNullOrEmpty(error2FA))
+        {
+            <div class="error" style="margin-top:.5rem; color:var(--danger-foreground)">@error2FA</div>
+        }
+    </div>
+}
+
+@code {
+    record LoginModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private LoginModel model = new();
+    private bool busy;
+    private string? error;
+    private bool require2FA;
+    private string twoFactorCode = string.Empty;
+    private string? error2FA;
+
+    private async Task HandleLogin()
+    {
+        busy = true; error = null;
+        var result = await Auth.LoginAsync(model.Username, model.Password);
+        busy = false;
+        if (!result.Success)
+        {
+            error = result.Error ?? "Login inválido";
+            return;
+        }
+        if (result.Requires2FA)
+        {
+            require2FA = true;
+            StateHasChanged();
+            return;
+        }
+        var user = await Auth.GetCurrentUserAsync();
+        if (user?.MustChangePassword == true)
+        {
+            Nav.NavigateTo("/change-password", true);
+        }
+        else
+        {
+            Nav.NavigateTo("/dashboard", true);
+        }
+    }
+
+    private async Task VerifyCode()
+    {
+        error2FA = null;
+        var ok = await Auth.Verify2FAAsync(twoFactorCode);
+        if (!ok)
+        {
+            error2FA = "Código inválido";
+            return;
+        }
+        var user = await Auth.GetCurrentUserAsync();
+        if (user?.MustChangePassword == true)
+        {
+            Nav.NavigateTo("/change-password", true);
+        }
+        else
+        {
+            Nav.NavigateTo("/dashboard", true);
+        }
+    }
+}

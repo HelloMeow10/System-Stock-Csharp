@@ -1,0 +1,66 @@
+@page "/seguridad"
+@inject AgileStockPro.Web.Services.IUserStore Store
+@inject AgileStockPro.Web.Services.IAuthService Auth
+
+<PageHeader Title="Políticas de seguridad" />
+
+@if (currentUser is null)
+{
+    <div class="panel"><div class="panel-header">Acceso</div><p>Inicie sesión para continuar. <a href="/login">Login</a></p></div>
+}
+else if (currentUser.IsAdmin == false)
+{
+    <div class="panel"><div class="panel-header">Acceso restringido</div><p>Solo administradores.</p></div>
+}
+else if (policy is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <div class="panel">
+        <div class="panel-header">Password</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.5rem;">
+            <label>Mínimo de caracteres</label>
+            <input type="number" class="input" @bind-value="policy.MinLength" />
+            <label>Cantidad de preguntas</label>
+            <select class="input" @bind="policy.QuestionsCount">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+            </select>
+            <label>Mayúsculas y minúsculas</label>
+            <input type="checkbox" @bind="policy.RequireUpperLower" />
+            <label>Números</label>
+            <input type="checkbox" @bind="policy.RequireNumber" />
+            <label>Carácter especial</label>
+            <input type="checkbox" @bind="policy.RequireSpecial" />
+            <label>2FA por correo (simulado)</label>
+            <input type="checkbox" @bind="policy.Require2FA" />
+            <label>No repetir contraseñas anteriores</label>
+            <input type="checkbox" @bind="policy.PreventReuse" />
+            <label>Evitar datos personales</label>
+            <input type="checkbox" @bind="policy.CheckPersonalData" />
+        </div>
+        <div style="margin-top:.75rem">
+            <button class="btn btn-primary" @onclick="Save">Guardar</button>
+        </div>
+    </div>
+}
+
+@code {
+    private Models.SecurityPolicy? policy;
+    private Models.AppUser? currentUser;
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await Auth.GetCurrentUserAsync();
+        policy = await Store.GetPolicyAsync();
+    }
+    private async Task Save()
+    {
+        if (policy != null)
+        {
+            await Store.SavePolicyAsync(policy);
+        }
+    }
+}

@@ -1,0 +1,51 @@
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.page-header h2 {
+    font-size: 1.875rem; /* 30px */
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.page-header p {
+    color: var(--neutral-foreground-rest);
+    opacity: 0.7;
+}
+
+.stats-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+}
+
+.main-widgets-grid,
+.secondary-widgets-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Large devices (desktops, 1024px and up) */
+@media (min-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .main-widgets-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .secondary-widgets-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

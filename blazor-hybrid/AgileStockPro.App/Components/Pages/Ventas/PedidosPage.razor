@@ -1,0 +1,92 @@
+@page "/ventas/pedidos"
+@using AgileStockPro.App.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h2>Pedidos</h2>
+            <p>Gestión de presupuestos y notas de pedido</p>
+        </div>
+        <FluentButton Appearance="Appearance.Accent">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Add())" />
+            Nuevo Pedido
+        </FluentButton>
+    </div>
+
+    <div class="toolbar">
+        <FluentTextField Placeholder="Buscar por número o cliente..." class="search-field">
+            <FluentIcon Value="@(new Icons.Regular.Size16.Search())" Slot="start" />
+        </FluentTextField>
+
+        <FluentSelect class="status-select" TOption="string">
+            <FluentOption Value="all">Todos los estados</FluentOption>
+            <FluentOption Value="confirmado">Confirmado</FluentOption>
+            <FluentOption Value="pendiente">Pendiente</FluentOption>
+            <FluentOption Value="facturado">Facturado</FluentOption>
+            <FluentOption Value="reservado">Reservado</FluentOption>
+        </FluentSelect>
+
+        <FluentButton>
+            <FluentIcon Value="@(new Icons.Regular.Size16.Filter())" />
+            Filtros
+        </FluentButton>
+    </div>
+
+    <FluentCard class="table-card">
+    <FluentDataGrid Items="@_pedidos.AsQueryable()" GridTemplateColumns="1fr 1fr 2fr 1fr 1fr 1fr 1fr" TGridItem="Pedido">
+            <TemplateColumn Title="N° Pedido">
+                <p class="font-mono">@context.Id</p>
+            </TemplateColumn>
+            <TemplateColumn Title="Fecha">
+                @context.Fecha
+            </TemplateColumn>
+            <TemplateColumn Title="Cliente">
+                @context.Cliente
+            </TemplateColumn>
+            <TemplateColumn Title="Items" Align="Align.End">
+                @context.Items
+            </TemplateColumn>
+            <TemplateColumn Title="Total" Align="Align.End">
+                <p class="font-semibold">@context.Total.ToString("C")</p>
+            </TemplateColumn>
+            <TemplateColumn Title="Estado">
+                <FluentBadge Appearance="Appearance.Accent"
+                             BackgroundColor="@GetStatusColor(context.Estado, "--light")"
+                             Color="@GetStatusColor(context.Estado)">
+                    @context.Estado
+                </FluentBadge>
+            </TemplateColumn>
+            <TemplateColumn Title="Acciones" Align="Align.End">
+                <div class="action-buttons">
+                    <FluentButton IconStart="@(new Icons.Regular.Size16.Eye())" Appearance="Appearance.Stealth" />
+                </div>
+            </TemplateColumn>
+        </FluentDataGrid>
+    </FluentCard>
+</div>
+
+@code {
+    private readonly IEnumerable<Pedido> _pedidos = new List<Pedido>
+    {
+        new("NP-2024-0456", "15/03/2024", "Construcciones del Sur", 8, 15200, "Confirmado"),
+        new("NP-2024-0455", "15/03/2024", "Obras Civiles SA", 12, 28400, "Pendiente"),
+        new("NP-2024-0454", "14/03/2024", "Instalaciones Industriales", 5, 9800, "Facturado"),
+        new("NP-2024-0453", "14/03/2024", "Arquitectura Moderna", 15, 42600, "Reservado"),
+        new("NP-2024-0452", "13/03/2024", "Construcciones del Sur", 6, 11300, "Cancelado")
+    };
+
+    private string GetStatusColor(string estado, string suffix = "")
+    {
+        return estado switch
+        {
+            "Confirmado" => $"var(--success{suffix})",
+            "Pendiente" => $"var(--warning{suffix})",
+            "Facturado" => $"var(--info{suffix})",
+            "Reservado" => $"var(--accent-fill-rest)",
+            "Cancelado" => $"var(--danger{suffix})",
+            _ => $"var(--neutral{suffix})",
+        };
+    }
+}

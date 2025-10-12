@@ -1,0 +1,60 @@
+@page "/configuracion"
+@inject Microsoft.JSInterop.IJSRuntime JS
+<PageHeader Title="Configuración" Subtitle="Preferencias de apariencia y ajustes" />
+
+<section class="panel">
+	<div class="panel-header">Apariencia</div>
+	<div style="display:flex; gap:1rem; align-items:center">
+		<label>Tema:</label>
+		<select class="input" @bind="theme">
+			<option value="auto">Auto</option>
+			<option value="light">Claro</option>
+			<option value="dark">Oscuro</option>
+		</select>
+		<label>Color de acento:</label>
+		<input class="input" type="color" @bind="accent" />
+		<button class="btn btn-primary" @onclick="Aplicar">Aplicar</button>
+	</div>
+	<p style="margin-top:.5rem; color:var(--neutral-foreground-rest)">Los cambios se guardan en este navegador y se aplican de inmediato.</p>
+</section>
+
+<section class="panel">
+	<div class="panel-header">Notificaciones</div>
+	<label style="display:flex; gap:.5rem; align-items:center">
+		<input type="checkbox" @bind="notifEmail" /> Email
+	</label>
+	<label style="display:flex; gap:.5rem; align-items:center">
+		<input type="checkbox" @bind="notifToast" /> Toasts en app
+	</label>
+</section>
+
+@code {
+    private string theme = "auto";
+    private string accent = "#6d28d9"; // violeta por defecto
+	private bool notifEmail = true;
+	private bool notifToast = true;
+
+	protected override async Task OnInitializedAsync()
+	{
+		// Cargar valores persistidos si existen
+		var savedTheme = await JS.InvokeAsync<string?>("app.getLocal", "theme");
+		var savedAccent = await JS.InvokeAsync<string?>("app.getLocal", "accent");
+		if (!string.IsNullOrWhiteSpace(savedTheme)) theme = savedTheme!;
+		if (!string.IsNullOrWhiteSpace(savedAccent)) accent = savedAccent!;
+		await ApplyTheme();
+	}
+
+	private async Task Aplicar()
+	{
+		await ApplyTheme();
+	}
+
+	private async Task ApplyTheme()
+	{
+		// Persistir y aplicar al DOM
+		await JS.InvokeVoidAsync("app.setLocal", "theme", theme);
+		await JS.InvokeVoidAsync("app.setLocal", "accent", accent);
+		await JS.InvokeVoidAsync("app.setTheme", theme);
+		await JS.InvokeVoidAsync("app.setAccent", accent);
+	}
+}

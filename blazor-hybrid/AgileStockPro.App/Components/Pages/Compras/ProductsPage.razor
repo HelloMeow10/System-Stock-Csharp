@@ -1,0 +1,66 @@
+@page "/compras/productos"
+@using AgileStockPro.App.Components.Products
+@using AgileStockPro.App.Models
+@using AgileStockPro.App.Services
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@inject IProductService ProductService
+
+<PageTitle>Productos</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="title-section">
+            <h2>Productos</h2>
+            <p>Gestión completa del catálogo de productos</p>
+        </div>
+        <FluentButton Appearance="Appearance.Accent">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Add())" Slot="start" />
+            Nuevo Producto
+        </FluentButton>
+    </div>
+
+    <div class="filters-container">
+        <FluentTextField Placeholder="Buscar por código, nombre o marca..." class="search-field">
+            <FluentIcon Value="@(new Icons.Regular.Size16.Search())" Slot="start" />
+        </FluentTextField>
+
+        <FluentSelect class="filter-select" TOption="string">
+            <FluentOption Value="all">Todas las categorías</FluentOption>
+            <FluentOption Value="ferreteria">Ferretería</FluentOption>
+            <FluentOption Value="pintureria">Pinturería</FluentOption>
+            <FluentOption Value="electricidad">Electricidad</FluentOption>
+            <FluentOption Value="construccion">Construcción</FluentOption>
+        </FluentSelect>
+
+        <FluentSelect class="filter-select" TOption="string">
+            <FluentOption Value="all">Todos</FluentOption>
+            <FluentOption Value="ok">Stock Normal</FluentOption>
+            <FluentOption Value="low">Stock Bajo</FluentOption>
+            <FluentOption Value="critical">Stock Crítico</FluentOption>
+        </FluentSelect>
+
+        <FluentButton Appearance="Appearance.Outline">
+            <FluentIcon Value="@(new Icons.Regular.Size16.Filter())" Slot="start" />
+            Filtros Avanzados
+        </FluentButton>
+
+        <FluentButton Appearance="Appearance.Outline">
+            <FluentIcon Value="@(new Icons.Regular.Size16.ArrowDownload())" Slot="start" />
+            Exportar
+        </FluentButton>
+    </div>
+
+    <div class="grid-container">
+        <ProductsTable Products="products" />
+    </div>
+</div>
+
+@code {
+    private IEnumerable<Product>? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await ProductService.GetProductsAsync();
+    }
+}

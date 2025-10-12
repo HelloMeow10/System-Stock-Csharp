@@ -1,0 +1,60 @@
+@page "/almacenes"
+@using AgileStockPro.App.Components.Shared
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@using AgileStockPro.App.Models
+@using AgileStockPro.App.Services
+@inject IAlmacenService AlmacenService
+
+<PageTitle>Almacenes</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="title-section">
+            <h2>Módulo de Almacenes</h2>
+            <p>Gestión de inventario, movimientos y depósitos.</p>
+        </div>
+        <FluentButton Appearance="Appearance.Accent">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Add())" Slot="start" />
+            Nuevo Almacén
+        </FluentButton>
+    </div>
+
+    @if (almacenes is null)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+    <FluentDataGrid Items="@almacenes?.AsQueryable()" GridTemplateColumns="1fr 2fr 3fr 1fr 1fr" TGridItem="Almacen">
+            <PropertyColumn Property="@(a => a.Id)" Sortable="true" Title="ID" />
+            <PropertyColumn Property="@(a => a.Name)" Sortable="true" Title="Nombre" />
+            <PropertyColumn Property="@(a => a.Location)" Sortable="true" Title="Ubicación" />
+            <PropertyColumn Property="@(a => a.Capacity)" Sortable="true" Title="Capacidad (m³)" Align="Align.End" />
+            <PropertyColumn Property="@(a => a.ProductCount)" Sortable="true" Title="Nº Productos" Align="Align.End" />
+        </FluentDataGrid>
+    }
+
+    <div class="navigation-grid" style="margin-top: 2rem;">
+        <NavigationCard Title="Stock"
+                        Icon="@(new Icons.Regular.Size24.Box())"
+                        Description="Control de stock, lotes y vencimientos."
+                        Href="/almacenes/stock" />
+        <NavigationCard Title="Movimientos"
+                        Icon="@(new Icons.Regular.Size24.ArrowSwap())"
+                        Description="Registro de ingresos, egresos y transferencias."
+                        Href="/almacenes/movimientos" />
+        <NavigationCard Title="Scrap"
+                        Icon="@(new Icons.Regular.Size24.Delete())"
+                        Description="Gestión de productos defectuosos o vencidos."
+                        Href="/almacenes/scrap" />
+    </div>
+</div>
+
+@code {
+    private List<Almacen>? almacenes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        almacenes = await AlmacenService.GetAlmacenesAsync();
+    }
+}

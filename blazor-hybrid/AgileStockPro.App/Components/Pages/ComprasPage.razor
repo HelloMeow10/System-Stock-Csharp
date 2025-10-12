@@ -1,0 +1,91 @@
+@page "/compras"
+@using AgileStockPro.App.Models
+@using AgileStockPro.App.Services
+@using AgileStockPro.App.Components.Shared
+@inject ICompraService CompraService
+
+<PageTitle>Compras</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="title-section">
+            <h2>Módulo de Compras</h2>
+            <p>Gestión integral de compras y proveedores.</p>
+        </div>
+    </div>
+
+    @if (stats is not null)
+    {
+        <div class="stats-grid">
+            <StatsCard Title="Productos Activos" Value="@stats.ProductosActivos.ToString("N0")" IconValue="@(new Icons.Regular.Size24.Box())" />
+            <StatsCard Title="Proveedores" Value="@stats.Proveedores.ToString()" IconValue="@(new Icons.Regular.Size24.BuildingPeople())" CardAppearance="Appearance.Accent" />
+            <StatsCard Title="Órdenes del Mes" Value="@stats.OrdenesDelMes.ToString()" IconValue="@(new Icons.Regular.Size24.Cart())" TrendValue="@stats.OrdenesDelMesTrend" IsTrendPositive="true" CardAppearance="Appearance.Accent" />
+        </div>
+    }
+    else
+    {
+        <FluentProgressRing />
+    }
+
+    <div class="navigation-grid">
+        <NavigationCard Title="Productos"
+                        Icon="@(new Icons.Regular.Size24.Box())"
+                        Description="Gestión completa del catálogo de productos: alta, baja, modificación, categorías y control de stock."
+                        Href="/compras/productos" />
+        <NavigationCard Title="Proveedores"
+                        Icon="@(new Icons.Regular.Size24.BuildingPeople())"
+                        Description="Administración de proveedores, condiciones comerciales, tiempos de entrega y catálogos."
+                        Href="/compras/proveedores" />
+        <NavigationCard Title="Órdenes de Compra"
+                        Icon="@(new Icons.Regular.Size24.Cart())"
+                        Description="Emisión de presupuestos, órdenes de compra, seguimiento de entregas y registro de facturas."
+                        Href="/compras/ordenes" />
+    </div>
+
+    <FluentCard>
+        <div class="recent-orders-header">
+            <h4>Órdenes de Compra Recientes</h4>
+        </div>
+        @if (recentesOrdenes is not null)
+        {
+            <div class="recent-orders-list">
+                @foreach (var orden in recentesOrdenes)
+                {
+                    <div class="order-item">
+                        <div class="order-item-info">
+                            <span class="order-id">@orden.Id</span>
+                            <span class="order-supplier">@orden.Proveedor</span>
+                        </div>
+                        <div class="order-item-details">
+                            <span class="order-total">@orden.Total.ToString("C0")</span>
+                            <FluentBadge Appearance="@GetStatusBadgeAppearance(orden.Estado)">@orden.Estado</FluentBadge>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <FluentProgressRing />
+        }
+    </FluentCard>
+</div>
+
+@code {
+    private CompraStats? stats;
+    private List<OrdenCompra>? recentesOrdenes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        stats = await CompraService.GetCompraStatsAsync();
+        recentesOrdenes = await CompraService.GetRecentOrdenesCompraAsync();
+    }
+
+    private Appearance GetStatusBadgeAppearance(string status) => status switch
+    {
+    "Entregada" => Appearance.Accent,
+    "Pendiente" => Appearance.Neutral,
+        "En tránsito" => Appearance.Accent,
+        _ => Appearance.Neutral
+    };
+}

@@ -1,0 +1,53 @@
+.page-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 1rem;
+}
+
+.page-header h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.page-header p {
+    color: var(--neutral-foreground-rest);
+}
+
+.stats-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(1, 1fr);
+}
+
+.navigation-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(1, 1fr);
+}
+
+.recent-sales-card {
+    padding: 1rem;
+}
+
+:host ::deep .fluent-data-grid-row {
+    align-items: center;
+}
+
+:host ::deep .fluent-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .navigation-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

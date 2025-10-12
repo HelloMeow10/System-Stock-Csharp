@@ -1,0 +1,60 @@
+@page "/analisis"
+@using AgileStockPro.App.Components.Shared
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Microsoft.FluentUI.AspNetCore.Components.Icons
+
+<PageTitle>Análisis</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Análisis y Reportes</h1>
+        <p>Visualización de datos clave del negocio.</p>
+    </div>
+
+    <div class="stats-grid">
+        <StatsCard
+            Title="Margen de Beneficio Bruto"
+            Value="25.4%"
+            Icon="@(new Icons.Regular.Size24.ChartMultiple())"
+            TrendValue="1.2%"
+            IsTrendPositive="true"
+            CardAppearance="Appearance.Success" />
+        <StatsCard
+            Title="Rotación de Inventario"
+            Value="4.2"
+            Icon="@(new Icons.Regular.Size24.ArrowSync())"
+            TrendValue="-0.1"
+            IsTrendPositive="false"
+            CardAppearance="Appearance.Normal" />
+        <StatsCard
+            Title="Costo Promedio de Pedido"
+            Value="$1,230.50"
+            Icon="@(new Icons.Regular.Size24.Money())"
+            TrendValue="$50.10"
+            IsTrendPositive="false"
+            CardAppearance="Appearance.Warning" />
+        <StatsCard
+            Title="Tasa de Devolución"
+            Value="2.1%"
+            Icon="@(new Icons.Regular.Size24.ArrowUndo())"
+            TrendValue="0.3%"
+            IsTrendPositive="false"
+            CardAppearance="Appearance.Accent" />
+    </div>
+
+    <div class="report-section">
+        <FluentCard>
+            <CardHeader>
+                <h4>Reportes Generales</h4>
+            </CardHeader>
+            <CardContent>
+                <p>Aquí se mostrará una grilla o lista de reportes disponibles para generar (Ej: Ventas por período, Compras por proveedor, etc.).</p>
+                <FluentButton Appearance="Appearance.Accent">Generar Reporte de Ventas</FluentButton>
+            </CardContent>
+        </FluentCard>
+    </div>
+</div>
+
+@code {
+
+}

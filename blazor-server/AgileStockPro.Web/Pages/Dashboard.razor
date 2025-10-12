@@ -1,0 +1,115 @@
+@page "/dashboard"
+@using AgileStockPro.Web.Models
+@using AgileStockPro.Web.Services
+@inject IDashboardService DashboardSvc
+
+<PageHeader Title="Dashboard" />
+
+<div class="dashboard">
+  <section class="cards">
+    @if (Stats is not null)
+    {
+    foreach (var s in Stats)
+    {
+      <StatCard Model="s" />
+    }
+    }
+  </section>
+
+  <section class="grid-two">
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Actividad reciente</h3>
+      </div>
+  <RecentActivityList Items="Recent" />
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Top productos</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table compact">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>
+                <button class="th-btn" @onclick="() => ToggleSort(TopSort.Sold)">
+                  Vendidos
+                  <span class="glyph">@SortGlyph(TopSort.Sold)</span>
+                </button>
+              </th>
+              <th>
+                <button class="th-btn" @onclick="() => ToggleSort(TopSort.Stock)">
+                  Stock
+                  <span class="glyph">@SortGlyph(TopSort.Stock)</span>
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+          @if (TopProducts is not null)
+          {
+            foreach (var p in TopView)
+            {
+              <tr>
+                <td>@p.Name</td>
+                <td>@p.Category</td>
+                <td>@p.Sold</td>
+                <td>
+                  <span class="badge @(p.Stock <= 5 ? "danger" : p.Stock <= 15 ? "warning" : "success")">@p.Stock</span>
+                </td>
+              </tr>
+            }
+          }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+@code {
+    private IReadOnlyList<StatsCardModel>? Stats;
+    private IReadOnlyList<RecentActivityModel>? Recent;
+    private IReadOnlyList<TopProductModel>? TopProducts;
+
+    private enum TopSort { Sold, Stock }
+    private TopSort _sortBy = TopSort.Sold;
+    private bool _desc = true;
+
+    private IEnumerable<TopProductModel> TopView
+    {
+        get
+        {
+            var src = TopProducts ?? Array.Empty<TopProductModel>();
+            IOrderedEnumerable<TopProductModel> ordered = _sortBy == TopSort.Sold
+                ? (_desc ? src.OrderByDescending(p => p.Sold) : src.OrderBy(p => p.Sold))
+                : (_desc ? src.OrderByDescending(p => p.Stock) : src.OrderBy(p => p.Stock));
+            return ordered.ThenBy(p => p.Name).ThenBy(p => p.Category);
+        }
+    }
+
+    private void ToggleSort(TopSort column)
+    {
+        if (_sortBy == column) _desc = !_desc; else { _sortBy = column; _desc = true; }
+    }
+
+    private string SortGlyph(TopSort column)
+    {
+        if (_sortBy != column) return string.Empty;
+        return _desc ? "▼" : "▲";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var statsTask = DashboardSvc.GetStatsAsync();
+        var recentTask = DashboardSvc.GetRecentActivitiesAsync();
+        var topTask = DashboardSvc.GetTopProductsAsync();
+        await Task.WhenAll(statsTask, recentTask, topTask);
+        Stats = await statsTask;
+        Recent = await recentTask;
+        TopProducts = await topTask;
+    }
+}

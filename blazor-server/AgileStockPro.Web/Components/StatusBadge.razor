@@ -1,0 +1,18 @@
+@namespace AgileStockPro.Web.Components
+@inherits ComponentBase
+
+@if (!string.IsNullOrWhiteSpace(Status))
+{
+    var cls = Status.ToLowerInvariant() switch
+    {
+        "ok" => "badge badge-ok",
+        "low" => "badge badge-low",
+        "critical" => "badge badge-critical",
+        _ => "badge"
+    };
+    <span class="@cls">@Status</span>
+}
+
+@code {
+    [Parameter] public string? Status { get; set; }
+}

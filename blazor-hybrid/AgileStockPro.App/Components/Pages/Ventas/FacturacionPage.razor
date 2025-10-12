@@ -1,0 +1,107 @@
+@page "/ventas/facturacion"
+@using AgileStockPro.App.Models
+@using AgileStockPro.App.Services
+@using Microsoft.FluentUI.AspNetCore.Components
+@using AgileStockPro.App.Components.Shared
+@inject FacturacionService FacturacionSvc
+@inject IToastService ToastService
+
+<PageTitle>Facturación</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h2>Facturación</h2>
+            <p>Emisión y gestión de comprobantes</p>
+        </div>
+        <div class="header-actions">
+            <FluentButton Appearance="Appearance.Outline">
+                <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.ArrowDownload())" />
+                Exportar
+            </FluentButton>
+            <FluentButton Appearance="Appearance.Accent" OnClick="@(() => ToastService.ShowSuccess("Funcionalidad para nueva factura no implementada."))">
+                <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Add())" />
+                Nueva Factura
+            </FluentButton>
+        </div>
+    </div>
+
+    <div class="search-bar">
+        <FluentTextField Placeholder="Buscar por número o cliente..." @bind-Value="_filtro" Immediate="true" OnInput="@HandleSearch">
+            <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Search())" />
+        </FluentTextField>
+    </div>
+
+    <div class="stats-grid">
+    <StatsCard Title="Facturado del Mes" Value="$128,450" IconValue="@(new Icons.Regular.Size24.Money())" TrendValue="+8%" IsTrendPositive="true" />
+    <StatsCard Title="Por Cobrar" Value="$45,200" IconValue="@(new Icons.Regular.Size24.Clock())" CardAppearance="Appearance.Neutral" TrendValue="5 facturas" />
+    <StatsCard Title="Vencidas" Value="$11,300" IconValue="@(new Icons.Regular.Size24.Calendar())" CardAppearance="Appearance.Accent" TrendValue="2 facturas" />
+    <StatsCard Title="Cobrado" Value="$83,250" IconValue="@(new Icons.Regular.Size24.CheckmarkCircle())" CardAppearance="Appearance.Accent" TrendValue="15 facturas" />
+    </div>
+
+    <div class="grid-container">
+        @if (_facturasFiltradas is null)
+        {
+            <FluentProgressRing />
+        }
+        else
+        {
+            <FluentDataGrid Items="@_facturasFiltradas?.AsQueryable()" GridTemplateColumns="1fr 1fr 1.5fr 1fr 1fr 1fr 0.5fr" TGridItem="Factura">
+                <TemplateColumn Title="N° Comprobante" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true">
+                    <strong>@context.Id</strong>
+                </TemplateColumn>
+                <PropertyColumn Property="@(p => p.Fecha)" Sortable="true" />
+                <PropertyColumn Property="@(p => p.Cliente)" Sortable="true" />
+                <TemplateColumn Title="Tipo">
+                    <FluentBadge Appearance="Appearance.Neutral">@context.Tipo</FluentBadge>
+                </TemplateColumn>
+                <TemplateColumn Title="Total" Align="Align.End">
+                    <strong class="@(context.Total < 0 ? "text-danger" : "")">@context.Total.ToString("C")</strong>
+                </TemplateColumn>
+                <TemplateColumn Title="Estado" Align="Align.Center">
+                    <FluentBadge Appearance="@GetEstadoBadgeAppearance(context.Estado)">@context.Estado</FluentBadge>
+                </TemplateColumn>
+                <TemplateColumn Title="Acciones" Align="Align.End">
+                    <FluentButton IconStart="@(new Icons.Regular.Size16.Document())" Appearance="Appearance.Stealth" OnClick="@(() => ToastService.ShowInfo($"Viendo detalle de {context.Id}"))" />
+                    <FluentButton IconStart="@(new Icons.Regular.Size16.ArrowDownload())" Appearance="Appearance.Stealth" OnClick="@(() => ToastService.ShowInfo($"Descargando {context.Id}"))" />
+                </TemplateColumn>
+            </FluentDataGrid>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Factura>? _facturas;
+    private IEnumerable<Factura>? _facturasFiltradas;
+    private string? _filtro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _facturas = await FacturacionSvc.ObtenerFacturasAsync();
+        _facturasFiltradas = _facturas;
+    }
+
+    private void HandleSearch(ChangeEventArgs e)
+    {
+        _filtro = e.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(_filtro))
+        {
+            _facturasFiltradas = _facturas;
+        }
+        else
+        {
+            _facturasFiltradas = _facturas?.Where(f =>
+                f.Id.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ||
+                f.Cliente.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private Appearance GetEstadoBadgeAppearance(EstadoFactura estado) => estado switch
+    {
+        EstadoFactura.Pagada => Appearance.Accent,
+        EstadoFactura.Pendiente => Appearance.Neutral,
+        EstadoFactura.Aplicada => Appearance.Neutral,
+        EstadoFactura.Vencida => Appearance.Accent,
+        _ => Appearance.Stealth
+    };
+}

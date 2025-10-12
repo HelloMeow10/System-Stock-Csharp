@@ -1,0 +1,16 @@
+.page-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.page-header h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.page-header p {
+    color: var(--neutral-foreground-rest);
+    opacity: 0.7;
+}

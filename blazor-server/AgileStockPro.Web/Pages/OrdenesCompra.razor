@@ -1,0 +1,45 @@
+@page "/ordenes-compra"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@inject IAppDataService Data
+
+<PageHeader Title="Órdenes de compra" />
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>Proveedor</th>
+				<th>Fecha</th>
+				<th>Estado</th>
+				<th>Total</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var oc in items)
+		{
+			<tr>
+				<td>@oc.Id</td>
+				<td>@oc.Supplier</td>
+				<td>@oc.Date.ToString("dd/MM/yyyy")</td>
+				<td>@oc.Status</td>
+				<td>$@oc.Total</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+@code {
+	private IReadOnlyList<OrdenCompra>? items;
+	protected override async Task OnInitializedAsync()
+	{
+		items = await Data.GetPurchaseOrdersAsync();
+	}
+}

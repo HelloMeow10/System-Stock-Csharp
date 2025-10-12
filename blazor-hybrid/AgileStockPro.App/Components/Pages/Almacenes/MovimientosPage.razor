@@ -1,0 +1,98 @@
+@page "/almacenes/movimientos"
+@using AgileStockPro.App.Models
+@using AgileStockPro.App.Services
+@using Microsoft.FluentUI.AspNetCore.Components
+@using AgileStockPro.App.Components.Shared
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@inject MovimientoService MovimientoSvc
+@inject IToastService ToastService
+
+<PageTitle>Movimientos de Stock</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h2>Movimientos de Stock</h2>
+            <p>Registro de entradas y salidas</p>
+        </div>
+        <div class="header-actions">
+            <FluentButton Appearance="Appearance.Outline" OnClick="@(() => ToastService.ShowInfo("Funcionalidad para exportar no implementada."))">
+                <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.ArrowDownload())" />
+                Exportar
+            </FluentButton>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+    <StatsCard Title="Entradas del Mes" Value="2,450" IconValue="@(new Icons.Regular.Size24.ArrowTrendingLines())" CardAppearance="Appearance.Accent" TrendValue="145 movimientos" />
+    <StatsCard Title="Salidas del Mes" Value="1,890" IconValue="@(new Icons.Regular.Size24.ArrowTrending())" CardAppearance="Appearance.Neutral" TrendValue="203 movimientos" />
+    <StatsCard Title="Balance" Value="+560" IconValue="@(new Icons.Regular.Size24.ArrowUp())" TrendValue="Stock incrementado" IsTrendPositive="true" />
+    </div>
+
+    <div class="search-bar-container">
+        <FluentTextField Placeholder="Buscar por documento o producto..." @bind-Value="_filtro" Immediate="true" OnInput="@HandleSearch" Style="width: 100%;">
+            <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Search())" />
+        </FluentTextField>
+        <FluentButton Appearance="Appearance.Outline" OnClick="@(() => ToastService.ShowInfo("Funcionalidad de filtros no implementada."))">
+            <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Filter())" />
+            Filtros
+        </FluentButton>
+    </div>
+
+    <div class="grid-container">
+        @if (_movimientosFiltrados is null)
+        {
+            <FluentProgressRing />
+        }
+        else
+        {
+            <FluentDataGrid Items="@_movimientosFiltrados?.AsQueryable()" GridTemplateColumns="1fr 1fr 1fr 2fr 1fr 1.5fr 1fr" TGridItem="Movimiento">
+                <PropertyColumn Property="@(p => p.Id)" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" Title="ID Movimiento" />
+                <TemplateColumn Title="Tipo">
+                    <FluentBadge Appearance="Appearance.Accent">
+                        <FluentIcon Value="@((Icon)(context.Tipo == TipoMovimiento.Entrada ? new Icons.Regular.Size16.ArrowUp() : new Icons.Regular.Size16.ArrowDown()))" />
+                        @context.Tipo
+                    </FluentBadge>
+                </TemplateColumn>
+                <PropertyColumn Property="@(p => p.Documento)" Sortable="true" />
+                <PropertyColumn Property="@(p => p.Producto)" Sortable="true" />
+                <TemplateColumn Title="Cantidad" Align="Align.End">
+                    <strong class="@(context.Cantidad > 0 ? "text-success" : "text-info")">
+                        @context.Cantidad.ToString("+#;-#;0")
+                    </strong>
+                </TemplateColumn>
+                <PropertyColumn Property="@(p => p.FechaHora)" Format="dd/MM/yyyy HH:mm" Sortable="true" Title="Fecha y Hora" />
+                <TemplateColumn Title="Usuario">
+                     <FluentBadge Appearance="Appearance.Neutral">@context.Usuario</FluentBadge>
+                </TemplateColumn>
+            </FluentDataGrid>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Movimiento>? _movimientos;
+    private IEnumerable<Movimiento>? _movimientosFiltrados;
+    private string? _filtro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _movimientos = await MovimientoSvc.ObtenerMovimientosAsync();
+        _movimientosFiltrados = _movimientos;
+    }
+
+    private void HandleSearch(ChangeEventArgs e)
+    {
+        _filtro = e.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(_filtro))
+        {
+            _movimientosFiltrados = _movimientos;
+        }
+        else
+        {
+            _movimientosFiltrados = _movimientos?.Where(m =>
+                m.Documento.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ||
+                m.Producto.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+}

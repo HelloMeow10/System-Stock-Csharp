@@ -1,0 +1,54 @@
+@page "/clientes"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@inject IAppDataService Data
+
+<PageHeader Title="Clientes" />
+
+<div style="margin-bottom:.75rem">
+	<input class="search" placeholder="Buscar por nombre o email..." @bind-value="term" @bind-value:event="oninput" />
+  </div>
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>Id</th>
+				<th>Nombre</th>
+				<th>Email</th>
+				<th>Teléfono</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var c in View)
+		{
+			<tr>
+				<td>@c.Id</td>
+				<td>@c.Name</td>
+				<td>@c.Email</td>
+				<td>@c.Phone</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+@code {
+	private IReadOnlyList<Customer>? items;
+	private string term = string.Empty;
+
+	protected override async Task OnInitializedAsync()
+	{
+		items = await Data.GetCustomersAsync();
+	}
+
+	private IEnumerable<Customer> View => (items ?? Array.Empty<Customer>())
+		.Where(s => string.IsNullOrWhiteSpace(term)
+			|| (s.Name?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+			|| (s.Email?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+}

@@ -1,0 +1,66 @@
+:host ::deep .fluent-card {
+    height: 100%;
+}
+
+.stats-card {
+    background-color: var(--neutral-layer-2);
+    border-radius: var(--corner-radius);
+    padding: 16px;
+}
+
+.card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.title {
+    color: var(--neutral-foreground-rest);
+}
+
+.body {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.trend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trend-value {
+    font-size: 14px;
+}
+
+.trend-positive {
+    color: var(--success-text-rest);
+}
+
+.trend-negative {
+    color: var(--error-text-rest);
+}
+
+.icon-variant-default {
+    color: var(--accent-fill-rest);
+}
+
+.icon-variant-warning {
+    color: var(--warning-fill-rest);
+}
+
+.icon-variant-success {
+    color: var(--success-fill-rest);
+}
+
+.icon-variant-info {
+    color: var(--info-fill-rest);
+}

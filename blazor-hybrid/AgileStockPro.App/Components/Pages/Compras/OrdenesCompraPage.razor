@@ -1,0 +1,92 @@
+@page "/compras/ordenes"
+@using AgileStockPro.App.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h2>Órdenes de Compra</h2>
+            <p>Gestión de presupuestos, órdenes y seguimiento</p>
+        </div>
+        <FluentButton Appearance="Appearance.Accent">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Add())" />
+            Nueva Orden de Compra
+        </FluentButton>
+    </div>
+
+    <div class="toolbar">
+        <FluentTextField Placeholder="Buscar por número de orden o proveedor..." class="search-field">
+            <FluentIcon Value="@(new Icons.Regular.Size16.Search())" Slot="start" />
+        </FluentTextField>
+
+        <FluentSelect class="status-select" TOption="string">
+            <FluentOption Value="all">Todos los estados</FluentOption>
+            <FluentOption Value="entregada">Entregada</FluentOption>
+            <FluentOption Value="pendiente">Pendiente</FluentOption>
+            <FluentOption Value="transito">En tránsito</FluentOption>
+            <FluentOption Value="cancelada">Cancelada</FluentOption>
+        </FluentSelect>
+
+        <FluentButton>
+            <FluentIcon Value="@(new Icons.Regular.Size16.Filter())" />
+            Filtros
+        </FluentButton>
+    </div>
+
+    <FluentCard class="table-card">
+    <FluentDataGrid Items="@_ordenes.AsQueryable()" GridTemplateColumns="1fr 1fr 2fr 1fr 1fr 1fr 1fr" TGridItem="OrdenCompra">
+            <TemplateColumn Title="N° Orden">
+                <p class="font-mono">@context.Id</p>
+            </TemplateColumn>
+            <TemplateColumn Title="Fecha">
+                @context.Fecha
+            </TemplateColumn>
+            <TemplateColumn Title="Proveedor">
+                @context.Proveedor
+            </TemplateColumn>
+            <TemplateColumn Title="Items" Align="Align.End">
+                @context.Items
+            </TemplateColumn>
+            <TemplateColumn Title="Total" Align="Align.End">
+                <p class="font-semibold">@context.Total.ToString("C")</p>
+            </TemplateColumn>
+            <TemplateColumn Title="Estado">
+                <FluentBadge Appearance="Appearance.Accent"
+                             BackgroundColor="@GetStatusColor(context.Estado, "--light")"
+                             Color="@GetStatusColor(context.Estado)">
+                    @context.Estado
+                </FluentBadge>
+            </TemplateColumn>
+            <TemplateColumn Title="Acciones" Align="Align.End">
+                <div class="action-buttons">
+                    <FluentButton IconStart="@(new Icons.Regular.Size16.Eye())" Appearance="Appearance.Stealth" />
+                    <FluentButton IconStart="@(new Icons.Regular.Size16.Document())" Appearance="Appearance.Stealth" />
+                </div>
+            </TemplateColumn>
+        </FluentDataGrid>
+    </FluentCard>
+</div>
+
+@inject Services.IOrdenCompraService OrdenCompraService
+
+@code {
+    private IEnumerable<OrdenCompra> _ordenes = new List<OrdenCompra>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _ordenes = await OrdenCompraService.GetOrdenesCompraAsync();
+    }
+
+    private string GetStatusColor(string estado, string suffix = "")
+    {
+        return estado switch
+        {
+            "Entregada" => $"var(--success{suffix})",
+            "Pendiente" => $"var(--warning{suffix})",
+            "En tránsito" => $"var(--info{suffix})",
+            "Cancelada" => $"var(--danger{suffix})",
+            _ => $"var(--neutral{suffix})",
+        };
+    }
+}
