@@ -54,6 +54,7 @@ namespace Services.Controllers.V1
             {
                 Username = user.Username,
                 Rol = normalizedRole ?? "Unknown",
+                Token = token
             });
         }
 
@@ -82,6 +83,7 @@ namespace Services.Controllers.V1
             {
                 Username = user.Username,
                 Rol = normalizedRole ?? "Unknown",
+                Token = token
             });
         }
 

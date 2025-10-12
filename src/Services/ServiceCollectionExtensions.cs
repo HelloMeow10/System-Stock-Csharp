@@ -71,12 +71,20 @@ namespace Services
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
                     };
 
-                    // Extract token from cookie
+                    // Prefer Authorization header; fallback to cookie
                     options.Events = new JwtBearerEvents
                     {
                         OnMessageReceived = context =>
                         {
-                            context.Token = context.Request.Cookies["ums_auth"];
+                            var authHeader = context.Request.Headers["Authorization"].ToString();
+                            if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                            {
+                                context.Token = authHeader.Substring("Bearer ".Length).Trim();
+                            }
+                            else
+                            {
+                                context.Token = context.Request.Cookies["ums_auth"];
+                            }
                             return Task.CompletedTask;
                         }
                     };

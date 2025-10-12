@@ -15,8 +15,13 @@ builder.Services.AddFluentUIComponents();
 builder.Services.AddSingleton<IProductService, ProductService>();
 builder.Services.AddSingleton<IDashboardService, DashboardService>();
 builder.Services.AddSingleton<IAppDataService, AppDataService>();
-builder.Services.AddScoped<IUserStore, LocalUserStore>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+
+// API integration
+builder.Services.AddSingleton(new AgileStockPro.Web.Services.Api.ApiOptions { BaseUrl = "http://localhost:5000/" });
+builder.Services.AddScoped<AgileStockPro.Web.Services.Api.ITokenProvider, AgileStockPro.Web.Services.Api.TokenProvider>();
+builder.Services.AddScoped<AgileStockPro.Web.Services.Api.BackendApiClient>();
+builder.Services.AddScoped<IUserStore, AgileStockPro.Web.Services.Api.ApiUserStore>();
+builder.Services.AddScoped<IAuthService, AgileStockPro.Web.Services.Api.ApiAuthService>();
 
 var app = builder.Build();
 

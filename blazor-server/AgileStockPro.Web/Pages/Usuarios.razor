@@ -3,6 +3,7 @@
 @inject AgileStockPro.Web.Services.IUserStore Store
 @inject AgileStockPro.Web.Services.IAuthService Auth
 @inject Microsoft.JSInterop.IJSRuntime JS
+@inject AgileStockPro.Web.Services.Api.BackendApiClient Api
 
 <PageHeader Title="Usuarios">
     <Actions>
@@ -66,6 +67,28 @@ else
             <input class="input" @bind-value="editing.Email" />
             <label>Admin</label>
             <input type="checkbox" @bind="editing.IsAdmin" />
+            <label>Persona</label>
+            <select class="input" @bind="selectedPersonaId">
+                <option value="">Seleccione…</option>
+                @if (personas != null)
+                {
+                    foreach (var p in personas)
+                    {
+                        <option value="@p.IdPersona">@p.NombreCompleto</option>
+                    }
+                }
+            </select>
+            <label>Rol</label>
+            <select class="input" @bind="selectedRolId">
+                <option value="">Seleccione…</option>
+                @if (roles != null)
+                {
+                    foreach (var r in roles)
+                    {
+                        <option value="@r.IdRol">@r.Nombre</option>
+                    }
+                }
+            </select>
         </div>
 
         <div class="panel-header" style="margin-top:1rem;">Preguntas de seguridad</div>
@@ -101,6 +124,10 @@ else
     private SecurityPolicy policy = new();
     private string? tempPassInfo;
     private AppUser? user;
+    private List<AgileStockPro.Web.Services.Api.PersonaDto>? personas;
+    private List<(int IdRol, string Nombre)>? roles;
+    private string? selectedPersonaId;
+    private string? selectedRolId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -109,6 +136,9 @@ else
         if (user?.IsAdmin == true)
         {
             list = (await Store.GetAllAsync()).ToList();
+            // cargar combos
+            personas = (await Api.GetAsync<AgileStockPro.Web.Services.Api.PagedResponse<AgileStockPro.Web.Services.Api.PersonaDto>>("api/v1/personas")).Items?.ToList() ?? new();
+            roles = (await Api.GetAsync<List<AgileStockPro.Web.Services.Api.RolDto>>("api/v1/referencedata/roles")).Select(r => (r.IdRol, r.Nombre)).ToList();
         }
     }
 
@@ -139,16 +169,29 @@ else
     private async Task Guardar()
     {
         if (editing == null) return;
-        // If creating, generate first random password and hash username+password
-        if (string.IsNullOrWhiteSpace(editing.PasswordHash))
+        // Crear usuario en backend si no tiene BackendIdUsuario
+        if (editing.BackendIdUsuario == null)
         {
-            var first = GenerateTempPassword();
-            var hash = await JS.InvokeAsync<string>("app.sha256", editing.Username + first);
-            editing.PasswordHash = hash;
-            editing.MustChangePassword = true;
-            tempPassInfo = $"Contraseña inicial: {first} (deberá cambiarla al ingresar)";
+            if (string.IsNullOrWhiteSpace(selectedPersonaId) || string.IsNullOrWhiteSpace(selectedRolId))
+            {
+                tempPassInfo = "Seleccione Persona y Rol";
+                return;
+            }
+            var created = await Api.PostAsync<AgileStockPro.Web.Services.Api.UserDto>("api/v1/users", new Contracts.UserRequest
+            {
+                PersonaId = selectedPersonaId,
+                Username = editing.Username,
+                Password = GenerateTempPassword(),
+                Rol = roles!.First(r => r.IdRol.ToString() == selectedRolId).Nombre
+            });
+            editing.BackendIdUsuario = created.IdUsuario;
+            editing.BackendIdPersona = created.IdPersona;
+            tempPassInfo = "Usuario creado. La contraseña inicial fue enviada por correo (según backend).";
         }
-        await Store.SaveAsync(editing);
+        else
+        {
+            await Store.SaveAsync(editing);
+        }
         list = (await Store.GetAllAsync()).ToList();
         editing = null;
     }

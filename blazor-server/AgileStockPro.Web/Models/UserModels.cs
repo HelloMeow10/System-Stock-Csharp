@@ -33,6 +33,10 @@ public class PasswordHistoryEntry
 public class AppUser
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    // Backend identifiers for API operations
+    public int? BackendIdUsuario { get; set; }
+    public int? BackendIdPersona { get; set; }
+    public int? BackendIdRol { get; set; }
     [Required]
     public string Username { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
