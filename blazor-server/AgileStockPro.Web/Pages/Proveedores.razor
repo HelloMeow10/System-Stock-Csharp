@@ -1,0 +1,61 @@
+@page "/proveedores"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@inject IAppDataService Data
+
+<AgileStockPro.Web.Components.AuthGuard>
+<PageHeader Title="Proveedores">
+	<Actions>
+		<button class="btn btn-primary">Nuevo</button>
+	</Actions>
+</PageHeader>
+
+<div style="margin-bottom:.75rem">
+	<input class="search" placeholder="Buscar por nombre o email..." @bind-value="term" @bind-value:event="oninput" />
+  </div>
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+
+</AgileStockPro.Web.Components.AuthGuard>
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>Id</th>
+				<th>Nombre</th>
+				<th>Email</th>
+				<th>Teléfono</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var s in View)
+		{
+			<tr>
+				<td>@s.Id</td>
+				<td>@s.Name</td>
+				<td>@s.Email</td>
+				<td>@s.Phone</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+@code {
+	private IReadOnlyList<Supplier>? items;
+	private string term = string.Empty;
+
+	protected override async Task OnInitializedAsync()
+	{
+		items = await Data.GetSuppliersAsync();
+	}
+
+	private IEnumerable<Supplier> View => (items ?? Array.Empty<Supplier>())
+		.Where(s => string.IsNullOrWhiteSpace(term)
+			|| (s.Name?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+			|| (s.Email?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+}

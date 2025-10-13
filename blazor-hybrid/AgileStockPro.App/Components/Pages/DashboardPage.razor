@@ -1,0 +1,48 @@
+@page "/dashboard"
+@using AgileStockPro.App.Components.Dashboard
+@using AgileStockPro.App.Models.Dashboard
+@using AgileStockPro.App.Services
+@inject IDashboardService DashboardService
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="dashboard-container">
+    <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Resumen general del sistema de gestión</p>
+    </div>
+
+    @if (stats is not null)
+    {
+        <div class="stats-grid">
+            <StatsCard Title="Total Productos" Value="@stats.TotalProducts.ToString("N0")" IconValue="@(new Icons.Regular.Size24.Box())" TrendValue="@stats.TotalProductsTrend" IsTrendPositive="true" />
+            <StatsCard Title="Productos en Stock Bajo" Value="@stats.LowStockProducts.ToString()" IconValue="@(new Icons.Regular.Size24.Warning())" CardAppearance="Appearance.Neutral" />
+            <StatsCard Title="Ventas del Mes" Value="@stats.MonthlySales.ToString("C0")" IconValue="@(new Icons.Regular.Size24.ArrowTrendingLines())" TrendValue="@stats.MonthlySalesTrend" IsTrendPositive="true" CardAppearance="Appearance.Accent" />
+            <StatsCard Title="Órdenes Pendientes" Value="@stats.PendingOrders.ToString()" IconValue="@(new Icons.Regular.Size24.Cart())" CardAppearance="Appearance.Accent" />
+        </div>
+    }
+    else
+    {
+        <FluentProgressRing />
+    }
+
+    <div class="main-widgets-grid">
+        <AlertsWidget />
+        <RecentActivityWidget />
+    </div>
+
+    <div class="secondary-widgets-grid">
+        <TopProductsWidget />
+        <TopSuppliersWidget />
+        <TopClientsWidget />
+    </div>
+</div>
+
+@code {
+    private DashboardStats? stats;
+
+    protected override async Task OnInitializedAsync()
+    {
+        stats = await DashboardService.GetDashboardStatsAsync();
+    }
+}

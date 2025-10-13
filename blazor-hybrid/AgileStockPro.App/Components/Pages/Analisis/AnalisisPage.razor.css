@@ -1,0 +1,28 @@
+.page-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.page-header h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.page-header p {
+    color: var(--neutral-foreground-rest);
+    opacity: 0.7;
+}
+
+.navigation-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+    .navigation-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

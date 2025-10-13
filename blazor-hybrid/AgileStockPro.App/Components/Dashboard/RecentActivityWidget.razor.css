@@ -1,0 +1,66 @@
+:host ::deep .fluent-card {
+    height: 100%;
+}
+
+.recent-activity-widget {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--neutral-stroke-divider-rest);
+}
+
+.card-content {
+    padding: 16px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.activity-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.activity-item {
+    display: flex;
+    gap: 16px;
+    position: relative;
+    padding-bottom: 16px;
+    border-left: 2px solid var(--neutral-stroke-strong-rest);
+    margin-left: 6px; /* Half of dot width */
+}
+
+.activity-item:last-child {
+    border-left: 2px solid transparent;
+    padding-bottom: 0;
+}
+
+
+.timeline-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--accent-fill-rest);
+    position: absolute;
+    left: -7px; /* Half of dot width + half of border width */
+    top: 4px;
+}
+
+.activity-details {
+    padding-left: 24px;
+}
+
+.detail-label {
+    font-size: 14px;
+    color: var(--neutral-foreground-rest);
+}
+
+.time-label {
+    font-size: 12px;
+    color: var(--neutral-foreground-rest);
+    margin-top: 4px;
+}

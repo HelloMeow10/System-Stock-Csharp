@@ -1,0 +1,28 @@
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <FluentIcon Value="@(new Icons.Regular.Size24.Box())" />
+        <div class="sidebar-title">
+            <h1>StockPro</h1>
+            <p>Sistema de Gestión</p>
+        </div>
+    </div>
+    <FluentNavMenu>
+        <FluentNavLink Href="/dashboard" Icon="@(new Icons.Regular.Size24.Home())" Match="NavLinkMatch.All">Dashboard</FluentNavLink>
+
+        <FluentNavGroup Title="Módulos" Icon="@(new Icons.Regular.Size24.Apps())" Expanded="true">
+            <FluentNavGroup Title="Compras" Icon="@(new Icons.Regular.Size24.Cart())" Expanded="false">
+                <FluentNavLink Href="/compras/productos">Productos</FluentNavLink>
+                <FluentNavLink Href="/compras/proveedores">Proveedores</FluentNavLink>
+            </FluentNavGroup>
+            <FluentNavLink Href="/ventas" Icon="@(new Icons.Regular.Size24.Receipt())">Ventas</FluentNavLink>
+            <FluentNavLink Href="/almacenes" Icon="@(new Icons.Regular.Size24.Archive())">Almacenes</FluentNavLink>
+            <FluentNavLink Href="/analisis" Icon="@(new Icons.Regular.Size24.ChartMultiple())">Análisis</FluentNavLink>
+        </FluentNavGroup>
+
+        <FluentNavLink Href="/alertas" Icon="@(new Icons.Regular.Size24.Warning())">Alertas</FluentNavLink>
+        <FluentNavLink Href="/configuracion" Icon="@(new Icons.Regular.Size24.Settings())">Configuración</FluentNavLink>
+    </FluentNavMenu>
+</nav>

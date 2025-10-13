@@ -1,0 +1,108 @@
+@inherits ComponentBase
+
+@inject NavigationManager Nav
+
+<div class="page-header">
+  @if (ShowBreadcrumbs)
+  {
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      @foreach (var (segment, href, isLast) in Breadcrumbs)
+      {
+        if (!isLast)
+        {
+            <a href="@href">@segment</a><span class="sep">/</span>
+        }
+        else
+        {
+            <span class="current">@segment</span>
+        }
+      }
+    </nav>
+  }
+  <div class="title">
+    <h1>@Title</h1>
+    @if (!string.IsNullOrWhiteSpace(Subtitle))
+    {
+        <div class="subtitle">@Subtitle</div>
+    }
+  </div>
+  <div class="actions">
+    @Actions
+  </div>
+  
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public bool ShowBreadcrumbs { get; set; } = true;
+
+    private IReadOnlyList<(string label, string href, bool last)> Breadcrumbs { get; set; } = Array.Empty<(string, string, bool)>();
+
+    protected override void OnParametersSet()
+    {
+        Breadcrumbs = BuildBreadcrumbs();
+    }
+
+    private IReadOnlyList<(string label, string href, bool last)> BuildBreadcrumbs()
+    {
+        var uri = Nav.ToBaseRelativePath(Nav.Uri);
+        // Normalize: remove query/fragment
+        var q = uri.IndexOf('?');
+        if (q >= 0) uri = uri.Substring(0, q);
+        var h = uri.IndexOf('#');
+        if (h >= 0) uri = uri.Substring(0, h);
+
+        // root
+        var list = new List<(string label, string href, bool last)>
+        {
+            ("Inicio", "/dashboard", false)
+        };
+
+        if (string.IsNullOrWhiteSpace(uri) || uri == "/" || uri.Equals("dashboard", StringComparison.OrdinalIgnoreCase))
+        {
+            list[^1] = ("Dashboard", "/dashboard", true);
+            return list;
+        }
+
+        var parts = uri.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var acc = string.Empty;
+        for (var i = 0; i < parts.Length; i++)
+        {
+            acc += "/" + parts[i];
+            var last = i == parts.Length - 1;
+            var label = TranslateSegment(parts[i]);
+            list.Add((label, acc, last));
+        }
+        return list;
+    }
+
+    private static string TranslateSegment(string segment)
+    {
+        return segment.ToLowerInvariant() switch
+        {
+            "dashboard" => "Dashboard",
+            "products" => "Productos",
+            "proveedores" => "Proveedores",
+            "clientes" => "Clientes",
+            "almacenes" => "Almacenes",
+            "stock" => "Stock",
+            "movimientos" => "Movimientos",
+            "ventas" => "Ventas",
+            "facturacion" => "Facturación",
+            "ordenes-compra" => "Órdenes de compra",
+            "pedidos" => "Pedidos",
+            "alertas" => "Alertas",
+            "scrap" => "Scrap",
+            "configuracion" => "Configuración",
+            _ => Capitalize(segment.Replace('-', ' '))
+        };
+    }
+
+    private static string Capitalize(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return s;
+        return char.ToUpperInvariant(s[0]) + s.Substring(1);
+    }
+}

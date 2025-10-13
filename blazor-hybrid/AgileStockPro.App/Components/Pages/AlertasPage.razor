@@ -1,0 +1,50 @@
+@page "/alertas"
+@using AgileStockPro.App.Models.Dashboard
+@using AgileStockPro.App.Services
+@inject IDashboardService DashboardService
+
+<PageTitle>Alertas</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="title-section">
+            <h2>Alertas del Sistema</h2>
+            <p>Monitorización de niveles de stock y otros eventos críticos.</p>
+        </div>
+    </div>
+
+    @if (alerts is null)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+    <FluentDataGrid Items="@alerts?.AsQueryable()" GridTemplateColumns="2fr 1fr 1fr 1fr 1fr" TGridItem="AlertModel">
+            <PropertyColumn Property="@(a => a.ProductName)" Sortable="true" />
+            <PropertyColumn Property="@(a => a.Sku)" Sortable="true" Title="SKU" />
+            <PropertyColumn Property="@(a => a.CurrentStock)" Sortable="true" Title="Stock Actual" Align="Align.End" />
+            <PropertyColumn Property="@(a => a.MinimumStock)" Sortable="true" Title="Stock Mínimo" Align="Align.End" />
+            <TemplateColumn Title="Estado" Align="Align.Center">
+                <FluentBadge Appearance="@GetStatusBadgeAppearance(context.Status)">
+                    @context.Status
+                </FluentBadge>
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+</div>
+
+@code {
+    private IEnumerable<AlertModel>? alerts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        alerts = await DashboardService.GetAlertsAsync();
+    }
+
+    private Appearance GetStatusBadgeAppearance(string status) => status switch
+    {
+        "Bajo Stock" => Appearance.Neutral,
+        "Sin Stock" => Appearance.Accent,
+        _ => Appearance.Accent
+    };
+}

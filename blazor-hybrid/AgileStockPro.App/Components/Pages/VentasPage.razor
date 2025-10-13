@@ -1,0 +1,81 @@
+@page "/ventas"
+@using AgileStockPro.App.Components.Shared
+@using AgileStockPro.App.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+
+<div class="page-container">
+    <div class="page-header">
+        <h2>Módulo de Ventas</h2>
+        <p>Gestión integral de ventas y clientes</p>
+    </div>
+
+    <div class="stats-grid">
+    <StatsCard Title="Ventas del Mes"
+           Value="$128,450"
+           Icon="@(new Icons.Regular.Size24.Money())"
+           Trend="@(new TrendModel { Value = 8, IsPositive = true })"
+           Variant="success" />
+        <StatsCard Title="Clientes Activos"
+                   Value="234"
+                   Icon="@(new Icons.Regular.Size24.People())"
+                   Variant="info" />
+        <StatsCard Title="Pedidos Pendientes"
+                   Value="18"
+                   Icon="@(new Icons.Regular.Size24.Document())"
+                   Variant="warning" />
+        <StatsCard Title="Ticket Promedio"
+                   Value="$7,136"
+                   Icon="@(new Icons.Regular.Size24.ChartMultiple())"
+                   Variant="default" />
+    </div>
+
+    <div class="navigation-grid">
+        <NavigationCard Title="Clientes"
+                        Icon="@(new Icons.Regular.Size24.People())"
+                        Description="Gestión de clientes, condiciones de pago, límites de crédito y datos de contacto."
+                        Href="/ventas/clientes" />
+        <NavigationCard Title="Pedidos"
+                        Icon="@(new Icons.Regular.Size24.Document())"
+                        Description="Presupuestos, notas de pedido, confirmación de ventas y gestión de stock reservado."
+                        Href="/ventas/pedidos" />
+        <NavigationCard Title="Facturación"
+                        Icon="@(new Icons.Regular.Size24.Money())"
+                        Description="Emisión de facturas, notas de crédito/débito y reportes de ventas por período."
+                        Href="/ventas/facturacion" />
+    </div>
+
+    <FluentCard class="recent-sales-card">
+    <FluentDataGrid Items="@_ventas.AsQueryable()" GridTemplateColumns="1fr 2fr 1fr 1fr 1fr" TGridItem="Venta">
+            <TemplateColumn Title="ID">
+                <p>@context.Id</p>
+            </TemplateColumn>
+            <TemplateColumn Title="Cliente">
+                <p>@context.Cliente</p>
+            </TemplateColumn>
+            <TemplateColumn Title="Total">
+                <p>@context.Total</p>
+            </TemplateColumn>
+            <TemplateColumn Title="Fecha">
+                <p>@context.Fecha</p>
+            </TemplateColumn>
+            <TemplateColumn Title="Estado">
+                <FluentBadge Appearance="Appearance.Accent"
+                             BackgroundColor="@(context.Estado == "Facturada" ? "var(--success-light)" : context.Estado == "Pendiente" ? "var(--warning-light)" : "var(--info-light)")"
+                             Color="@(context.Estado == "Facturada" ? "var(--success)" : context.Estado == "Pendiente" ? "var(--warning)" : "var(--info)")">
+                    @context.Estado
+                </FluentBadge>
+            </TemplateColumn>
+        </FluentDataGrid>
+    </FluentCard>
+</div>
+
+@code {
+    private readonly IEnumerable<Venta> _ventas = new List<Venta>
+    {
+        new("V-2024-0892", "Construcciones del Sur", "$15,200", "15/03/2024", "Facturada"),
+        new("V-2024-0891", "Obras Civiles SA", "$28,400", "15/03/2024", "Pendiente"),
+        new("V-2024-0890", "Instalaciones Industriales", "$9,800", "14/03/2024", "Facturada"),
+        new("V-2024-0889", "Arquitectura Moderna", "$42,600", "14/03/2024", "Reservada")
+    };
+}

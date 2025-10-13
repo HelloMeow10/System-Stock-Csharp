@@ -1,0 +1,33 @@
+@using AgileStockPro.App.Models.Dashboard
+
+<FluentCard class="top-products-widget">
+    <div class="card-header">
+        <FluentLabel Type="LabelType.H6">Productos Más Vendidos</FluentLabel>
+    </div>
+    <div class="card-content">
+        @if (Products is not null)
+        {
+            <div class="items-container">
+                @foreach (var product in Products)
+                {
+                    <div class="item">
+                        <div class="item-info">
+                            <FluentLabel Type="LabelType.P">@product.Name</FluentLabel>
+                            <FluentLabel Type="LabelType.Small" Class="subtitle">@product.Units unidades</FluentLabel>
+                        </div>
+                        <FluentLabel Type="LabelType.P">@product.Revenue</FluentLabel>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p>Cargando productos...</p>
+        }
+    </div>
+</FluentCard>
+
+@code {
+    [Parameter]
+    public IEnumerable<TopProductModel>? Products { get; set; }
+}

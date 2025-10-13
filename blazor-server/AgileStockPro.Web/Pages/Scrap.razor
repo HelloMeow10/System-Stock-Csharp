@@ -1,0 +1,45 @@
+@page "/scrap"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@inject IAppDataService Data
+
+<PageHeader Title="Scrap" />
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>Producto</th>
+				<th>Cantidad</th>
+				<th>Motivo</th>
+				<th>Fecha</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var s in items)
+		{
+			<tr>
+				<td>@s.Id</td>
+				<td>@s.Product</td>
+				<td>@s.Quantity</td>
+				<td>@s.Reason</td>
+				<td>@s.Date.ToString("dd/MM/yyyy")</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+@code {
+	private IReadOnlyList<ScrapItem>? items;
+	protected override async Task OnInitializedAsync()
+	{
+		items = await Data.GetScrapAsync();
+	}
+}

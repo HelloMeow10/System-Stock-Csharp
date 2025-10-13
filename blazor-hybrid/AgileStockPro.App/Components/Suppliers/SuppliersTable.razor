@@ -1,0 +1,39 @@
+@using AgileStockPro.App.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+
+@if (Suppliers is null)
+{
+    <FluentProgressRing />
+}
+else
+{
+    <FluentDataGrid Items="@Suppliers?.AsQueryable()" GridTemplateColumns="1fr 2fr 1.5fr 1.5fr 2fr 2fr 1fr" TGridItem="Supplier">
+        <TemplateColumn Title="Código" Align="Align.Start">
+            <span class="font-mono">@context.Id</span>
+        </TemplateColumn>
+        <PropertyColumn Property="@(s => s.Name)" Title="Nombre" Sortable="true" />
+        <PropertyColumn Property="@(s => s.Cuit)" Title="CUIT" Sortable="true" />
+        <PropertyColumn Property="@(s => s.Phone)" Title="Teléfono" />
+        <PropertyColumn Property="@(s => s.Email)" Title="Email" />
+        <TemplateColumn Title="Categorías">
+            <FluentStack Wrap="true" Gap="0.25rem">
+                @foreach (var category in context.Categories)
+                {
+                    <FluentBadge Appearance="Appearance.Neutral">@category</FluentBadge>
+                }
+            </FluentStack>
+        </TemplateColumn>
+        <TemplateColumn Title="Acciones" Align="Align.End">
+            <FluentStack Gap="0.5rem" HorizontalAlignment="HorizontalAlignment.End">
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Eye())" Appearance="Appearance.Stealth" Title="Ver Detalle" />
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" Appearance="Appearance.Stealth" Title="Editar" />
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" Appearance="Appearance.Stealth" Title="Eliminar" />
+            </FluentStack>
+        </TemplateColumn>
+    </FluentDataGrid>
+}
+
+@code {
+    [Parameter]
+    public IEnumerable<Supplier>? Suppliers { get; set; }
+}

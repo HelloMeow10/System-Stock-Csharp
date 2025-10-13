@@ -1,0 +1,158 @@
+@page "/login"
+@inject NavigationManager Nav
+@inject AgileStockPro.Web.Services.IAuthService Auth
+@inject IToastService Toast
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+
+<PageHeader Title="Ingreso" />
+
+<EditForm Model="model" OnValidSubmit="HandleLogin" OnInvalidSubmit="OnInvalidLogin">
+    <DataAnnotationsValidator />
+    <div class="panel">
+        <div class="panel-header">Credenciales</div>
+        <div style="display:grid; grid-template-columns: 160px 1fr; gap:.25rem .5rem; align-items:center;">
+            <label>Usuario</label>
+            <div>
+                <InputText class="input" @bind-Value="model.Username" />
+                <ValidationMessage For="() => model.Username" />
+            </div>
+            <label>Contraseña</label>
+            <div>
+                <InputText type="password" class="input" @bind-Value="model.Password" />
+                <ValidationMessage For="() => model.Password" />
+            </div>
+        </div>
+        <div style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
+            <button class="btn btn-primary" disabled="@busy">@(busy ? "Ingresando…" : "Ingresar")</button>
+            <a href="/forgot-password" class="btn">Olvidé mi contraseña</a>
+        </div>
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="error" style="margin-top:.5rem; color:var(--danger-foreground)">@error</div>
+        }
+    </div>
+</EditForm>
+
+@if (require2FA)
+{
+    <div class="panel" style="margin-top:1rem;">
+        <div class="panel-header">Autenticación en dos pasos</div>
+        <div style="display:flex; gap:.5rem; align-items:center;">
+            <input class="input" placeholder="Código de verificación" @bind-value="twoFactorCode" />
+            <button class="btn btn-primary" disabled="@busy2fa" @onclick="VerifyCode">@(busy2fa ? "Verificando…" : "Verificar")</button>
+        </div>
+        <div class="muted" style="margin-top:.5rem">Se envió un código al correo (simulado). Revisa la consola para verlo en esta demo.</div>
+        @if (!string.IsNullOrEmpty(error2FA))
+        {
+            <div class="error" style="margin-top:.5rem; color:var(--danger-foreground)">@error2FA</div>
+        }
+    </div>
+}
+
+@code {
+    class LoginModel
+    {
+        [Required(ErrorMessage = "Usuario requerido")] 
+        public string Username { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Contraseña requerida")] 
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private LoginModel model = new();
+    private bool busy;
+    private string? error;
+    private bool require2FA;
+    private string twoFactorCode = string.Empty;
+    private bool busy2fa;
+    private string? error2FA;
+
+    private void OnInvalidLogin()
+    {
+        error = "Complete usuario y contraseña";
+        Toast.ShowError(error);
+    }
+
+    private async Task HandleLogin()
+    {
+    busy = true; error = null; require2FA = false;
+        var result = await Auth.LoginAsync(model.Username, model.Password);
+        busy = false;
+        if (!result.Success)
+        {
+            error = result.Error ?? "Login inválido";
+            Toast.ShowError(error);
+            return;
+        }
+        if (result.Requires2FA)
+        {
+            require2FA = true;
+            StateHasChanged();
+            return;
+        }
+        Toast.ShowSuccess("Sesión iniciada");
+        var user = await Auth.GetCurrentUserAsync();
+        if (user?.MustChangePassword == true)
+        {
+            Nav.NavigateTo("/change-password", true);
+        }
+        else
+        {
+            var ru = GetReturnUrl();
+            if (!string.IsNullOrWhiteSpace(ru))
+            {
+                Nav.NavigateTo(ru!, true);
+            }
+            else
+            {
+                Nav.NavigateTo("/dashboard", true);
+            }
+        }
+    }
+
+    private async Task VerifyCode()
+    {
+    error2FA = null; busy2fa = true;
+        var ok = await Auth.Verify2FAAsync(twoFactorCode);
+    busy2fa = false;
+        if (!ok)
+        {
+            error2FA = "Código inválido";
+            Toast.ShowError(error2FA);
+            return;
+        }
+        Toast.ShowSuccess("2FA verificado");
+        var user = await Auth.GetCurrentUserAsync();
+        if (user?.MustChangePassword == true)
+        {
+            Nav.NavigateTo("/change-password", true);
+        }
+        else
+        {
+            Nav.NavigateTo("/dashboard", true);
+        }
+    }
+
+    private string? GetReturnUrl()
+    {
+        try
+        {
+            var uri = new Uri(Nav.Uri);
+            var q = uri.Query;
+            if (string.IsNullOrEmpty(q)) return null;
+            // naive parse: ?returnUrl=/algo&x=y
+            foreach (var part in q.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var kv = part.Split('=', 2);
+                if (kv.Length == 2 && string.Equals(kv[0], "returnUrl", StringComparison.OrdinalIgnoreCase))
+                {
+                    var val = Uri.UnescapeDataString(kv[1]);
+                    // prevent open redirects
+                    if (!string.IsNullOrWhiteSpace(val) && val.StartsWith('/') && !val.Contains("://")) return val;
+                }
+            }
+        }
+        catch { }
+        return null;
+    }
+}

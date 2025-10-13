@@ -1,0 +1,57 @@
+@page "/almacenes"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@using AgileStockPro.Web.Components
+@inject IAppDataService Data
+
+<AuthGuard>
+<PageHeader Title="Almacenes" />
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="error">@error</div>
+}
+else if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>Nombre</th>
+				<th>Ubicación</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var a in (items ?? Array.Empty<Almacen>()))
+		{
+			<tr>
+				<td>@a.Id</td>
+				<td>@a.Name</td>
+				<td>@a.Location</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+</AuthGuard>
+
+@code {
+    private IReadOnlyList<Almacen>? items;
+    private string? error;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            items = await Data.GetWarehousesAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}

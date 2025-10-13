@@ -1,0 +1,65 @@
+@page "/clientes"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@using AgileStockPro.Web.Components
+@inject IAppDataService Data
+
+<AuthGuard>
+<PageHeader Title="Clientes" />
+
+<div style="margin-bottom:.75rem">
+	<input class="search" placeholder="Buscar por nombre o email..." @bind-value="term" @bind-value:event="oninput" />
+  </div>
+
+@if (items is null)
+{
+	<p>Cargando...</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+	<div class="error">@error</div>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>Id</th>
+				<th>Nombre</th>
+				<th>Email</th>
+				<th>Teléfono</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var c in View)
+		{
+			<tr>
+				<td>@c.Id</td>
+				<td>@c.Name</td>
+				<td>@c.Email</td>
+				<td>@c.Phone</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+</AuthGuard>
+
+@code {
+	private IReadOnlyList<Customer>? items;
+	private string? error;
+	private string term = string.Empty;
+
+	protected override async Task OnInitializedAsync()
+	{
+		try { items = await Data.GetCustomersAsync(); }
+		catch (Exception ex) { error = ex.Message; }
+	}
+
+	private IEnumerable<Customer> View => (items ?? Array.Empty<Customer>())
+		.Where(s => string.IsNullOrWhiteSpace(term)
+			|| (s.Name?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+			|| (s.Email?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vscode/master/extensions/json/schemas/tasks.v1.json",
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Backend (Services)",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "src/Services/Services.csproj"
+      ],
+      "isBackground": true,
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Blazor Server",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "blazor-server/AgileStockPro.Web/AgileStockPro.Web.csproj"
+      ],
+      "isBackground": false,
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run WinForms (Presentation)",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "src/Presentation/Presentation.csproj"
+      ],
+      "isBackground": false,
+      "group": "none",
+      "problemMatcher": []
+    }
+  ]
+}

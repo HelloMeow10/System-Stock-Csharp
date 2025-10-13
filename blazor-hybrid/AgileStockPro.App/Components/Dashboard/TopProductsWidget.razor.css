@@ -1,0 +1,33 @@
+:host ::deep .fluent-card {
+    height: 100%;
+}
+
+.card-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--neutral-stroke-divider-rest);
+}
+
+.card-content {
+    padding: 16px;
+}
+
+.items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.subtitle {
+    color: var(--neutral-foreground-hint);
+}

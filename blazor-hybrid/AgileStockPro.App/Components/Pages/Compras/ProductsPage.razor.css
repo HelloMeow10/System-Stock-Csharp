@@ -1,0 +1,43 @@
+::deep .page-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--neutral-stroke-divider-rest);
+}
+
+.page-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.page-header p {
+    color: var(--neutral-foreground-rest);
+    opacity: 0.8;
+}
+
+.filters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.search-field {
+    flex-grow: 1;
+    min-width: 250px;
+}
+
+.filter-select {
+    min-width: 180px;
+}
+
+.grid-container {
+    overflow-x: auto;
+}

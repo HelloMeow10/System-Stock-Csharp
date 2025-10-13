@@ -1,0 +1,55 @@
+@page "/ordenes-compra"
+@using AgileStockPro.Web.Services
+@using AgileStockPro.Web.Models
+@using AgileStockPro.Web.Components
+@inject IAppDataService Data
+
+<AuthGuard>
+<PageHeader Title="Órdenes de compra" />
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="error">@error</div>
+}
+else if (items is null)
+{
+	<p>Cargando...</p>
+}
+else
+{
+	<table>
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>Proveedor</th>
+				<th>Fecha</th>
+				<th>Estado</th>
+				<th>Total</th>
+			</tr>
+		</thead>
+		<tbody>
+		@foreach (var oc in items)
+		{
+			<tr>
+				<td>@oc.Id</td>
+				<td>@oc.Supplier</td>
+				<td>@oc.Date.ToString("dd/MM/yyyy")</td>
+				<td>@oc.Status</td>
+				<td>$@oc.Total</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+</AuthGuard>
+
+@code {
+	private IReadOnlyList<OrdenCompra>? items;
+	private string? error;
+	protected override async Task OnInitializedAsync()
+	{
+		try { items = await Data.GetPurchaseOrdersAsync(); }
+		catch (Exception ex) { error = ex.Message; }
+	}
+}

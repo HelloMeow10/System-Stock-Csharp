@@ -1,0 +1,39 @@
+@using AgileStockPro.App.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+
+<FluentCard class="stats-card">
+    <div class="card-content">
+        <div class="icon-container @Variant">
+            <FluentIcon Value="@IconValue" />
+        </div>
+        <div class="text-content">
+            <p class="title">@Title</p>
+            <p class="value">@Value</p>
+            @if (Trend != null)
+            {
+                <p class="trend @(Trend.IsPositive ? "positive" : "negative")">
+                    <FluentIcon Value="@(Trend.IsPositive ? (Icon)new Icons.Regular.Size16.ArrowUp() : (Icon)new Icons.Regular.Size16.ArrowDown())" />
+                    @Trend.Value%
+                </p>
+            }
+        </div>
+    </div>
+</FluentCard>
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string Value { get; set; }
+
+    [Parameter]
+    public Microsoft.FluentUI.AspNetCore.Components.Icon IconValue { get; set; }
+
+    [Parameter]
+    public TrendModel? Trend { get; set; }
+
+    [Parameter]
+    public string Variant { get; set; } = "default";
+}

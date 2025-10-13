@@ -1,0 +1,64 @@
+@page "/almacenes/stock"
+@using AgileStockPro.App.Components.Products
+@using AgileStockPro.App.Components.Shared
+@using AgileStockPro.App.Services
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@inject IProductService ProductSvc
+@inject IToastService ToastService
+
+<PageTitle>Stock</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h2>Stock</h2>
+            <p>Visualización y control de inventario</p>
+        </div>
+        <div class="header-actions">
+            <FluentButton Appearance="Appearance.Outline" OnClick="@(() => ToastService.ShowInfo("Funcionalidad para exportar no implementada."))">
+                <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.ArrowDownload())" />
+                Exportar Stock
+            </FluentButton>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+    <StatsCard Title="Productos en Stock" Value="@_stats.Total.ToString("N0")" IconValue="@(new Icons.Regular.Size24.Box())" />
+    <StatsCard Title="Stock Normal" Value="@_stats.Normal.ToString("N0")" IconValue="@(new Icons.Regular.Size24.CheckmarkCircle())" CardAppearance="Appearance.Neutral" />
+    <StatsCard Title="Stock Bajo" Value="@_stats.Bajo.ToString("N0")" IconValue="@(new Icons.Regular.Size24.Warning())" CardAppearance="Appearance.Accent" />
+    <StatsCard Title="Stock Crítico" Value="@_stats.Critico.ToString("N0")" IconValue="@(new Icons.Regular.Size24.ErrorCircle())" CardAppearance="Appearance.Accent" />
+    </div>
+
+    <div class="search-bar-container">
+        <FluentTextField Placeholder="Buscar productos..." @bind-Value="_filtro" Immediate="true" OnInput="@HandleSearch" Style="width: 100%;">
+            <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Search())" />
+        </FluentTextField>
+        <FluentButton Appearance="Appearance.Outline" OnClick="@(() => ToastService.ShowInfo("Funcionalidad de filtros no implementada."))">
+            <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Filter())" />
+            Filtros
+        </FluentButton>
+    </div>
+
+    <div class="grid-container">
+        <ProductsTable Filter="@_filtro" />
+    </div>
+</div>
+
+@code {
+    private (int Total, int Normal, int Bajo, int Critico) _stats;
+    private string? _filtro;
+
+    protected override async Task OnInitializedAsync()
+    {
+    var products = (await ProductSvc.GetProductsAsync()).ToList();
+    _stats.Total = products.Count();
+    _stats.Normal = products.Count(p => string.Equals(p.Status, "ok", StringComparison.OrdinalIgnoreCase));
+    _stats.Bajo = products.Count(p => string.Equals(p.Status, "low", StringComparison.OrdinalIgnoreCase));
+    _stats.Critico = products.Count(p => string.Equals(p.Status, "critical", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void HandleSearch(ChangeEventArgs e)
+    {
+        _filtro = e.Value?.ToString();
+    }
+}

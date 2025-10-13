@@ -1,0 +1,50 @@
+@using AgileStockPro.App.Models
+@using Microsoft.FluentUI.AspNetCore.Components
+
+@if (Products is null)
+{
+    <FluentProgressRing />
+}
+else
+{
+    <FluentDataGrid Items="@Products?.AsQueryable()" GridTemplateColumns="1fr 2fr 1fr 1fr 1fr 1fr 1fr 1fr" TGridItem="Product">
+        <TemplateColumn Title="Código" Align="Align.Start">
+            <span class="font-mono">@context.Id</span>
+        </TemplateColumn>
+        <PropertyColumn Property="@(p => p.Name)" Sortable="true" />
+        <PropertyColumn Property="@(p => p.Category)" Sortable="true" />
+        <PropertyColumn Property="@(p => p.Brand)" Sortable="true" />
+        <TemplateColumn Title="Stock Actual" Align="Align.End">
+            <FluentNumberField Value="@context.Stock" ReadOnly="true" />
+        </TemplateColumn>
+        <TemplateColumn Title="Stock Mínimo" Align="Align.End">
+            <span>@context.MinStock</span>
+        </TemplateColumn>
+        <TemplateColumn Title="Estado">
+            @switch (context.Status)
+            {
+                case "ok":
+                    <FluentBadge Appearance="Appearance.Accent">Normal</FluentBadge>
+                    break;
+                case "low":
+                    <FluentBadge Appearance="Appearance.Neutral">Bajo</FluentBadge>
+                    break;
+                case "critical":
+                    <FluentBadge Appearance="Appearance.Accent">Crítico</FluentBadge>
+                    break;
+            }
+        </TemplateColumn>
+        <TemplateColumn Title="Acciones" Align="Align.End">
+            <FluentStack Gap="0.5rem" HorizontalAlignment="HorizontalAlignment.End">
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Eye())" Appearance="Appearance.Stealth" />
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" Appearance="Appearance.Stealth" />
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" Appearance="Appearance.Stealth" />
+            </FluentStack>
+        </TemplateColumn>
+    </FluentDataGrid>
+}
+
+@code {
+    [Parameter]
+    public IEnumerable<Product>? Products { get; set; }
+}

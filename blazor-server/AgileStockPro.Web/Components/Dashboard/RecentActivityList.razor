@@ -1,0 +1,35 @@
+@using AgileStockPro.Web.Models
+
+<div class="activity-list">
+  @if (Items is { Count: > 0 })
+  {
+      foreach (var item in Items)
+      {
+                    <div class="activity-item @item.Category">
+                            <div class="when">@item.When.ToString("HH:mm")</div>
+                            <div class="desc">
+                                <span class="tag @item.Category">@CategoryLabel(item.Category)</span>
+                                <span>@item.Description</span>
+                            </div>
+                    </div>
+      }
+  }
+  else
+  {
+      <div class="muted">Sin actividad reciente</div>
+  }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<RecentActivityModel> Items { get; set; } = Array.Empty<RecentActivityModel>();
+
+    private static string CategoryLabel(string c) => c switch
+    {
+        "sale" => "Venta",
+        "purchase" => "Compra",
+        "stock" => "Stock",
+        "alert" => "Alerta",
+        "order" => "Pedido",
+        _ => c
+    };
+}

@@ -1,0 +1,105 @@
+@page "/almacenes/scrap"
+@using AgileStockPro.App.Models
+@using AgileStockPro.App.Services
+@using Microsoft.FluentUI.AspNetCore.Components
+@using AgileStockPro.App.Components.Shared
+@inject ScrapService ScrapSvc
+@inject IToastService ToastService
+
+<PageTitle>Scrap</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h2>Scrap</h2>
+            <p>Gestión de productos dañados, vencidos u obsoletos</p>
+        </div>
+        <div class="header-actions">
+            <FluentButton Appearance="Appearance.Accent" OnClick="@(() => ToastService.ShowSuccess("Funcionalidad para registrar scrap no implementada."))">
+                <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Add())" />
+                Registrar Scrap
+            </FluentButton>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+    <StatsCard Title="Items en Scrap" Value="125" IconValue="@(new Icons.Regular.Size24.Box())" />
+    <StatsCard Title="Valor Total Scrap" Value="$485,600" IconValue="@(new Icons.Regular.Size24.Money())" CardAppearance="Appearance.Accent" />
+    <StatsCard Title="Scrap del Mes" Value="41" IconValue="@(new Icons.Regular.Size24.Calendar())" />
+    <StatsCard Title="Principal Motivo" Value="Vencidos" IconValue="@(new Icons.Regular.Size24.Document())" />
+    </div>
+
+    <div class="search-bar-container">
+        <FluentTextField Placeholder="Buscar por producto o lote..." @bind-Value="_filtro" Immediate="true" OnInput="@HandleSearch" Style="width: 100%;">
+            <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Search())" />
+        </FluentTextField>
+        <FluentButton Appearance="Appearance.Outline" OnClick="@(() => ToastService.ShowInfo("Funcionalidad de filtros no implementada."))">
+            <FluentIcon Slot="start" Value="@(new Icons.Regular.Size20.Filter())" />
+            Filtros
+        </FluentButton>
+    </div>
+
+    <div class="grid-container">
+        @if (_scrapsFiltrados is null)
+        {
+            <FluentProgressRing />
+        }
+        else
+        {
+            <FluentDataGrid Items="@_scrapsFiltrados?.AsQueryable()" GridTemplateColumns="0.8fr 1fr 2fr 1fr 1fr 1fr 1fr 1fr" TGridItem="Scrap">
+                <PropertyColumn Property="@(p => p.Id)" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" Title="ID Scrap" />
+                <PropertyColumn Property="@(p => p.Fecha)" Sortable="true" />
+                <TemplateColumn Title="Producto y Lote">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <FluentIcon Value="@(new Icons.Regular.Size16.Warning())" />
+                        <span>@context.Producto</span>
+                    </div>
+                </TemplateColumn>
+                <PropertyColumn Property="@(p => p.Cantidad)" Sortable="true" Align="Align.End" />
+                <TemplateColumn Title="Motivo">
+                    <FluentBadge Appearance="@GetMotivoBadgeAppearance(context.Motivo)">@context.Motivo</FluentBadge>
+                </TemplateColumn>
+                <PropertyColumn Property="@(p => p.ValorUnitario)" Format="C" Sortable="true" Title="Valor Unit." Align="Align.End" />
+                <TemplateColumn Title="Valor Total" Align="Align.End">
+                    <strong class="text-danger">@context.ValorTotal.ToString("C")</strong>
+                </TemplateColumn>
+                <TemplateColumn Title="Usuario">
+                     <FluentBadge Appearance="Appearance.Neutral">@context.Usuario</FluentBadge>
+                </TemplateColumn>
+            </FluentDataGrid>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Scrap>? _scraps;
+    private IEnumerable<Scrap>? _scrapsFiltrados;
+    private string? _filtro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _scraps = await ScrapSvc.ObtenerScrapsAsync();
+        _scrapsFiltrados = _scraps;
+    }
+
+    private void HandleSearch(ChangeEventArgs e)
+    {
+        _filtro = e.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(_filtro))
+        {
+            _scrapsFiltrados = _scraps;
+        }
+        else
+        {
+            _scrapsFiltrados = _scraps?.Where(s =>
+                s.Producto.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private Appearance GetMotivoBadgeAppearance(string motivo) => motivo switch
+    {
+        "Vencido" => Appearance.Accent,
+        "Dañado" => Appearance.Neutral,
+        _ => Appearance.Neutral
+    };
+}

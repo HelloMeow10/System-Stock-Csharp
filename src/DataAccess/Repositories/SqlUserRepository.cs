@@ -121,6 +121,7 @@ namespace DataAccess.Repositories
                 p.AddWithValue("@Username", (object?)queryParameters.Username ?? DBNull.Value);
                 p.AddWithValue("@Email", (object?)queryParameters.Email ?? DBNull.Value);
                 p.AddWithValue("@SortBy", (object?)queryParameters.SortBy ?? "id_usuario");
+                p.AddWithValue("@RoleId", (object?)queryParameters.RoleId ?? DBNull.Value);
                 p.Add(totalRecords);
             });
 

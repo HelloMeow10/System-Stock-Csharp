@@ -1,0 +1,43 @@
+@page "/ventas/clientes"
+@using AgileStockPro.App.Models
+@using AgileStockPro.App.Services
+@inject IClienteService ClienteService
+
+<PageTitle>Clientes</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="title-section">
+            <h2>Gestión de Clientes</h2>
+            <p>Administración de clientes y condiciones comerciales.</p>
+        </div>
+        <FluentButton Appearance="Appearance.Accent">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Add())" Slot="start" />
+            Nuevo Cliente
+        </FluentButton>
+    </div>
+
+    @if (clientes is null)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+    <FluentDataGrid Items="@clientes?.AsQueryable()" GridTemplateColumns="1fr 2fr 1.5fr 2fr 1.5fr" TGridItem="Cliente">
+            <PropertyColumn Property="@(c => c.Id)" Sortable="true" Title="ID" />
+            <PropertyColumn Property="@(c => c.Nombre)" Sortable="true" Title="Nombre" />
+            <PropertyColumn Property="@(c => c.Cuit)" Sortable="true" Title="CUIT" />
+            <PropertyColumn Property="@(c => c.Email)" Sortable="true" Title="Email" />
+            <PropertyColumn Property="@(c => c.Telefono)" Sortable="true" Title="Teléfono" />
+        </FluentDataGrid>
+    }
+</div>
+
+@code {
+    private List<Cliente>? clientes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        clientes = await ClienteService.GetClientesAsync();
+    }
+}
