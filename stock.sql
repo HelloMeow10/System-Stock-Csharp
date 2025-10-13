@@ -59,6 +59,7 @@ CREATE TABLE Productos (
     ubicacion VARCHAR(100),
     habilitado BIT,
     id_categoria INT,
+    unidadesAvisoVencimiento INT DEFAULT 0,
     FOREIGN KEY (id_marca) REFERENCES MarcasProducto(id_marca),
     FOREIGN KEY (id_categoria) REFERENCES CategoriasProducto(id_categoria)
 );
@@ -136,6 +137,13 @@ CREATE TABLE DetalleCompras (
     FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
 );
 
+CREATE TABLE DevolucionesProveedor (
+    id_devolucion INT PRIMARY KEY IDENTITY(1,1),
+    id_detalleCompra INT,
+    motivo VARCHAR(100),
+    fecha DATE DEFAULT GETDATE(),
+    FOREIGN KEY (id_detalleCompra) REFERENCES DetalleCompras(id_detalleCompra)
+);
 -- ============================================
 -- CLIENTES
 -- ============================================
@@ -145,10 +153,11 @@ CREATE TABLE Clientes (
     nombre VARCHAR(50),
     razonSocial VARCHAR(100),
     CUIT_DNI VARCHAR(20),
-    formaPago VARCHAR(50),
+    id_formaPago INT,
     limiteCredito DECIMAL(18,2),
     descuento DECIMAL(5,2),
     estado VARCHAR(45)
+    FOREIGN KEY (id_formaPago) REFERENCES FormaPago(id_formaPago)
 );
 
 CREATE TABLE ClienteContactos (
