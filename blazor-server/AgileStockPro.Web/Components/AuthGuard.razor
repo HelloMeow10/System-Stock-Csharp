@@ -1,0 +1,32 @@
+@inject AgileStockPro.Web.Services.IAuthService Auth
+@inject NavigationManager Nav
+
+@if (!_checked)
+{
+    <div></div>
+}
+else if (_allow && _user != null && (!RequireAdmin || _user.IsAdmin))
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool RequireAdmin { get; set; }
+
+    private AgileStockPro.Web.Models.AppUser? _user;
+    private bool _checked;
+    private bool _allow;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = await Auth.GetCurrentUserAsync();
+        _allow = _user != null;
+        _checked = true;
+        if (!_allow)
+        {
+            // redirect to login and ensure full reload to reset state
+            Nav.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(Nav.Uri)}", true);
+        }
+    }
+}

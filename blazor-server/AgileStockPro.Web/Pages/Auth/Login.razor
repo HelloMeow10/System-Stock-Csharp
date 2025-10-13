@@ -2,18 +2,26 @@
 @inject NavigationManager Nav
 @inject AgileStockPro.Web.Services.IAuthService Auth
 @inject IToastService Toast
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
 
 <PageHeader Title="Ingreso" />
 
-<EditForm Model="model" OnValidSubmit="HandleLogin">
+<EditForm Model="model" OnValidSubmit="HandleLogin" OnInvalidSubmit="OnInvalidLogin">
     <DataAnnotationsValidator />
     <div class="panel">
         <div class="panel-header">Credenciales</div>
-        <div style="display:grid; grid-template-columns: 160px 1fr; gap:.5rem; align-items:center;">
+        <div style="display:grid; grid-template-columns: 160px 1fr; gap:.25rem .5rem; align-items:center;">
             <label>Usuario</label>
-            <InputText class="input" @bind-Value="model.Username" />
+            <div>
+                <InputText class="input" @bind-Value="model.Username" />
+                <ValidationMessage For="() => model.Username" />
+            </div>
             <label>Contraseña</label>
-            <InputText type="password" class="input" @bind-Value="model.Password" />
+            <div>
+                <InputText type="password" class="input" @bind-Value="model.Password" />
+                <ValidationMessage For="() => model.Password" />
+            </div>
         </div>
         <div style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
             <button class="btn btn-primary" disabled="@busy">@(busy ? "Ingresando…" : "Ingresar")</button>
@@ -43,9 +51,11 @@
 }
 
 @code {
-    record LoginModel
+    class LoginModel
     {
+        [Required(ErrorMessage = "Usuario requerido")] 
         public string Username { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Contraseña requerida")] 
         public string Password { get; set; } = string.Empty;
     }
 
@@ -56,6 +66,12 @@
     private string twoFactorCode = string.Empty;
     private bool busy2fa;
     private string? error2FA;
+
+    private void OnInvalidLogin()
+    {
+        error = "Complete usuario y contraseña";
+        Toast.ShowError(error);
+    }
 
     private async Task HandleLogin()
     {
@@ -82,7 +98,15 @@
         }
         else
         {
-            Nav.NavigateTo("/dashboard", true);
+            var ru = GetReturnUrl();
+            if (!string.IsNullOrWhiteSpace(ru))
+            {
+                Nav.NavigateTo(ru!, true);
+            }
+            else
+            {
+                Nav.NavigateTo("/dashboard", true);
+            }
         }
     }
 
@@ -107,5 +131,28 @@
         {
             Nav.NavigateTo("/dashboard", true);
         }
+    }
+
+    private string? GetReturnUrl()
+    {
+        try
+        {
+            var uri = new Uri(Nav.Uri);
+            var q = uri.Query;
+            if (string.IsNullOrEmpty(q)) return null;
+            // naive parse: ?returnUrl=/algo&x=y
+            foreach (var part in q.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var kv = part.Split('=', 2);
+                if (kv.Length == 2 && string.Equals(kv[0], "returnUrl", StringComparison.OrdinalIgnoreCase))
+                {
+                    var val = Uri.UnescapeDataString(kv[1]);
+                    // prevent open redirects
+                    if (!string.IsNullOrWhiteSpace(val) && val.StartsWith('/') && !val.Contains("://")) return val;
+                }
+            }
+        }
+        catch { }
+        return null;
     }
 }

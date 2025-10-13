@@ -1,43 +1,64 @@
 @page "/alertas"
 @using AgileStockPro.Web.Services
 @using AgileStockPro.Web.Models
+@using AgileStockPro.Web.Components
+@using AgileStockPro.Web.Components.Shared
 @inject IAppDataService Data
 
-<PageHeader Title="Alertas" />
+<AuthGuard>
+	<PageHeader Title="Alertas" />
 
-@if (items is null)
-{
-	<p>Cargando...</p>
-}
-else
-{
-	<table>
-		<thead>
-			<tr>
-				<th>Fecha</th>
-				<th>Mensaje</th>
-				<th>Severidad</th>
-			</tr>
-		</thead>
-		<tbody>
-		@foreach (var a in items)
-		{
-			<tr>
-				<td>@a.Date.ToString("dd/MM/yyyy HH:mm")</td>
-				<td>@a.Message</td>
-				<td>
-					<span class="badge @(a.Severity == "danger" ? "danger" : a.Severity == "warning" ? "warning" : "success")">@a.Severity</span>
-				</td>
-			</tr>
-		}
-		</tbody>
-	</table>
-}
+	@if (!string.IsNullOrWhiteSpace(error))
+	{
+		<div class="error">@error</div>
+	}
+	else if (items is null)
+	{
+		<p>Cargando...</p>
+	}
+	else if ((items?.Count ?? 0) == 0)
+	{
+		<p class="muted">No hay alertas.</p>
+	}
+	else
+	{
+		var list = items?.Where(a => a is not null).ToList() ?? new List<Alerta>();
+		<table>
+			<thead>
+				<tr>
+					<th>Fecha</th>
+					<th>Mensaje</th>
+					<th>Severidad</th>
+				</tr>
+			</thead>
+			<tbody>
+			@foreach (var a in list)
+			{
+				<tr>
+					<td>@(a?.Date.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+					<td>@(a?.Message ?? "-")</td>
+					<td>
+						<span class="badge @((a?.Severity ?? "info") == "danger" ? "danger" : (a?.Severity ?? "info") == "warning" ? "warning" : "success")">@(a?.Severity ?? "info")</span>
+					</td>
+				</tr>
+			}
+			</tbody>
+		</table>
+	}
+</AuthGuard>
 
 @code {
 	private IReadOnlyList<Alerta>? items;
+	private string? error;
 	protected override async Task OnInitializedAsync()
 	{
-		items = await Data.GetAlertsAsync();
+		try
+		{
+			items = await Data.GetAlertsAsync() ?? Array.Empty<Alerta>();
+		}
+		catch (Exception ex)
+		{
+			error = ex.Message;
+		}
 	}
 }

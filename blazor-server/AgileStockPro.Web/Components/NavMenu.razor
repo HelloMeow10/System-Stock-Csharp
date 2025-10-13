@@ -7,6 +7,8 @@
     <div class="title">AgileStockPro</div>
   </div>
   <nav class="sidebar-nav">
+    @if (User is not null)
+    {
     <NavLink href="/dashboard" Match="NavLinkMatch.All" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-dashboard" Icon="@(Icons.Regular.Size20.Home)" /></span>
       <span class="nav-text">Dashboard</span>
@@ -129,13 +131,16 @@
     }
 
     <div class="nav-section">Usuarios</div>
-    <NavLink href="/login" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-login" Icon="@(Icons.Regular.Size20.LockClosed)" /></span>
-      <span class="nav-text">Login</span>
-    </NavLink>
-    @if (Collapsed)
+    @if (User is null)
     {
-        <FluentTooltip Anchor="nav-login">Login</FluentTooltip>
+        <NavLink href="/login" class="nav-link">
+          <span class="nav-icon"><FluentIcon Id="nav-login" Icon="@(Icons.Regular.Size20.LockClosed)" /></span>
+          <span class="nav-text">Login</span>
+        </NavLink>
+        @if (Collapsed)
+        {
+            <FluentTooltip Anchor="nav-login">Login</FluentTooltip>
+        }
     }
     @if (User?.IsAdmin == true)
     {
@@ -164,13 +169,17 @@
         <FluentTooltip Anchor="nav-security">Seguridad</FluentTooltip>
     }
     }
-    <NavLink href="/change-password" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-chpass" Icon="@(Icons.Regular.Size20.Key)" /></span>
-      <span class="nav-text">Cambiar contraseña</span>
-    </NavLink>
-    @if (Collapsed)
+    @if (User is not null)
     {
-        <FluentTooltip Anchor="nav-chpass">Cambiar contraseña</FluentTooltip>
+      <NavLink href="/change-password" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-chpass" Icon="@(Icons.Regular.Size20.Key)" /></span>
+        <span class="nav-text">Cambiar contraseña</span>
+      </NavLink>
+      @if (Collapsed)
+      {
+          <FluentTooltip Anchor="nav-chpass">Cambiar contraseña</FluentTooltip>
+      }
+    }
     }
   </nav>
 </aside>

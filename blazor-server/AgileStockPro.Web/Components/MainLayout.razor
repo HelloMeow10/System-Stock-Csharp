@@ -5,6 +5,7 @@
 @using Microsoft.FluentUI.AspNetCore.Components
 
 @inject AgileStockPro.Web.Services.IAuthService Auth
+@inject AgileStockPro.Web.Services.Api.ITokenProvider Tokens
 @inject IToastService Toast
 
 <div class="layout-root">
@@ -43,10 +44,12 @@
 @code {
     private bool collapsed;
     private AgileStockPro.Web.Models.AppUser? currentUser;
+    private System.Timers.Timer? _logoutTimer;
 
     protected override async Task OnInitializedAsync()
     {
         currentUser = await Auth.GetCurrentUserAsync();
+        SetupAutoLogout();
     }
 
     private void ToggleSidebar() => collapsed = !collapsed;
@@ -56,5 +59,50 @@
         currentUser = null;
         Toast.ShowInfo("Sesión cerrada");
         StateHasChanged();
+    }
+
+    private void SetupAutoLogout()
+    {
+        try
+        {
+            _logoutTimer?.Stop();
+            _logoutTimer?.Dispose();
+            var token = Tokens.Token;
+            if (string.IsNullOrWhiteSpace(token)) return;
+            var exp = GetJwtExpiryUtc(token);
+            if (exp == null) return;
+            var now = DateTimeOffset.UtcNow;
+            var ms = (exp.Value - now).TotalMilliseconds;
+            if (ms <= 0) { _ = Logout(); return; }
+            _logoutTimer = new System.Timers.Timer(ms);
+            _logoutTimer.AutoReset = false;
+            _logoutTimer.Elapsed += async (_, __) => { await Logout(); };
+            _logoutTimer.Start();
+        }
+        catch { }
+    }
+
+    private static DateTimeOffset? GetJwtExpiryUtc(string jwt)
+    {
+        try
+        {
+            var parts = jwt.Split('.');
+            if (parts.Length < 2) return null;
+            var payload = parts[1];
+            payload = PadBase64(payload);
+            var json = System.Text.Json.JsonDocument.Parse(Convert.FromBase64String(payload));
+            if (json.RootElement.TryGetProperty("exp", out var exp) && exp.TryGetInt64(out var seconds))
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(seconds);
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private static string PadBase64(string s)
+    {
+        s = s.Replace('-', '+').Replace('_', '/');
+        return s.PadRight(s.Length + (4 - s.Length % 4) % 4, '=');
     }
 }

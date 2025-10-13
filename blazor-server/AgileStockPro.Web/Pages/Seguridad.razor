@@ -1,16 +1,14 @@
 @page "/seguridad"
 @inject AgileStockPro.Web.Services.IUserStore Store
 @inject AgileStockPro.Web.Services.IAuthService Auth
+@using AgileStockPro.Web.Components
 
+<AuthGuard RequireAdmin="true">
 <PageHeader Title="Políticas de seguridad" />
 
-@if (currentUser is null)
+@if (!string.IsNullOrWhiteSpace(error))
 {
-    <div class="panel"><div class="panel-header">Acceso</div><p>Inicie sesión para continuar. <a href="/login">Login</a></p></div>
-}
-else if (currentUser.IsAdmin == false)
-{
-    <div class="panel"><div class="panel-header">Acceso restringido</div><p>Solo administradores.</p></div>
+    <div class="error">@error</div>
 }
 else if (policy is null)
 {
@@ -48,13 +46,15 @@ else
     </div>
 }
 
+</AuthGuard>
+
 @code {
     private Models.SecurityPolicy? policy;
-    private Models.AppUser? currentUser;
+    private string? error;
     protected override async Task OnInitializedAsync()
     {
-        currentUser = await Auth.GetCurrentUserAsync();
-        policy = await Store.GetPolicyAsync();
+        try { policy = await Store.GetPolicyAsync(); }
+        catch (Exception ex) { error = ex.Message; }
     }
     private async Task Save()
     {

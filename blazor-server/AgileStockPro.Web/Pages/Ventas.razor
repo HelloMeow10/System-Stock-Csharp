@@ -4,12 +4,15 @@
 @using AgileStockPro.Web.Models
 @inject IAppDataService Data
 
+<AgileStockPro.Web.Components.AuthGuard>
 <PageHeader Title="Ventas" Subtitle="Resumen de los últimos 30 días" />
 
 @if (invoices is null || orders is null)
 {
 	<p>Cargando...</p>
 }
+
+</AgileStockPro.Web.Components.AuthGuard>
 else
 {
 	<div class="dashboard-cards">

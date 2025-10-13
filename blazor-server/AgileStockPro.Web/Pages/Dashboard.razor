@@ -3,6 +3,7 @@
 @using AgileStockPro.Web.Services
 @inject IDashboardService DashboardSvc
 
+<AgileStockPro.Web.Components.AuthGuard>
 <PageHeader Title="Dashboard" />
 
 <div class="dashboard">
@@ -69,6 +70,7 @@
     </div>
   </section>
 </div>
+</AgileStockPro.Web.Components.AuthGuard>
 
 @code {
     private IReadOnlyList<StatsCardModel>? Stats;

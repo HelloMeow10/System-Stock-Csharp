@@ -1,19 +1,25 @@
 @page "/personas"
 @using AgileStockPro.Web.Services.Api
 @using Microsoft.AspNetCore.Components.Forms
+@using AgileStockPro.Web.Components
+@using AgileStockPro.Web.Components.Shared
 @inject BackendApiClient Api
 @inject IToastService Toast
 @inject Microsoft.JSInterop.IJSRuntime JS
 
+<AuthGuard RequireAdmin="true">
 <PageHeader Title="Personas">
     <Actions>
         <input class="input" placeholder="Nombre" @bind="nombreFilter" style="min-width:160px" />
         <input class="input" placeholder="N° Doc" @bind="docFilter" style="min-width:120px" />
         <select class="input" @bind="provinciaFilterId">
             <option value="0">Provincia</option>
-            @foreach (var pr in provincias)
+            @if (provincias != null)
             {
-                <option value="@pr.IdProvincia">@pr.Nombre</option>
+                foreach (var pr in provincias)
+                {
+                    <option value="@pr.IdProvincia">@pr.Nombre</option>
+                }
             }
         </select>
         <button class="btn" disabled="@busy" @onclick="Buscar">Buscar</button>
@@ -22,19 +28,10 @@
     </Actions>
 </PageHeader>
 
-        catch (Exception ex)
+@if (!string.IsNullOrWhiteSpace(error))
 {
-            if (!string.IsNullOrWhiteSpace(ex.Message) && TryApplyProblemDetails(ex.Message))
-            {
-                // handled by TryApplyProblemDetails
-            }
-            else
-            {
-                Toast.ShowError(ex.Message);
-            }
+    <div class="error" style="margin-top:.5rem">@error</div>
 }
-else
-{
     <table>
         <thead>
             <tr>
@@ -47,7 +44,7 @@ else
             </tr>
         </thead>
         <tbody>
-        @foreach (var p in lista)
+        @foreach (var p in (lista ?? new List<PersonaDto>()))
         {
             <tr>
                 <td>@p.IdPersona</td>
@@ -64,23 +61,16 @@ else
         </tbody>
     </table>
     <div style="display:flex; gap:.5rem; align-items:center; margin-top:.5rem;">
-                catch (Exception ex)
+        <button class="btn" disabled="@busy || pageNumber <= 1" @onclick="PrevPage">Anterior</button>
+        <button class="btn" disabled="@busy || (pageNumber * pageSize) >= totalCount" @onclick="NextPage">Siguiente</button>
         <span class="muted">Página @pageNumber</span>
-                    if (!string.IsNullOrWhiteSpace(ex.Message) && TryApplyProblemDetails(ex.Message))
-                    {
-                        // handled
-                    }
-                    else
-                    {
-                        Toast.ShowError(ex.Message);
-                    }
         <span class="muted">Total: @totalCount</span>
     </div>
-}
 
 @if (editando != null)
 {
-    <div class="panel" style="margin-top:1rem;">
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-start; justify-content:center; padding-top:5vh; z-index:1000;">
+    <div class="panel" style="width:min(960px,94vw); max-height:90vh; overflow:auto;">
         <div class="panel-header">@(editando.IdPersona == 0 ? "Nueva persona" : $"Editar: {editando.Nombre} {editando.Apellido}")</div>
         @if (submitted && errors.Count > 0)
         {
@@ -95,6 +85,9 @@ else
             </div>
         }
         <div style="display:grid; grid-template-columns: 160px 1fr; gap:.5rem; align-items:center;">
+            <label>Legajo <span class="req">*</span></label>
+            <input class=@($"input {(Invalid("Legajo") ? "invalid" : "")}") @bind="legajoInput" />
+            @if (Invalid("Legajo")) { <span class="error-text">@GetError("Legajo")</span> }
             <label>Nombre <span class="req">*</span></label>
             <input class=@($"input {(Invalid("Nombre") ? "invalid" : "")}") @bind="editando.Nombre" />
             @if (Invalid("Nombre")) { <span class="error-text">@GetError("Nombre")</span> }
@@ -104,9 +97,12 @@ else
             <label>Tipo Doc <span class="req">*</span></label>
             <select class=@($"input {(Invalid("IdTipoDoc") ? "invalid" : "")}") @bind="selectedTipoDocId">
                 <option value="0">Seleccione…</option>
-                @foreach (var t in tiposDoc)
+                @if (tiposDoc != null)
                 {
-                    <option value="@t.IdTipoDoc">@t.Nombre</option>
+                    foreach (var t in tiposDoc)
+                    {
+                        <option value="@t.IdTipoDoc">@t.Nombre</option>
+                    }
                 }
             </select>
             @if (Invalid("IdTipoDoc")) { <span class="error-text">@GetError("IdTipoDoc")</span> }
@@ -131,36 +127,48 @@ else
             <label>Provincia <span class="req">*</span></label>
             <select class=@($"input {(Invalid("IdProvincia") ? "invalid" : "")}") @bind="selectedProvinciaId" @bind:after="ProvinciaChanged">
                 <option value="0">Seleccione…</option>
-                @foreach (var pr in provincias)
+                @if (provincias != null)
                 {
-                    <option value="@pr.IdProvincia">@pr.Nombre</option>
+                    foreach (var pr in provincias)
+                    {
+                        <option value="@pr.IdProvincia">@pr.Nombre</option>
+                    }
                 }
             </select>
             @if (Invalid("IdProvincia")) { <span class="error-text">@GetError("IdProvincia")</span> }
             <label>Partido <span class="req">*</span></label>
             <select class=@($"input {(Invalid("IdPartido") ? "invalid" : "")}") @bind="selectedPartidoId" @bind:after="PartidoChanged">
                 <option value="0">Seleccione…</option>
-                @foreach (var pa in partidos)
+                @if (partidos != null)
                 {
-                    <option value="@pa.IdPartido">@pa.Nombre</option>
+                    foreach (var pa in partidos)
+                    {
+                        <option value="@pa.IdPartido">@pa.Nombre</option>
+                    }
                 }
             </select>
             @if (Invalid("IdPartido")) { <span class="error-text">@GetError("IdPartido")</span> }
             <label>Localidad <span class="req">*</span></label>
             <select class=@($"input {(Invalid("IdLocalidad") ? "invalid" : "")}") @bind="selectedLocalidadId">
                 <option value="0">Seleccione…</option>
-                @foreach (var lo in localidades)
+                @if (localidades != null)
                 {
-                    <option value="@lo.IdLocalidad">@lo.Nombre</option>
+                    foreach (var lo in localidades)
+                    {
+                        <option value="@lo.IdLocalidad">@lo.Nombre</option>
+                    }
                 }
             </select>
             @if (Invalid("IdLocalidad")) { <span class="error-text">@GetError("IdLocalidad")</span> }
             <label>Género <span class="req">*</span></label>
             <select class=@($"input {(Invalid("IdGenero") ? "invalid" : "")}") @bind="selectedGeneroId">
                 <option value="0">Seleccione…</option>
-                @foreach (var g in generos)
+                @if (generos != null)
                 {
-                    <option value="@g.IdGenero">@g.Nombre</option>
+                    foreach (var g in generos)
+                    {
+                        <option value="@g.IdGenero">@g.Nombre</option>
+                    }
                 }
             </select>
             @if (Invalid("IdGenero")) { <span class="error-text">@GetError("IdGenero")</span> }
@@ -168,7 +176,7 @@ else
             <InputDate class="input" @bind-Value="editando.FechaIngreso" TValue="DateTime?" />
         </div>
         <div style="display:flex; gap:.5rem; margin-top:.75rem;">
-            <button class="btn btn-primary" disabled="@busy" @onclick="Guardar">@(busy ? "Guardando…" : "Guardar")</button>
+            <button class="btn btn-primary" disabled="@busy || !CanGuardar" @onclick="Guardar">@(busy ? "Guardando…" : "Guardar")</button>
             <button class="btn" disabled="@busy" @onclick="Cancelar">Cancelar</button>
         </div>
         @if (!string.IsNullOrWhiteSpace(info))
@@ -180,11 +188,15 @@ else
             <div class="error" style="margin-top:.5rem">@error</div>
         }
     </div>
+    </div>
 }
+
+</AuthGuard>
 
 @code {
     private List<PersonaDto>? lista;
     private PersonaDto? editando;
+    private string legajoInput = string.Empty;
     private int selectedTipoDocId;
     private List<TipoDocDto> tiposDoc = new();
     private List<ProvinciaDto> provincias = new();
@@ -206,6 +218,20 @@ else
     private int provinciaFilterId;
     private bool submitted;
     private Dictionary<string, string> errors = new();
+    private bool CanGuardar =>
+        editando != null
+        && !string.IsNullOrWhiteSpace(legajoInput) && legajoInput.All(char.IsDigit)
+        && !string.IsNullOrWhiteSpace(editando.Nombre)
+        && !string.IsNullOrWhiteSpace(editando.Apellido)
+        && !string.IsNullOrWhiteSpace(editando.NumDoc) && editando.NumDoc.All(char.IsDigit)
+        && selectedTipoDocId > 0
+        && selectedProvinciaId > 0
+        && selectedPartidoId > 0
+        && selectedLocalidadId > 0
+        && selectedGeneroId > 0
+        && !string.IsNullOrWhiteSpace(editando.Calle)
+        && (string.IsNullOrWhiteSpace(editando.Altura) || editando.Altura.All(char.IsDigit))
+        && !string.IsNullOrWhiteSpace(editando.Correo) && editando.Correo.Contains('@') && editando.Correo.Contains('.');
 
     protected override async Task OnInitializedAsync()
     {
@@ -215,9 +241,18 @@ else
 
     private async Task CargarCatalogos()
     {
-        tiposDoc = await Api.GetAsync<List<TipoDocDto>>("api/v1/referencedata/tiposdoc");
-        provincias = await Api.GetAsync<List<ProvinciaDto>>("api/v1/referencedata/provincias");
-        generos = await Api.GetAsync<List<GeneroDto>>("api/v1/referencedata/generos");
+        try
+        {
+            tiposDoc = await Api.GetAsync<List<TipoDocDto>>("api/v1/referencedata/tiposdoc");
+            provincias = await Api.GetAsync<List<ProvinciaDto>>("api/v1/referencedata/provincias");
+            generos = await Api.GetAsync<List<GeneroDto>>("api/v1/referencedata/generos");
+        }
+        catch (Exception ex)
+        {
+            // avoid circuit crash; show error and allow user to navigate/login
+            error = string.IsNullOrWhiteSpace(ex.Message) ? "No se pudieron cargar catálogos" : ex.Message;
+            Toast.ShowError(error);
+        }
     }
 
     private async Task CargarLista()
@@ -251,6 +286,7 @@ else
     private void Nueva()
     {
         editando = new PersonaDto();
+        legajoInput = string.Empty;
         selectedTipoDocId = 0;
         selectedProvinciaId = 0;
         selectedPartidoId = 0;
@@ -273,6 +309,7 @@ else
             Celular = p.Celular,
             TipoDocNombre = p.TipoDocNombre
         };
+        legajoInput = p.Legajo > 0 ? p.Legajo.ToString() : string.Empty;
         selectedTipoDocId = p.IdTipoDoc;
         selectedProvinciaId = p.IdProvincia;
         selectedPartidoId = p.IdPartido;
@@ -317,6 +354,7 @@ else
                 // Crear
                 var req = new PersonaCreateRequest
                 {
+                    Legajo = legajoInput,
                     Nombre = editando.Nombre ?? string.Empty,
                     Apellido = editando.Apellido ?? string.Empty,
                     TipoDoc = (tiposDoc.FirstOrDefault(t => t.IdTipoDoc == selectedTipoDocId)?.Nombre) ?? string.Empty,
@@ -324,8 +362,9 @@ else
                     FechaNacimiento = editando.FechaNacimiento ?? DateTime.UtcNow.Date,
                     Cuil = editando.Cuil ?? string.Empty,
                     Calle = editando.Calle ?? string.Empty,
-                    Altura = editando.Altura ?? string.Empty,
-                    Localidad = (localidades.FirstOrDefault(l => l.IdLocalidad == selectedLocalidadId)?.Nombre) ?? string.Empty,
+                    Altura = string.IsNullOrWhiteSpace(editando.Altura) ? "0" : editando.Altura!,
+                    // Backend expects Localidad as a numeric string (ID)
+                    Localidad = selectedLocalidadId > 0 ? selectedLocalidadId.ToString() : "0",
                     Genero = (generos.FirstOrDefault(g => g.IdGenero == selectedGeneroId)?.Nombre) ?? string.Empty,
                     Correo = editando.Correo ?? string.Empty,
                     Celular = editando.Celular ?? string.Empty,
@@ -364,8 +403,15 @@ else
         }
         catch (Exception ex)
         {
-            error = ex.Message;
-            Toast.ShowError(error);
+            if (!string.IsNullOrWhiteSpace(ex.Message) && TryApplyProblemDetails(ex.Message))
+            {
+                // handled as validation errors with inline messages
+            }
+            else
+            {
+                error = ex.Message;
+                Toast.ShowError(error);
+            }
         }
         finally { busy = false; }
     }
@@ -404,7 +450,7 @@ else
     // Local DTOs for create/update payloads (simplified mapping)
     class PersonaCreateRequest
     {
-        public string Legajo { get; set; } = ""; // opcional para este formulario básico
+        public string Legajo { get; set; } = ""; // requerido numérico (como string)
         public string Nombre { get; set; } = "";
         public string Apellido { get; set; } = "";
         public string TipoDoc { get; set; } = "";
@@ -414,7 +460,7 @@ else
         public string Cuil { get; set; } = "";
         public string Calle { get; set; } = "";
         public string Altura { get; set; } = "";
-        public string Localidad { get; set; } = "";
+        public string Localidad { get; set; } = ""; // debe ser IdLocalidad en string
         public string Genero { get; set; } = "";
         public string Correo { get; set; } = "";
         public DateTime FechaIngreso { get; set; } = DateTime.UtcNow.Date;
@@ -456,6 +502,8 @@ else
     {
         errors.Clear();
         if (editando is null) return false;
+        if (string.IsNullOrWhiteSpace(legajoInput)) errors["Legajo"] = "Requerido";
+        else if (!legajoInput.All(char.IsDigit)) errors["Legajo"] = "Solo números";
         if (string.IsNullOrWhiteSpace(editando.Nombre)) errors[nameof(editando.Nombre)] = "Requerido";
         if (string.IsNullOrWhiteSpace(editando.Apellido)) errors[nameof(editando.Apellido)] = "Requerido";
         if (string.IsNullOrWhiteSpace(editando.NumDoc)) errors[nameof(editando.NumDoc)] = "Requerido";
@@ -482,17 +530,19 @@ else
             var digits = new string(editando.Cuil.Where(char.IsDigit).ToArray());
             if (digits.Length != 11) errors[nameof(editando.Cuil)] = "CUIL inválido (11 dígitos)";
         }
-        // Email básico (opcional)
-        if (!string.IsNullOrWhiteSpace(editando.Correo))
-        {
-            if (!editando.Correo.Contains('@') || !editando.Correo.Contains('.')) errors[nameof(editando.Correo)] = "Email inválido";
-        }
+        // Email requerido por backend y con formato básico
+        if (string.IsNullOrWhiteSpace(editando.Correo)) errors[nameof(editando.Correo)] = "Requerido";
+        else if (!editando.Correo.Contains('@') || !editando.Correo.Contains('.')) errors[nameof(editando.Correo)] = "Email inválido";
         // Celular: opcional, máximo 20 y sin letras
         if (!string.IsNullOrWhiteSpace(editando.Celular))
         {
             if (editando.Celular.Length > 20) errors[nameof(editando.Celular)] = "Máximo 20 caracteres";
             if (editando.Celular.Any(char.IsLetter)) errors[nameof(editando.Celular)] = "No usar letras";
         }
+        // Calle requerida por backend
+        if (string.IsNullOrWhiteSpace(editando.Calle)) errors[nameof(editando.Calle)] = "Requerido";
+        // Altura numérica
+        if (!string.IsNullOrWhiteSpace(editando.Altura) && !editando.Altura.All(char.IsDigit)) errors[nameof(editando.Altura)] = "Solo números";
 
         StateHasChanged();
         return errors.Count == 0;
@@ -524,6 +574,7 @@ else
     class ProblemDetailsPayload { public string? Title { get; set; } public string? Detail { get; set; } public Dictionary<string, string[]>? Errors { get; set; } }
     private string DisplayName(string key) => key switch
     {
+        "Legajo" => "Legajo",
         "Nombre" => "Nombre",
         "Apellido" => "Apellido",
         "NumDoc" => "Número Doc",

@@ -40,14 +40,54 @@ public class ApiAuthService : IAuthService
 
     public async Task<LoginResult> LoginAsync(string username, string password)
     {
-        var res = await _api.PostAsync<LoginResponse>("api/v1/auth/login", new LoginRequest { Username = username, Password = password });
-        if (res.Requires2fa)
+        try
         {
-            _lastUsername = username;
-            return new LoginResult(true, true, null);
+            var res = await _api.PostAsync<LoginResponse>("api/v1/auth/login", new LoginRequest { Username = username, Password = password });
+            if (res.Requires2fa)
+            {
+                _lastUsername = username;
+                return new LoginResult(true, true, null);
+            }
+            _tokens.SetToken(res.Token);
+            return new LoginResult(true, false, null);
         }
-        _tokens.SetToken(res.Token);
-        return new LoginResult(true, false, null);
+        catch (Exception ex)
+        {
+            // Try to parse ProblemDetails for a clearer message
+            var msg = TryGetProblemDetails(ex.Message) ?? "Usuario o contraseña incorrectos.";
+            return new LoginResult(false, false, msg);
+        }
+    }
+
+    public async Task<IReadOnlyList<string>> GetSecurityQuestionsAsync(string username)
+    {
+        try
+        {
+            var qs = await _api.GetAsync<IEnumerable<PreguntaSeguridadDto>>($"api/v1/securityquestions/{username}");
+            return qs.Select(q => q.Pregunta).ToList();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    private static string? TryGetProblemDetails(string content)
+    {
+        try
+        {
+            var doc = System.Text.Json.JsonDocument.Parse(content);
+            if (doc.RootElement.TryGetProperty("detail", out var d) && d.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return d.GetString();
+            }
+            if (doc.RootElement.TryGetProperty("title", out var t) && t.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return t.GetString();
+            }
+        }
+        catch { }
+        return null;
     }
 
     public Task LogoutAsync()
@@ -98,7 +138,8 @@ public class ApiAuthService : IAuthService
         }
         catch (Exception ex)
         {
-            return new ResetPasswordResult(false, null, ex.Message);
+            var msg = ex.Message;
+            return new ResetPasswordResult(false, null, string.IsNullOrWhiteSpace(msg) ? "No se pudo resetear la contraseña" : msg);
         }
     }
 

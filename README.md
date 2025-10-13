@@ -91,9 +91,16 @@ Notas de UI (Blazor):
 - Usuarios: confirmación antes de eliminar y paginación simple (Anterior/Siguiente).
 - Personas: confirmación antes de eliminar, paginación simple y combos en cascada Provincia → Partido → Localidad, además de Género y Tipo Doc.
 
+Seguridad en UI (Blazor):
+- Rutas protegidas por JWT: Dashboard y el resto de páginas requieren sesión; las páginas administrativas (Usuarios, Personas, Seguridad) requieren rol Admin. Si no hay sesión, se redirige a /login con returnUrl.
+- Menú condicionado: las secciones del menú sólo aparecen cuando estás autenticado. Los ítems de Admin se muestran sólo si el usuario tiene ese rol.
+- Cierre automático de sesión: al expirar el JWT, la app cierra sesión automáticamente y muestra un aviso.
+- Post-login con retorno: si venías de una página protegida, tras loguearte se vuelve automáticamente a la ruta original (parámetro returnUrl seguro).
+
 Detalles recientes (Blazor):
 - Filtros y paginación server-side en Usuarios y Personas.
 - Manejo de errores uniforme: el cliente parsea ProblemDetails del backend para mostrar errores de validación inline y via toasts (crear/editar/eliminar/listar).
+ - Hardening de autenticación y sesión: guards de rutas, gating del menú, auto-logout por expiración de token y navegación de retorno post-login.
 
 7) Flujo recomendado de pruebas end-to-end
 - Backend arriba (http://localhost:5000)

@@ -3,6 +3,7 @@
 @using AgileStockPro.Web.Models
 @inject IAppDataService Data
 
+<AgileStockPro.Web.Components.AuthGuard>
 <PageHeader Title="Proveedores">
 	<Actions>
 		<button class="btn btn-primary">Nuevo</button>
@@ -17,6 +18,8 @@
 {
 	<p>Cargando...</p>
 }
+
+</AgileStockPro.Web.Components.AuthGuard>
 else
 {
 	<table>

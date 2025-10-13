@@ -33,7 +33,7 @@ public class BackendApiClient
         var content = await res.Content.ReadAsStringAsync();
         if (!res.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException(string.IsNullOrWhiteSpace(content) ? $"{(int)res.StatusCode} {res.ReasonPhrase}" : content);
+            throw ApiException.FromResponse(res.StatusCode, content, res.ReasonPhrase);
         }
         var obj = JsonSerializer.Deserialize<T>(content, _json);
         if (obj == null) throw new InvalidOperationException("Respuesta vacía del servidor");
@@ -48,7 +48,7 @@ public class BackendApiClient
         var content = await res.Content.ReadAsStringAsync();
         if (!res.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException(string.IsNullOrWhiteSpace(content) ? $"{(int)res.StatusCode} {res.ReasonPhrase}" : content);
+            throw ApiException.FromResponse(res.StatusCode, content, res.ReasonPhrase);
         }
         var obj = JsonSerializer.Deserialize<T>(content, _json);
         if (obj == null) throw new InvalidOperationException("Respuesta vacía del servidor");
@@ -63,7 +63,7 @@ public class BackendApiClient
         if (!res.IsSuccessStatusCode)
         {
             var content = await res.Content.ReadAsStringAsync();
-            throw new InvalidOperationException(string.IsNullOrWhiteSpace(content) ? $"{(int)res.StatusCode} {res.ReasonPhrase}" : content);
+            throw ApiException.FromResponse(res.StatusCode, content, res.ReasonPhrase);
         }
     }
 
@@ -75,7 +75,7 @@ public class BackendApiClient
         var content = await res.Content.ReadAsStringAsync();
         if (!res.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException(string.IsNullOrWhiteSpace(content) ? $"{(int)res.StatusCode} {res.ReasonPhrase}" : content);
+            throw ApiException.FromResponse(res.StatusCode, content, res.ReasonPhrase);
         }
         var obj = JsonSerializer.Deserialize<T>(content, _json);
         if (obj == null) throw new InvalidOperationException("Respuesta vacía del servidor");
@@ -89,7 +89,42 @@ public class BackendApiClient
         if (!res.IsSuccessStatusCode)
         {
             var content = await res.Content.ReadAsStringAsync();
-            throw new InvalidOperationException(string.IsNullOrWhiteSpace(content) ? $"{(int)res.StatusCode} {res.ReasonPhrase}" : content);
+            throw ApiException.FromResponse(res.StatusCode, content, res.ReasonPhrase);
         }
+    }
+}
+
+public class ApiException : Exception
+{
+    public int StatusCode { get; }
+    public string? Title { get; }
+    public string? Detail { get; }
+
+    public ApiException(int statusCode, string? message, string? title = null, string? detail = null) : base(message)
+    {
+        StatusCode = statusCode;
+        Title = title;
+        Detail = detail;
+    }
+
+    public static ApiException FromResponse(System.Net.HttpStatusCode statusCode, string? content, string? reason)
+    {
+        // Try parse ProblemDetails
+        string? title = null; string? detail = null; string message = string.Empty;
+        if (!string.IsNullOrWhiteSpace(content))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(content);
+                if (doc.RootElement.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String) title = t.GetString();
+                if (doc.RootElement.TryGetProperty("detail", out var d) && d.ValueKind == JsonValueKind.String) detail = d.GetString();
+            }
+            catch
+            {
+                // not JSON; fall through
+            }
+        }
+        message = detail ?? title ?? content ?? $"{(int)statusCode} {reason}";
+        return new ApiException((int)statusCode, message, title, detail);
     }
 }

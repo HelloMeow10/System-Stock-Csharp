@@ -1,4 +1,6 @@
 @page "/usuarios"
+@using AgileStockPro.Web.Components
+@using AgileStockPro.Web.Components.Shared
 @using AgileStockPro.Web.Models
 @inject AgileStockPro.Web.Services.IUserStore Store
 @inject AgileStockPro.Web.Services.IAuthService Auth
@@ -6,6 +8,7 @@
 @inject IToastService Toast
 @inject AgileStockPro.Web.Services.Api.BackendApiClient Api
 
+<AuthGuard RequireAdmin="true">
 <PageHeader Title="Usuarios">
     <Actions>
         <input class="input" placeholder="Usuario" @bind="usernameFilter" style="min-width:160px" />
@@ -26,14 +29,7 @@
     </Actions>
 </PageHeader>
 
-@if (user is null || user.IsAdmin == false)
-{
-    <div class="panel">
-        <div class="panel-header">Acceso restringido</div>
-        <p>Esta sección es solo para administradores. <a href="/login">Iniciar sesión</a></p>
-    </div>
-}
-else if (list is null)
+@if (busy && backendUsers.Count == 0)
 {
     <p>Cargando…</p>
 }
@@ -71,7 +67,13 @@ else
         <button class="btn" disabled="@busy || (pageNumber * pageSize) >= totalCount" @onclick="NextPage">Siguiente</button>
         <span class="muted">Total: @totalCount @if (rolFilterId>0){<text>| Filtrado: @backendUsers.Count</text>}</span>
     </div>
+    if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="error" style="margin-top:.5rem">@error</div>
+    }
 }
+
+</AuthGuard>
 
 @if (editing != null)
 {
@@ -162,6 +164,7 @@ else
     private bool submitted;
     private Dictionary<string, string> errors = new();
     private int? editingBackendId;
+    private string? error;
 
     protected override async Task OnInitializedAsync()
     {
@@ -170,10 +173,22 @@ else
         policy = await Store.GetPolicyAsync();
         if (user?.IsAdmin == true)
         {
-            await LoadBackendUsers();
-            // cargar combos
-            personas = (await Api.GetAsync<AgileStockPro.Web.Services.Api.PagedResponse<AgileStockPro.Web.Services.Api.PersonaDto>>("api/v1/personas")).Items?.ToList() ?? new();
-            roles = (await Api.GetAsync<List<AgileStockPro.Web.Services.Api.RolDto>>("api/v1/referencedata/roles")).Select(r => (r.IdRol, r.Nombre)).ToList();
+            try
+            {
+                await LoadBackendUsers();
+                // cargar combos
+                var personasPaged = await Api.GetAsync<AgileStockPro.Web.Services.Api.PagedResponse<AgileStockPro.Web.Services.Api.PersonaDto>>("api/v1/personas");
+                personas = personasPaged.Items?.ToList() ?? new();
+                roles = (await Api.GetAsync<List<AgileStockPro.Web.Services.Api.RolDto>>("api/v1/referencedata/roles")).Select(r => (r.IdRol, r.Nombre)).ToList();
+            }
+            catch (Exception ex)
+            {
+                if (!TryApplyProblemDetails(ex.Message))
+                {
+                    error = ex.Message;
+                    Toast.ShowError(error);
+                }
+            }
         }
         busy = false;
     }
@@ -250,7 +265,7 @@ else
             catch (Exception ex)
             {
                 if (TryApplyProblemDetails(ex.Message)) { busy = false; return; }
-                throw;
+                error = ex.Message; Toast.ShowError(error); busy = false; return;
             }
             editing.BackendIdUsuario = created.IdUsuario;
             editing.BackendIdPersona = created.IdPersona;
@@ -276,7 +291,7 @@ else
             catch (Exception ex)
             {
                 if (TryApplyProblemDetails(ex.Message)) { busy = false; return; }
-                throw;
+                error = ex.Message; Toast.ShowError(error); busy = false; return;
             }
             Toast.ShowSuccess("Usuario actualizado");
         }
@@ -306,7 +321,7 @@ else
         catch (Exception ex)
         {
             if (TryApplyProblemDetails(ex.Message)) { busy = false; return; }
-            throw;
+            error = ex.Message; Toast.ShowError(error); busy = false; return;
         }
         Toast.ShowSuccess("Usuario eliminado");
         await LoadBackendUsers();
@@ -356,8 +371,10 @@ else
         }
         catch (Exception ex)
         {
-            if (TryApplyProblemDetails(ex.Message)) return;
-            throw;
+            if (TryApplyProblemDetails(ex.Message)) { return; }
+            error = ex.Message;
+            Toast.ShowError(error);
+            return;
         }
     backendUsers = paged.Items?.ToList() ?? new();
         totalCount = paged.TotalCount;

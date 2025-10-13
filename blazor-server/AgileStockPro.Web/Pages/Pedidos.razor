@@ -1,11 +1,17 @@
 @page "/pedidos"
 @using AgileStockPro.Web.Services
 @using AgileStockPro.Web.Models
+@using AgileStockPro.Web.Components
 @inject IAppDataService Data
 
+<AuthGuard>
 <PageHeader Title="Pedidos" />
 
-@if (items is null)
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="error">@error</div>
+}
+else if (items is null)
 {
 	<p>Cargando...</p>
 }
@@ -36,10 +42,14 @@ else
 	</table>
 }
 
+</AuthGuard>
+
 @code {
 	private IReadOnlyList<Pedido>? items;
+	private string? error;
 	protected override async Task OnInitializedAsync()
 	{
-		items = await Data.GetOrdersAsync();
+		try { items = await Data.GetOrdersAsync(); }
+		catch (Exception ex) { error = ex.Message; }
 	}
 }

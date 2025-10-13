@@ -13,4 +13,5 @@ public interface IAuthService
     Task<bool> ChangePasswordAsync(string currentPassword, string newPassword);
     Task<ResetPasswordResult> ResetPasswordAsync(string username, IReadOnlyDictionary<string, string> answers);
     Task<bool> Verify2FAAsync(string code);
+    Task<IReadOnlyList<string>> GetSecurityQuestionsAsync(string username);
 }

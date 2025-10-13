@@ -5,7 +5,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container (classic Blazor Server)
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+var blazorBuilder = builder.Services.AddServerSideBlazor();
+if (builder.Environment.IsDevelopment())
+{
+    blazorBuilder.AddCircuitOptions(o => o.DetailedErrors = true);
+}
 builder.Services.AddHttpContextAccessor();
 
 // Per Fluent docs, register HttpClient before AddFluentUIComponents

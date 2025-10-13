@@ -139,4 +139,10 @@ public class AuthService : IAuthService
         }
         return ok;
     }
+
+    public async Task<IReadOnlyList<string>> GetSecurityQuestionsAsync(string username)
+    {
+        var user = await _store.FindByUsernameAsync(username);
+        return user?.SecurityQuestions.Select(q => q.Question).ToList() ?? new List<string>();
+    }
 }
