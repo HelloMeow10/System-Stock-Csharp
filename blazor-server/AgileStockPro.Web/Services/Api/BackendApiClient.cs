@@ -67,6 +67,21 @@ public class BackendApiClient
         }
     }
 
+    public async Task<T> PutAsync<T>(string uri, object body)
+    {
+        AddAuth();
+        var json = JsonSerializer.Serialize(body);
+        var res = await _http.PutAsync(uri, new StringContent(json, Encoding.UTF8, "application/json"));
+        var content = await res.Content.ReadAsStringAsync();
+        if (!res.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(content) ? $"{(int)res.StatusCode} {res.ReasonPhrase}" : content);
+        }
+        var obj = JsonSerializer.Deserialize<T>(content, _json);
+        if (obj == null) throw new InvalidOperationException("Respuesta vacía del servidor");
+        return obj;
+    }
+
     public async Task DeleteAsync(string uri)
     {
         AddAuth();

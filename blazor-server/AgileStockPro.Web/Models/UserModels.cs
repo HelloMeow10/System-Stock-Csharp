@@ -45,6 +45,8 @@ public class AppUser
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
     public bool IsAdmin { get; set; }
+    public bool Habilitado { get; set; } = true;
+    public DateTime? Expira { get; set; }
 
     // Stored as SHA256(username + password)
     public string PasswordHash { get; set; } = string.Empty;

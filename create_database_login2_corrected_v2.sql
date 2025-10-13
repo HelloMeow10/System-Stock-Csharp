@@ -1032,6 +1032,7 @@ CREATE PROCEDURE sp_get_users
     @PageSize INT = 10,
     @Username NVARCHAR(30) = NULL,
     @Email NVARCHAR(100) = NULL,
+    @RoleId INT = NULL,
     @SortBy NVARCHAR(100) = 'id_usuario',
     @TotalRecords INT OUTPUT
 AS
@@ -1053,6 +1054,11 @@ BEGIN
     BEGIN
         -- We need to join with Personas table to filter by email
         SET @WhereClause = @WhereClause + ' AND p.correo LIKE ''%'' + @Email + ''%''';
+    END
+
+    IF @RoleId IS NOT NULL
+    BEGIN
+        SET @WhereClause = @WhereClause + ' AND u.id_rol = @RoleId';
     END
 
     -- Remove leading ' AND '
@@ -1105,13 +1111,13 @@ BEGIN
 
     -- Execute count query
     EXEC sp_executesql @CountQuery,
-        N'@Username NVARCHAR(30), @Email NVARCHAR(100), @TotalRecords INT OUTPUT',
-        @Username, @Email, @TotalRecords OUTPUT;
+        N'@Username NVARCHAR(30), @Email NVARCHAR(100), @RoleId INT, @TotalRecords INT OUTPUT',
+        @Username, @Email, @RoleId, @TotalRecords OUTPUT;
 
     -- Execute main query
     EXEC sp_executesql @Query,
-        N'@PageNumber INT, @PageSize INT, @Username NVARCHAR(30), @Email NVARCHAR(100)',
-        @PageNumber, @PageSize, @Username, @Email;
+        N'@PageNumber INT, @PageSize INT, @Username NVARCHAR(30), @Email NVARCHAR(100), @RoleId INT',
+        @PageNumber, @PageSize, @Username, @Email, @RoleId;
 
 END
 GO

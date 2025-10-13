@@ -29,12 +29,38 @@ public class ApiUserStore : IUserStore
 
     public async Task SaveAsync(AppUser user)
     {
-        if (user.Id == Guid.Empty)
+        if (user.BackendIdUsuario is not int idUsuario)
         {
-            throw new NotSupportedException("Creación requiere asignar Persona y Rol; implementar UI de asignación");
+            // Create
+            if (user.BackendIdPersona is not int idPersona) throw new InvalidOperationException("Persona requerida");
+            if (user.BackendIdRol is not int idRol && !user.IsAdmin) throw new InvalidOperationException("Rol requerido");
+            var rolNombre = user.IsAdmin ? "Admin" : null; // si no admin, debería definirse según selección UI
+            var created = await _api.PostAsync<UserDto>("api/v1/users", new UserCreateRequest
+            {
+                PersonaId = idPersona.ToString(),
+                Username = user.Username,
+                Password = "", // backend auto-envía o UI puede setear temporal
+                Rol = rolNombre ?? "Usuario"
+            });
+            user.BackendIdUsuario = created.IdUsuario;
+            user.BackendIdPersona = created.IdPersona;
+            return;
         }
-        // We would need UpdateUserRequest mapping; keeping placeholder for later
-        throw new NotSupportedException("Actualizar usuario no implementado aún en Blazor");
+        else
+        {
+            // Update
+            var req = new UpdateUserRequest
+            {
+                Nombre = user.Name,
+                Apellido = user.LastName,
+                Correo = user.Email,
+                IdRol = user.BackendIdRol ?? (user.IsAdmin ? 1 : 2),
+                CambioContrasenaObligatorio = user.MustChangePassword,
+                FechaExpiracion = user.Expira,
+                Habilitado = user.Habilitado
+            };
+            await _api.PutAsync<UserDto>($"api/v1/users/{idUsuario}", req);
+        }
     }
 
     public async Task DeleteAsync(Guid id)
@@ -89,7 +115,9 @@ public class ApiUserStore : IUserStore
         LastName = u.Apellido ?? string.Empty,
         Email = u.Correo ?? string.Empty,
         IsAdmin = string.Equals(u.Rol, "Admin", StringComparison.OrdinalIgnoreCase) || string.Equals(u.Rol, "Administrador", StringComparison.OrdinalIgnoreCase),
-        MustChangePassword = u.CambioContrasenaObligatorio
+        MustChangePassword = u.CambioContrasenaObligatorio,
+        Habilitado = u.Habilitado,
+        Expira = u.FechaExpiracion
     };
 
     public Task SetCurrentUserAsync(AppUser? user) => Task.CompletedTask;

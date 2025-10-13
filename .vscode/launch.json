@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    
+    {
+      "name": ".NET Launch: Services API",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/src/Services/Services.csproj"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": ".NET Launch: Blazor Server",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/blazor-server/AgileStockPro.Web/AgileStockPro.Web.csproj"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run Backend + Blazor",
+      "configurations": [
+        ".NET Launch: Services API",
+        ".NET Launch: Blazor Server"
+      ]
+    }
+  ]
+}

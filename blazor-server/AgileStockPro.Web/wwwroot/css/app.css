@@ -94,6 +94,12 @@ input.search { width: 320px; max-width: 45vw; padding: .5rem .75rem; border: 1px
 .btn-primary:hover { background: var(--accent-600); border-color: var(--accent-700); }
 .btn-primary:active { background: var(--accent-700); }
 
+/* Form validation helpers */
+.req { color: var(--palette-red-foreground-2, #ef4444); }
+.error { border: 1px solid color-mix(in srgb, #ef4444 35%, transparent); background: color-mix(in srgb, #ef4444 6%, transparent); color: inherit; border-radius: 8px; padding: .5rem .75rem; }
+.error-text { color: var(--palette-red-foreground-2, #ef4444); font-size: .85rem; margin-top: -.35rem; margin-bottom: .35rem; display:block; }
+.input.invalid { border-color: color-mix(in srgb, #ef4444 45%, transparent); outline: 2px solid color-mix(in srgb, #ef4444 35%, transparent); outline-offset: 1px; }
+
 /* Dashboard */
 .dashboard { display: grid; gap: 16px; }
 .dashboard .cards { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }

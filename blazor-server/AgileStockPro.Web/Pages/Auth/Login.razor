@@ -1,6 +1,7 @@
 @page "/login"
 @inject NavigationManager Nav
 @inject AgileStockPro.Web.Services.IAuthService Auth
+@inject IToastService Toast
 
 <PageHeader Title="Ingreso" />
 
@@ -15,7 +16,7 @@
             <InputText type="password" class="input" @bind-Value="model.Password" />
         </div>
         <div style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
-            <button class="btn btn-primary" disabled="@busy">Ingresar</button>
+            <button class="btn btn-primary" disabled="@busy">@(busy ? "Ingresando…" : "Ingresar")</button>
             <a href="/forgot-password" class="btn">Olvidé mi contraseña</a>
         </div>
         @if (!string.IsNullOrEmpty(error))
@@ -31,7 +32,7 @@
         <div class="panel-header">Autenticación en dos pasos</div>
         <div style="display:flex; gap:.5rem; align-items:center;">
             <input class="input" placeholder="Código de verificación" @bind-value="twoFactorCode" />
-            <button class="btn btn-primary" @onclick="VerifyCode">Verificar</button>
+            <button class="btn btn-primary" disabled="@busy2fa" @onclick="VerifyCode">@(busy2fa ? "Verificando…" : "Verificar")</button>
         </div>
         <div class="muted" style="margin-top:.5rem">Se envió un código al correo (simulado). Revisa la consola para verlo en esta demo.</div>
         @if (!string.IsNullOrEmpty(error2FA))
@@ -53,16 +54,18 @@
     private string? error;
     private bool require2FA;
     private string twoFactorCode = string.Empty;
+    private bool busy2fa;
     private string? error2FA;
 
     private async Task HandleLogin()
     {
-        busy = true; error = null;
+    busy = true; error = null; require2FA = false;
         var result = await Auth.LoginAsync(model.Username, model.Password);
         busy = false;
         if (!result.Success)
         {
             error = result.Error ?? "Login inválido";
+            Toast.ShowError(error);
             return;
         }
         if (result.Requires2FA)
@@ -71,6 +74,7 @@
             StateHasChanged();
             return;
         }
+        Toast.ShowSuccess("Sesión iniciada");
         var user = await Auth.GetCurrentUserAsync();
         if (user?.MustChangePassword == true)
         {
@@ -84,13 +88,16 @@
 
     private async Task VerifyCode()
     {
-        error2FA = null;
+    error2FA = null; busy2fa = true;
         var ok = await Auth.Verify2FAAsync(twoFactorCode);
+    busy2fa = false;
         if (!ok)
         {
             error2FA = "Código inválido";
+            Toast.ShowError(error2FA);
             return;
         }
+        Toast.ShowSuccess("2FA verificado");
         var user = await Auth.GetCurrentUserAsync();
         if (user?.MustChangePassword == true)
         {

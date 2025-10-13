@@ -1,5 +1,4 @@
 using AgileStockPro.Web.Models;
-using Contracts;
 
 namespace AgileStockPro.Web.Services.Api;
 
@@ -15,7 +14,29 @@ public class ApiAuthService : IAuthService
         _tokens = tokens;
     }
 
-    public Task<AppUser?> GetCurrentUserAsync() => Task.FromResult<AppUser?>(null); // can be wired to api/v1/users/me later
+    public async Task<AppUser?> GetCurrentUserAsync()
+    {
+        try
+        {
+            var u = await _api.GetAsync<UserDto>("api/v1/users/me");
+            return new AppUser
+            {
+                BackendIdUsuario = u.IdUsuario,
+                BackendIdPersona = u.IdPersona,
+                Username = u.Username,
+                Name = u.Nombre ?? string.Empty,
+                LastName = u.Apellido ?? string.Empty,
+                Email = u.Correo ?? string.Empty,
+                IsAdmin = string.Equals(u.Rol, "Admin", StringComparison.OrdinalIgnoreCase) || string.Equals(u.Rol, "Administrador", StringComparison.OrdinalIgnoreCase),
+                MustChangePassword = u.CambioContrasenaObligatorio,
+                Habilitado = true
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public async Task<LoginResult> LoginAsync(string username, string password)
     {
@@ -32,19 +53,26 @@ public class ApiAuthService : IAuthService
     public Task LogoutAsync()
     {
         _tokens.SetToken(null);
+        // Best-effort backend logout to clear auth cookie
+        try { _ = _api.PostAsync("api/v1/auth/logout", new { }); } catch { }
         return Task.CompletedTask;
     }
 
     public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
     {
-        // Backend requires username; we can call /users/me first if needed in a future iteration
-        // For now, assume the backend derives current user from token and ignores Username
         try
         {
+            // Ensure we have a token; otherwise we'll get 401
+            if (string.IsNullOrWhiteSpace(_tokens.Token))
+            {
+                // Try to infer current token from cookie restored at TokenProvider ctor
+            }
+
+            // Server derives username from JWT now
             await _api.PostAsync("api/v1/password/change", new ChangePasswordRequest { Username = string.Empty, OldPassword = currentPassword, NewPassword = newPassword });
             return true;
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
@@ -54,8 +82,18 @@ public class ApiAuthService : IAuthService
     {
         try
         {
-            // Answers mapping to backend uses question ids; placeholder: send empty dict to trigger generic response
-            await _api.PostAsync("api/v1/password/recover", new RecoverPasswordRequest { Username = username, Answers = new Dictionary<int, string>() });
+            // Obtener preguntas con IDs desde backend y mapear respuestas por texto a sus IDs
+            var qs = await _api.GetAsync<IEnumerable<PreguntaSeguridadDto>>($"api/v1/securityquestions/{username}");
+            var byText = qs.ToDictionary(q => q.Pregunta, q => q.IdPregunta, StringComparer.OrdinalIgnoreCase);
+            var mapped = new Dictionary<int, string>();
+            foreach (var kv in answers)
+            {
+                if (byText.TryGetValue(kv.Key, out var id))
+                {
+                    mapped[id] = kv.Value;
+                }
+            }
+            await _api.PostAsync("api/v1/password/recover", new RecoverPasswordRequest { Username = username, Answers = mapped });
             return new ResetPasswordResult(true, null, null);
         }
         catch (Exception ex)

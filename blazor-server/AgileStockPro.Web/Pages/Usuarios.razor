@@ -3,11 +3,26 @@
 @inject AgileStockPro.Web.Services.IUserStore Store
 @inject AgileStockPro.Web.Services.IAuthService Auth
 @inject Microsoft.JSInterop.IJSRuntime JS
+@inject IToastService Toast
 @inject AgileStockPro.Web.Services.Api.BackendApiClient Api
 
 <PageHeader Title="Usuarios">
     <Actions>
-        <button class="btn btn-primary" @onclick="Nuevo">Nuevo usuario</button>
+        <input class="input" placeholder="Usuario" @bind="usernameFilter" style="min-width:160px" />
+        <input class="input" placeholder="Email" @bind="emailFilter" style="min-width:200px" />
+        <select class="input" @bind="rolFilterId" style="min-width:140px">
+            <option value="0">Rol</option>
+            @if (roles != null)
+            {
+                foreach (var r in roles)
+                {
+                    <option value="@r.IdRol">@r.Nombre</option>
+                }
+            }
+        </select>
+        <button class="btn" disabled="@busy" @onclick="Buscar">Buscar</button>
+        <button class="btn" disabled="@busy" @onclick="LimpiarFiltros">Limpiar</button>
+        <button class="btn btn-primary" disabled="@busy" @onclick="Nuevo">@(busy ? "Cargando…" : "Nuevo usuario")</button>
     </Actions>
 </PageHeader>
 
@@ -30,26 +45,32 @@ else
                 <th>Usuario</th>
                 <th>Nombre</th>
                 <th>Email</th>
-                <th>Admin</th>
+                <th>Rol</th>
                 <th></th>
             </tr>
         </thead>
         <tbody>
-        @foreach (var u in list)
+        @foreach (var u in backendUsers)
         {
             <tr>
                 <td>@u.Username</td>
-                <td>@u.Name @u.LastName</td>
-                <td>@u.Email</td>
-                <td>@(u.IsAdmin ? "Sí" : "No")</td>
+                <td>@u.Nombre @u.Apellido</td>
+                <td>@u.Correo</td>
+                <td>@u.Rol</td>
                 <td style="text-align:right">
-                    <button class="btn" @onclick="() => Edit(u)">Editar</button>
-                    <button class="btn" @onclick="() => Delete(u)">Eliminar</button>
+                    <button class="btn" disabled="@busy" @onclick="() => EditFromBackend(u)">Editar</button>
+                    <button class="btn" disabled="@busy" @onclick="() => DeleteBackend(u)">Eliminar</button>
                 </td>
             </tr>
         }
         </tbody>
     </table>
+    <div style="display:flex; gap:.5rem; align-items:center; margin-top:.5rem;">
+        <button class="btn" disabled="@busy || pageNumber<=1" @onclick="PrevPage">Anterior</button>
+        <span class="muted">Página @pageNumber</span>
+        <button class="btn" disabled="@busy || (pageNumber * pageSize) >= totalCount" @onclick="NextPage">Siguiente</button>
+        <span class="muted">Total: @totalCount @if (rolFilterId>0){<text>| Filtrado: @backendUsers.Count</text>}</span>
+    </div>
 }
 
 @if (editing != null)
@@ -57,18 +78,18 @@ else
     <div class="panel" style="margin-top:1rem;">
         <div class="panel-header">@(editing.Id == Guid.Empty ? "Nuevo usuario" : $"Editar: {editing.Username}")</div>
         <div style="display:grid; grid-template-columns: 160px 1fr; gap:.5rem; align-items:center;">
-            <label>Usuario</label>
-            <input class="input" @bind-value="editing.Username" />
+            <label>Usuario <span class="req">*</span></label>
+            <input class=@($"input {(Invalid("Username") ? "invalid" : "")}") @bind-value="editing.Username" />
+            @if (Invalid("Username")) { <span class="error-text">@GetError("Username")</span> }
             <label>Nombre</label>
             <input class="input" @bind-value="editing.Name" />
             <label>Apellido</label>
             <input class="input" @bind-value="editing.LastName" />
             <label>Email</label>
-            <input class="input" @bind-value="editing.Email" />
-            <label>Admin</label>
-            <input type="checkbox" @bind="editing.IsAdmin" />
-            <label>Persona</label>
-            <select class="input" @bind="selectedPersonaId">
+            <input class=@($"input {(Invalid("Email") ? "invalid" : "")}") @bind-value="editing.Email" />
+            @if (Invalid("Email")) { <span class="error-text">@GetError("Email")</span> }
+            <label>Persona <span class="req">*</span></label>
+            <select class=@($"input {(Invalid("PersonaId") ? "invalid" : "")}") @bind="selectedPersonaId">
                 <option value="">Seleccione…</option>
                 @if (personas != null)
                 {
@@ -78,8 +99,9 @@ else
                     }
                 }
             </select>
-            <label>Rol</label>
-            <select class="input" @bind="selectedRolId">
+            @if (Invalid("PersonaId")) { <span class="error-text">@GetError("PersonaId")</span> }
+            <label>Rol <span class="req">*</span></label>
+            <select class=@($"input {(Invalid("RolId") ? "invalid" : "")}") @bind="selectedRolId">
                 <option value="">Seleccione…</option>
                 @if (roles != null)
                 {
@@ -89,6 +111,7 @@ else
                     }
                 }
             </select>
+            @if (Invalid("RolId")) { <span class="error-text">@GetError("RolId")</span> }
         </div>
 
         <div class="panel-header" style="margin-top:1rem;">Preguntas de seguridad</div>
@@ -108,8 +131,8 @@ else
         }
 
         <div style="display:flex; gap:.5rem; margin-top:.75rem;">
-            <button class="btn btn-primary" @onclick="Guardar">Guardar</button>
-            <button class="btn" @onclick="Cancelar">Cancelar</button>
+            <button class="btn btn-primary" disabled="@busy" @onclick="Guardar">@(busy ? "Guardando…" : "Guardar")</button>
+            <button class="btn" disabled="@busy" @onclick="Cancelar">Cancelar</button>
         </div>
         @if (!string.IsNullOrWhiteSpace(tempPassInfo))
         {
@@ -119,7 +142,9 @@ else
 }
 
 @code {
-    private List<AppUser>? list;
+    private List<AppUser>? list; // legacy local store (used for hashing questions)
+    private List<AgileStockPro.Web.Services.Api.UserDto> backendUsers = new();
+    private int totalCount;
     private AppUser? editing;
     private SecurityPolicy policy = new();
     private string? tempPassInfo;
@@ -128,24 +153,36 @@ else
     private List<(int IdRol, string Nombre)>? roles;
     private string? selectedPersonaId;
     private string? selectedRolId;
+    private bool busy;
+    private int pageNumber = 1;
+    private int pageSize = 10;
+    private string? usernameFilter;
+    private string? emailFilter;
+    private int rolFilterId;
+    private bool submitted;
+    private Dictionary<string, string> errors = new();
+    private int? editingBackendId;
 
     protected override async Task OnInitializedAsync()
     {
+        busy = true;
         user = await Auth.GetCurrentUserAsync();
         policy = await Store.GetPolicyAsync();
         if (user?.IsAdmin == true)
         {
-            list = (await Store.GetAllAsync()).ToList();
+            await LoadBackendUsers();
             // cargar combos
             personas = (await Api.GetAsync<AgileStockPro.Web.Services.Api.PagedResponse<AgileStockPro.Web.Services.Api.PersonaDto>>("api/v1/personas")).Items?.ToList() ?? new();
             roles = (await Api.GetAsync<List<AgileStockPro.Web.Services.Api.RolDto>>("api/v1/referencedata/roles")).Select(r => (r.IdRol, r.Nombre)).ToList();
         }
+        busy = false;
     }
 
     private void Nuevo()
     {
         editing = new AppUser { Id = Guid.NewGuid(), MustChangePassword = true };
         tempPassInfo = null;
+        submitted = false; errors.Clear(); editingBackendId = null;
     }
 
     private void Edit(AppUser u)
@@ -166,40 +203,114 @@ else
         tempPassInfo = null;
     }
 
+    private void EditFromBackend(AgileStockPro.Web.Services.Api.UserDto u)
+    {
+        // Map minimal fields for editing (Nombre/Apellido/Correo y rol). Username no editable idealmente, pero lo permitimos si tu flujo lo admite.
+        editing = new AppUser
+        {
+            Id = Guid.NewGuid(),
+            Username = u.Username,
+            Name = u.Nombre ?? string.Empty,
+            LastName = u.Apellido ?? string.Empty,
+            Email = u.Correo ?? string.Empty,
+            IsAdmin = string.Equals(u.Rol, "Admin", StringComparison.OrdinalIgnoreCase)
+        };
+        selectedRolId = u.IdRol.ToString();
+        selectedPersonaId = u.IdPersona.ToString();
+        editingBackendId = u.IdUsuario;
+        submitted = false; errors.Clear(); tempPassInfo = null;
+    }
+
     private async Task Guardar()
     {
         if (editing == null) return;
+        busy = true;
+        submitted = true;
+        if (!Validate()) { busy = false; return; }
         // Crear usuario en backend si no tiene BackendIdUsuario
-        if (editing.BackendIdUsuario == null)
+        if (editingBackendId is null)
         {
             if (string.IsNullOrWhiteSpace(selectedPersonaId) || string.IsNullOrWhiteSpace(selectedRolId))
             {
                 tempPassInfo = "Seleccione Persona y Rol";
+                busy = false;
                 return;
             }
-            var created = await Api.PostAsync<AgileStockPro.Web.Services.Api.UserDto>("api/v1/users", new Contracts.UserRequest
+            AgileStockPro.Web.Services.Api.UserDto created;
+            try
             {
-                PersonaId = selectedPersonaId,
-                Username = editing.Username,
-                Password = GenerateTempPassword(),
-                Rol = roles!.First(r => r.IdRol.ToString() == selectedRolId).Nombre
-            });
+                created = await Api.PostAsync<AgileStockPro.Web.Services.Api.UserDto>("api/v1/users", new AgileStockPro.Web.Services.Api.UserCreateRequest
+                {
+                    PersonaId = selectedPersonaId!,
+                    Username = editing.Username,
+                    Password = GenerateTempPassword(),
+                    Rol = roles!.First(r => r.IdRol.ToString() == selectedRolId).Nombre
+                });
+            }
+            catch (Exception ex)
+            {
+                if (TryApplyProblemDetails(ex.Message)) { busy = false; return; }
+                throw;
+            }
             editing.BackendIdUsuario = created.IdUsuario;
             editing.BackendIdPersona = created.IdPersona;
+            editing.BackendIdRol = int.TryParse(selectedRolId, out var rid) ? rid : null;
             tempPassInfo = "Usuario creado. La contraseña inicial fue enviada por correo (según backend).";
+            Toast.ShowSuccess("Usuario creado");
         }
         else
         {
-            await Store.SaveAsync(editing);
+            // Update backend
+            var updateReq = new AgileStockPro.Web.Services.Api.UpdateUserRequest
+            {
+                Nombre = editing.Name,
+                Apellido = editing.LastName,
+                Correo = editing.Email,
+                IdRol = int.TryParse(selectedRolId, out var rid2) ? rid2 : 0,
+                Habilitado = true
+            };
+            try
+            {
+                await Api.PutAsync<AgileStockPro.Web.Services.Api.UserDto>($"api/v1/users/{editingBackendId}", updateReq);
+            }
+            catch (Exception ex)
+            {
+                if (TryApplyProblemDetails(ex.Message)) { busy = false; return; }
+                throw;
+            }
+            Toast.ShowSuccess("Usuario actualizado");
         }
-        list = (await Store.GetAllAsync()).ToList();
+        await LoadBackendUsers();
         editing = null;
+        busy = false;
     }
 
     private async Task Delete(AppUser u)
     {
+        if (!await Confirm($"¿Eliminar usuario {u.Username}?"))
+        {
+            return;
+        }
+        busy = true;
         await Store.DeleteAsync(u.Id);
-        list = (await Store.GetAllAsync()).ToList();
+    Toast.ShowSuccess("Usuario eliminado");
+        await LoadBackendUsers();
+    busy = false;
+    }
+
+    private async Task DeleteBackend(AgileStockPro.Web.Services.Api.UserDto u)
+    {
+        if (!await Confirm($"¿Eliminar usuario {u.Username}?")) return;
+        busy = true;
+        try { await Api.DeleteAsync($"api/v1/users/{u.IdUsuario}"); }
+        catch (Exception ex)
+        {
+            if (TryApplyProblemDetails(ex.Message)) { busy = false; return; }
+            throw;
+        }
+        Toast.ShowSuccess("Usuario eliminado");
+        await LoadBackendUsers();
+        busy = false;
     }
 
     private void Cancelar() { editing = null; }
@@ -215,5 +326,100 @@ else
     {
         var txt = e?.Value?.ToString() ?? string.Empty;
         q.AnswerHash = await JS.InvokeAsync<string>("app.sha256", txt);
+    }
+    private async Task NextPage()
+    {
+        pageNumber++;
+        if (user?.IsAdmin == true) await LoadBackendUsers();
+    }
+    private async Task PrevPage()
+    {
+        if (pageNumber>1) pageNumber--;
+        if (user?.IsAdmin == true) await LoadBackendUsers();
+    }
+
+    private async Task<bool> Confirm(string message)
+    {
+        return await JS.InvokeAsync<bool>("confirm", message);
+    }
+
+    private async Task LoadBackendUsers()
+    {
+    var qp = $"pageNumber={pageNumber}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(usernameFilter)) qp += $"&username={Uri.EscapeDataString(usernameFilter)}";
+        if (!string.IsNullOrWhiteSpace(emailFilter)) qp += $"&email={Uri.EscapeDataString(emailFilter)}";
+    if (rolFilterId > 0) qp += $"&roleId={rolFilterId}";
+        AgileStockPro.Web.Services.Api.PagedResponse<AgileStockPro.Web.Services.Api.UserDto> paged;
+        try
+        {
+            paged = await Api.GetAsync<AgileStockPro.Web.Services.Api.PagedResponse<AgileStockPro.Web.Services.Api.UserDto>>($"api/v1/users?{qp}");
+        }
+        catch (Exception ex)
+        {
+            if (TryApplyProblemDetails(ex.Message)) return;
+            throw;
+        }
+    backendUsers = paged.Items?.ToList() ?? new();
+        totalCount = paged.TotalCount;
+    }
+
+    private async Task Buscar()
+    {
+        pageNumber = 1;
+        await LoadBackendUsers();
+    }
+
+    private async Task LimpiarFiltros()
+    {
+        usernameFilter = emailFilter = null;
+        rolFilterId = 0;
+        pageNumber = 1; await LoadBackendUsers();
+    }
+
+    private bool Validate()
+    {
+        errors.Clear();
+        if (editing is null) return false;
+        if (string.IsNullOrWhiteSpace(editing.Username)) errors["Username"] = "Requerido";
+        if (string.IsNullOrWhiteSpace(selectedPersonaId)) errors["PersonaId"] = "Seleccione una persona";
+        if (string.IsNullOrWhiteSpace(selectedRolId)) errors["RolId"] = "Seleccione un rol";
+        if (!string.IsNullOrWhiteSpace(editing.Email))
+        {
+            if (!editing.Email.Contains('@') || !editing.Email.Contains('.')) errors["Email"] = "Email inválido";
+        }
+        StateHasChanged();
+        return errors.Count == 0;
+    }
+
+    private bool Invalid(string key) => submitted && errors.ContainsKey(key);
+    private string GetError(string key) => errors.TryGetValue(key, out var v) ? v : "Requerido";
+
+    private bool TryApplyProblemDetails(string content)
+    {
+        try
+        {
+            var problem = System.Text.Json.JsonSerializer.Deserialize<ProblemDetailsPayload>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (problem?.Errors != null && problem.Errors.Count > 0)
+            {
+                errors.Clear();
+                foreach (var kv in problem.Errors)
+                {
+                    if (kv.Value?.Length > 0) errors[kv.Key] = string.Join(" ", kv.Value);
+                }
+                submitted = true; StateHasChanged();
+                Toast.ShowError(problem.Title ?? "Error de validación");
+                return true;
+            }
+            if (!string.IsNullOrWhiteSpace(problem?.Detail)) { Toast.ShowError(problem.Detail!); return true; }
+        }
+        catch { /* not a problem details payload */ }
+        return false;
+    }
+
+    class ProblemDetailsPayload
+    {
+        public string? Title { get; set; }
+        public string? Detail { get; set; }
+        public Dictionary<string, string[]>? Errors { get; set; }
     }
 }

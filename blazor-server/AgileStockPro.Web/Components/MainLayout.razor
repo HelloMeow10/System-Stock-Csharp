@@ -5,6 +5,7 @@
 @using Microsoft.FluentUI.AspNetCore.Components
 
 @inject AgileStockPro.Web.Services.IAuthService Auth
+@inject IToastService Toast
 
 <div class="layout-root">
     <header class="site-header">
@@ -27,7 +28,9 @@
     <div class="layout-body @(collapsed ? "collapsed" : null)">
         <AgileStockPro.Web.Components.NavMenu Collapsed="collapsed" User="currentUser" />
         <main class="content">
-            @Body
+            <CascadingValue Value="Toast">
+                @Body
+            </CascadingValue>
         </main>
     </div>
         <FluentToastProvider />
@@ -51,6 +54,7 @@
     {
         await Auth.LogoutAsync();
         currentUser = null;
+        Toast.ShowInfo("Sesión cerrada");
         StateHasChanged();
     }
 }

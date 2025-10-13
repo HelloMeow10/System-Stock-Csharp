@@ -147,6 +147,14 @@
     {
         <FluentTooltip Anchor="nav-users">Usuarios</FluentTooltip>
     }
+    <NavLink href="/personas" class="nav-link">
+      <span class="nav-icon"><FluentIcon Id="nav-personas" Icon="@(Icons.Regular.Size20.Person)" /></span>
+      <span class="nav-text">Personas</span>
+    </NavLink>
+    @if (Collapsed)
+    {
+        <FluentTooltip Anchor="nav-personas">Personas</FluentTooltip>
+    }
     <NavLink href="/seguridad" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-security" Icon="@(Icons.Regular.Size20.ShieldLock)" /></span>
       <span class="nav-text">Seguridad</span>
