@@ -59,7 +59,7 @@ CREATE TABLE Productos (
     ubicacion VARCHAR(100),
     habilitado BIT,
     id_categoria INT,
-    FOREIGN KEY (id_marca) REFERENCES MarcasProducto(id_marca)
+    FOREIGN KEY (id_marca) REFERENCES MarcasProducto(id_marca),
     FOREIGN KEY (id_categoria) REFERENCES CategoriasProducto(id_categoria)
 );
 
