@@ -1,0 +1,112 @@
+CREATE PROCEDURE sp_AgregarCliente
+    @codigo VARCHAR(20),
+    @nombre VARCHAR(50),
+    @razonSocial VARCHAR(100),
+    @cuitDni VARCHAR(20),
+    @id_formaPago INT,
+    @limiteCredito DECIMAL(18,2),
+    @descuento DECIMAL(5,2),
+    @estado VARCHAR(45)
+AS
+BEGIN
+    INSERT INTO Clientes (codigo, nombre, razonSocial, CUIT_DNI, id_formaPago, limiteCredito, descuento, estado)
+    VALUES (@codigo, @nombre, @razonSocial, @cuitDni, @id_formaPago, @limiteCredito, @descuento, @estado)
+END
+GO
+
+CREATE PROCEDURE sp_ModificarCliente
+    @id_cliente INT,
+    @codigo VARCHAR(20),
+    @nombre VARCHAR(50),
+    @razonSocial VARCHAR(100),
+    @cuitDni VARCHAR(20),
+    @id_formaPago INT,
+    @limiteCredito DECIMAL(18,2),
+    @descuento DECIMAL(5,2),
+    @estado VARCHAR(45)
+AS
+BEGIN
+    UPDATE Clientes
+    SET codigo = @codigo,
+        nombre = @nombre,
+        razonSocial = @razonSocial,
+        CUIT_DNI = @cuitDni,
+        id_formaPago = @id_formaPago,
+        limiteCredito = @limiteCredito,
+        descuento = @descuento,
+        estado = @estado
+    WHERE id_cliente = @id_cliente
+END
+GO
+
+CREATE PROCEDURE sp_EliminarCliente
+    @id_cliente INT
+AS
+BEGIN
+    DELETE FROM Clientes WHERE id_cliente = @id_cliente
+END
+GO
+
+CREATE PROCEDURE sp_ConsultarClientePorNombre
+    @nombre VARCHAR(50)
+AS
+BEGIN
+    SELECT 
+        id_cliente,
+        codigo,
+        nombre,
+        razonSocial,
+        CUIT_DNI,
+        id_formaPago,
+        limiteCredito,
+        descuento,
+        estado
+    FROM Clientes
+    WHERE nombre LIKE '%' + @nombre + '%' OR razonSocial LIKE '%' + @nombre + '%'
+END
+GO
+
+CREATE PROCEDURE sp_ConsultarClientePorCUIT
+    @cuitDni VARCHAR(20)
+AS
+BEGIN
+    SELECT 
+        id_cliente,
+        codigo,
+        nombre,
+        razonSocial,
+        CUIT_DNI,
+        id_formaPago,
+        limiteCredito,
+        descuento,
+        estado
+    FROM Clientes
+    WHERE CUIT_DNI LIKE '%' + @cuitDni + '%'
+END
+GO
+
+CREATE PROCEDURE sp_AgregarTelefonoCliente
+    @id_cliente INT,
+    @telefono VARCHAR(20),
+    @sector VARCHAR(50),
+    @horario VARCHAR(20),
+    @email VARCHAR(100)
+AS
+BEGIN
+    INSERT INTO ClienteContactos (id_cliente, telefono, sector, horario, email)
+    VALUES (@id_cliente, @telefono, @sector, @horario, @email)
+END
+GO
+
+CREATE PROCEDURE sp_AgregarDireccionCliente
+    @id_cliente INT,
+    @direccion VARCHAR(100),
+    @localidad VARCHAR(45),
+    @provincia VARCHAR(45),
+    @tipo VARCHAR(20)
+AS
+BEGIN
+    INSERT INTO ClienteDirecciones (id_cliente, direccion, localidad, provincia, tipo)
+    VALUES (@id_cliente, @direccion, @localidad, @provincia, @tipo)
+END
+GO

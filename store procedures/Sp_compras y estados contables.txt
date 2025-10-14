@@ -1,0 +1,132 @@
+CREATE PROCEDURE sp_RegistrarPresupuestoCompra
+    @id_proveedor INT,
+    @fecha DATE,
+    @total DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO PresupuestoCompra (id_proveedor, fecha, total)
+    VALUES (@id_proveedor, @fecha, @total)
+END
+GO
+
+CREATE PROCEDURE sp_RegistrarOrdenCompra
+    @id_presupuesto INT,
+    @fecha DATE,
+    @total DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO OrdenCompra (id_presupuesto, fecha, total)
+    VALUES (@id_presupuesto, @fecha, @total)
+END
+GO
+
+CREATE PROCEDURE sp_ConsultarPedidos
+    @entregado BIT = NULL
+AS
+BEGIN
+    SELECT 
+        oc.id_ordenCompra,
+        p.razonSocial AS proveedor,
+        oc.fecha,
+        oc.total,
+        oc.entregado
+    FROM OrdenCompra oc
+    INNER JOIN Proveedor p ON oc.id_proveedor = p.id_proveedor
+    WHERE (@entregado IS NULL OR oc.entregado = @entregado)
+END
+GO
+
+CREATE PROCEDURE sp_RegistrarRemito
+    @id_ordenCompra INT,
+    @numeroRemito VARCHAR(50),
+    @fecha DATE,
+    @conFactura BIT
+AS
+BEGIN
+    INSERT INTO Remito (id_ordenCompra, numeroRemito, fecha, conFactura)
+    VALUES (@id_ordenCompra, @numeroRemito, @fecha, @conFactura)
+END
+GO
+
+CREATE PROCEDURE sp_RegistrarFacturaCompra
+    @id_proveedor INT,
+    @id_remito INT,
+    @numeroFactura VARCHAR(50),
+    @fecha DATE,
+    @total DECIMAL(18,2),
+    @visadoAlmacen BIT
+AS
+BEGIN
+    INSERT INTO FacturaCompra (id_proveedor, id_remito, numeroFactura, fecha, total, visadoAlmacen)
+    VALUES (@id_proveedor, @id_remito, @numeroFactura, @fecha, @total, @visadoAlmacen)
+END
+GO
+
+CREATE PROCEDURE sp_RegistrarNotaCredito
+    @id_factura INT,
+    @fecha DATE,
+    @monto DECIMAL(18,2),
+    @motivo VARCHAR(255)
+AS
+BEGIN
+    INSERT INTO NotaCredito (id_factura, fecha, monto, motivo)
+    VALUES (@id_factura, @fecha, @monto, @motivo)
+END
+GO
+
+CREATE PROCEDURE sp_RegistrarNotaDebito
+    @id_factura INT,
+    @fecha DATE,
+    @monto DECIMAL(18,2),
+    @motivo VARCHAR(255)
+AS
+BEGIN
+    INSERT INTO NotaDebito (id_factura, fecha, monto, motivo)
+    VALUES (@id_factura, @fecha, @monto, @motivo)
+END
+GO
+
+CREATE PROCEDURE sp_ReporteCompras
+    @fechaInicio DATE = NULL,
+    @fechaFin DATE = NULL,
+    @id_proveedor INT = NULL,
+    @id_producto INT = NULL
+AS
+BEGIN
+    SELECT 
+        fc.id_factura,
+        p.razonSocial AS proveedor,
+        pr.nombre AS producto,
+        fc.fecha,
+        fc.total
+    FROM FacturaCompra fc
+    INNER JOIN Proveedor p ON fc.id_proveedor = p.id_proveedor
+    INNER JOIN DetalleFacturaCompra df ON fc.id_factura = df.id_factura
+    INNER JOIN Producto pr ON df.id_producto = pr.id_producto
+    WHERE 
+        (@fechaInicio IS NULL OR fc.fecha >= @fechaInicio) AND
+        (@fechaFin IS NULL OR fc.fecha <= @fechaFin) AND
+        (@id_proveedor IS NULL OR fc.id_proveedor = @id_proveedor) AND
+        (@id_producto IS NULL OR pr.id_producto = @id_producto)
+END
+GO
+
+CREATE PROCEDURE sp_ReporteDevolucionesProveedores
+    @fechaInicio DATE = NULL,
+    @fechaFin DATE = NULL
+AS
+BEGIN
+    SELECT 
+        d.id_devolucion,
+        p.razonSocial AS proveedor,
+        pr.nombre AS producto,
+        d.fecha,
+        d.motivo
+    FROM DevolucionProveedor d
+    INNER JOIN Proveedor p ON d.id_proveedor = p.id_proveedor
+    INNER JOIN Producto pr ON d.id_producto = pr.id_producto
+    WHERE 
+        (@fechaInicio IS NULL OR d.fecha >= @fechaInicio) AND
+        (@fechaFin IS NULL OR d.fecha <= @fechaFin)
+END
+GO

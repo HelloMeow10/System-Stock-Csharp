@@ -1,0 +1,130 @@
+
+-- TABLAS AUXILIARES: Categorías, Marcas, Formas de Pago, Estados
+
+
+-- Categorías Producto
+CREATE PROCEDURE sp_AgregarCategoria
+    @categoria VARCHAR(100),
+    @descripcion VARCHAR(100)
+AS
+BEGIN
+    INSERT INTO CategoriasProducto (categoria, descripcion)
+    VALUES (@categoria, @descripcion)
+END
+GO
+
+CREATE PROCEDURE sp_ModificarCategoria
+    @id_categoria INT,
+    @categoria VARCHAR(100),
+    @descripcion VARCHAR(100)
+AS
+BEGIN
+    UPDATE CategoriasProducto
+    SET categoria = @categoria,
+        descripcion = @descripcion
+    WHERE id_categoria = @id_categoria
+END
+GO
+
+CREATE PROCEDURE sp_EliminarCategoria
+    @id_categoria INT
+AS
+BEGIN
+    DELETE FROM CategoriasProducto
+    WHERE id_categoria = @id_categoria
+END
+GO
+
+-- Marcas Producto
+CREATE PROCEDURE sp_AgregarMarca
+    @marca VARCHAR(45)
+AS
+BEGIN
+    INSERT INTO MarcasProducto (marca)
+    VALUES (@marca)
+END
+GO
+
+CREATE PROCEDURE sp_ModificarMarca
+    @id_marca INT,
+    @marca VARCHAR(45)
+AS
+BEGIN
+    UPDATE MarcasProducto
+    SET marca = @marca
+    WHERE id_marca = @id_marca
+END
+GO
+
+CREATE PROCEDURE sp_EliminarMarca
+    @id_marca INT
+AS
+BEGIN
+    DELETE FROM MarcasProducto
+    WHERE id_marca = @id_marca
+END
+GO
+
+-- Formas de Pago
+CREATE PROCEDURE sp_AgregarFormaPago
+    @descripcion VARCHAR(100)
+AS
+BEGIN
+    INSERT INTO FormaPago (descripcion)
+    VALUES (@descripcion)
+END
+GO
+
+CREATE PROCEDURE sp_ModificarFormaPago
+    @id_formaPago INT,
+    @descripcion VARCHAR(100)
+AS
+BEGIN
+    UPDATE FormaPago
+    SET descripcion = @descripcion
+    WHERE id_formaPago = @id_formaPago
+END
+GO
+
+CREATE PROCEDURE sp_EliminarFormaPago
+    @id_formaPago INT
+AS
+BEGIN
+    DELETE FROM FormaPago
+    WHERE id_formaPago = @id_formaPago
+END
+GO
+
+-- Estados Compras
+CREATE PROCEDURE sp_ModificarEstadoCompra
+    @id_estadoCompras INT,
+    @pendiente BIT,
+    @aprobada BIT,
+    @recibida BIT,
+    @cancelada BIT
+AS
+BEGIN
+    UPDATE EstadoCompras
+    SET pendiente = @pendiente,
+        aprobada = @aprobada,
+        recibida = @recibida,
+        cancelada = @cancelada
+    WHERE id_estadoCompras = @id_estadoCompras
+END
+GO
+
+-- Estados Ventas
+CREATE PROCEDURE sp_ModificarEstadoVenta
+    @id_estadoVentas INT,
+    @facturada BIT,
+    @entregada BIT,
+    @cancelada BIT
+AS
+BEGIN
+    UPDATE EstadoVentas
+    SET facturada = @facturada,
+        entregada = @entregada,
+        cancelada = @cancelada
+    WHERE id_estadoVentas = @id_estadoVentas
+END
+GO

@@ -1,0 +1,87 @@
+CREATE PROCEDURE sp_AgregarPresupuestoVenta
+    @id_cliente INT,
+    @fecha DATE,
+    @tipoDocumento VARCHAR(50),
+    @numeroDocumento VARCHAR(50),
+    @montoTotal DECIMAL(18,2),
+    @id_estadoVentas INT
+AS
+BEGIN
+    INSERT INTO Ventas (id_cliente, fecha, tipoDocumento, numeroDocumento, montoTotal, id_estadoVentas)
+    VALUES (@id_cliente, @fecha, @tipoDocumento, @numeroDocumento, @montoTotal, @id_estadoVentas)
+END
+GO
+
+CREATE PROCEDURE sp_AgregarNotaPedido
+    @id_venta INT,
+    @id_producto INT,
+    @cantidad INT,
+    @precioUnitario DECIMAL(18,2),
+    @subtotal DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO DetalleVentas (id_venta, id_producto, cantidad, precioUnitario, subtotal)
+    VALUES (@id_venta, @id_producto, @cantidad, @precioUnitario, @subtotal)
+    
+    UPDATE Stock
+    SET stock = stock - @cantidad
+    WHERE id_producto = @id_producto
+END
+GO
+
+CREATE PROCEDURE sp_AgregarNotaCredito
+    @id_venta INT,
+    @monto DECIMAL(18,2)
+AS
+BEGIN
+    UPDATE Ventas
+    SET montoTotal = montoTotal - @monto
+    WHERE id_venta = @id_venta
+END
+GO
+
+CREATE PROCEDURE sp_AgregarNotaDebito
+    @id_venta INT,
+    @monto DECIMAL(18,2)
+AS
+BEGIN
+    UPDATE Ventas
+    SET montoTotal = montoTotal + @monto
+    WHERE id_venta = @id_venta
+END
+GO
+
+CREATE PROCEDURE sp_DevolverProductoStock
+    @id_producto INT,
+    @cantidad INT
+AS
+BEGIN
+    UPDATE Stock
+    SET stock = stock + @cantidad
+    WHERE id_producto = @id_producto
+END
+GO
+
+CREATE PROCEDURE sp_ReporteVentas
+    @fechaDesde DATE,
+    @fechaHasta DATE
+AS
+BEGIN
+    SELECT v.id_venta,
+           v.fecha,
+           c.nombre AS Cliente,
+           c.razonSocial AS RazonSocial,
+           p.nombre AS Producto,
+           cat.categoria AS Categoria,
+           dv.cantidad,
+           dv.precioUnitario,
+           dv.subtotal,
+           v.montoTotal
+    FROM Ventas v
+    INNER JOIN Clientes c ON v.id_cliente = c.id_cliente
+    INNER JOIN DetalleVentas dv ON v.id_venta = dv.id_venta
+    INNER JOIN Productos p ON dv.id_producto = p.id_producto
+    INNER JOIN CategoriasProducto cat ON p.id_categoria = cat.id_categoria
+    WHERE v.fecha BETWEEN @fechaDesde AND @fechaHasta
+END
+GO

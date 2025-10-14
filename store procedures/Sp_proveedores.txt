@@ -1,0 +1,158 @@
+﻿CREATE PROCEDURE sp_AgregarProveedor
+    @codigo VARCHAR(50),
+    @razonSocial VARCHAR(100),
+    @cuit VARCHAR(20),
+    @email VARCHAR(100),
+    @formaPago VARCHAR(100),
+    @tiempoEntrega VARCHAR(50),
+    @descuento DECIMAL(5,2)
+AS
+BEGIN
+    INSERT INTO Proveedor (codigo, razonSocial, cuit, email, formaPago, tiempoEntrega, descuento)
+    VALUES (@codigo, @razonSocial, @cuit, @email, @formaPago, @tiempoEntrega, @descuento)
+END
+GO
+
+
+CREATE PROCEDURE sp_ModificarProveedor
+    @id_proveedor INT,
+    @codigo VARCHAR(50),
+    @razonSocial VARCHAR(100),
+    @cuit VARCHAR(20),
+    @email VARCHAR(100),
+    @formaPago VARCHAR(100),
+    @tiempoEntrega VARCHAR(50),
+    @descuento DECIMAL(5,2)
+AS
+BEGIN
+    UPDATE Proveedor
+    SET codigo = @codigo,
+        razonSocial = @razonSocial,
+        cuit = @cuit,
+        email = @email,
+        formaPago = @formaPago,
+        tiempoEntrega = @tiempoEntrega,
+        descuento = @descuento
+    WHERE id_proveedor = @id_proveedor
+END
+GO
+
+
+CREATE PROCEDURE sp_EliminarProveedor
+    @id_proveedor INT
+AS
+BEGIN
+    DELETE FROM Proveedor WHERE id_proveedor = @id_proveedor
+END
+GO
+
+
+CREATE PROCEDURE sp_ConsultarProveedoresPorNombre
+    @nombre VARCHAR(100)
+AS
+BEGIN
+    SELECT 
+        id_proveedor,
+        codigo,
+        razonSocial,
+        cuit,
+        email,
+        formaPago,
+        tiempoEntrega,
+        descuento
+    FROM Proveedor
+    WHERE razonSocial LIKE '%' + @nombre + '%'
+END
+GO
+
+
+CREATE PROCEDURE sp_ConsultarProveedoresPorCUIT
+    @cuit VARCHAR(20)
+AS
+BEGIN
+    SELECT 
+        id_proveedor,
+        codigo,
+        razonSocial,
+        cuit,
+        email,
+        formaPago,
+        tiempoEntrega,
+        descuento
+    FROM Proveedor
+    WHERE cuit LIKE '%' + @cuit + '%'
+END
+GO
+
+
+CREATE PROCEDURE sp_AgregarTelefonoProveedor
+    @id_proveedor INT,
+    @contacto VARCHAR(100),
+    @sector VARCHAR(100),
+    @telefono VARCHAR(50),
+    @email VARCHAR(100),
+    @horario VARCHAR(100)
+AS
+BEGIN
+    INSERT INTO TelefonoProveedor (id_proveedor, contacto, sector, telefono, email, horario)
+    VALUES (@id_proveedor, @contacto, @sector, @telefono, @email, @horario)
+END
+GO
+
+
+CREATE PROCEDURE sp_AgregarDireccionProveedor
+    @id_proveedor INT,
+    @direccion VARCHAR(255),
+    @localidad VARCHAR(100),
+    @provincia VARCHAR(100)
+AS
+BEGIN
+    INSERT INTO DireccionProveedor (id_proveedor, direccion, localidad, provincia)
+    VALUES (@id_proveedor, @direccion, @localidad, @provincia)
+END
+GO
+
+
+CREATE PROCEDURE sp_RelacionarProductoProveedor
+    @id_proveedor INT,
+    @id_producto INT
+AS
+BEGIN
+    INSERT INTO ProductoProveedor (id_proveedor, id_producto)
+    VALUES (@id_proveedor, @id_producto)
+END
+GO
+
+
+CREATE PROCEDURE sp_ConsultarProductosPorProveedor
+    @id_proveedor INT
+AS
+BEGIN
+    SELECT 
+        p.id_producto,
+        p.codigo,
+        p.nombre,
+        p.descripcion,
+        p.precio
+    FROM ProductoProveedor pp
+    INNER JOIN Producto p ON pp.id_producto = p.id_producto
+    WHERE pp.id_proveedor = @id_proveedor
+END
+GO
+
+
+CREATE PROCEDURE sp_ConsultarProveedoresPorProducto
+    @id_producto INT
+AS
+BEGIN
+    SELECT 
+        pr.id_proveedor,
+        pr.razonSocial,
+        pr.cuit,
+        pr.formaPago,
+        pr.descuento
+    FROM ProductoProveedor pp
+    INNER JOIN Proveedor pr ON pp.id_proveedor = pr.id_proveedor
+    WHERE pp.id_producto = @id_producto
+END
+GO
