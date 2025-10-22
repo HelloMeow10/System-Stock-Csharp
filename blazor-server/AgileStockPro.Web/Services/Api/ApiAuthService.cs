@@ -98,23 +98,24 @@ public class ApiAuthService : IAuthService
         return Task.CompletedTask;
     }
 
-    public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
+    public async Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string currentPassword, string newPassword)
     {
         try
         {
-            // Ensure we have a token; otherwise we'll get 401
             if (string.IsNullOrWhiteSpace(_tokens.Token))
             {
                 // Try to infer current token from cookie restored at TokenProvider ctor
             }
-
-            // Server derives username from JWT now
             await _api.PostAsync("api/v1/password/change", new ChangePasswordRequest { Username = string.Empty, OldPassword = currentPassword, NewPassword = newPassword });
-            return true;
+            return (true, null);
         }
-        catch (Exception)
+        catch (ApiException ex)
         {
-            return false;
+            return (false, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
         }
     }
 

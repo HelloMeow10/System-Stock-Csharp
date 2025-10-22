@@ -10,7 +10,7 @@ public interface IAuthService
     Task<AppUser?> GetCurrentUserAsync();
     Task<LoginResult> LoginAsync(string username, string password);
     Task LogoutAsync();
-    Task<bool> ChangePasswordAsync(string currentPassword, string newPassword);
+    Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string currentPassword, string newPassword);
     Task<ResetPasswordResult> ResetPasswordAsync(string username, IReadOnlyDictionary<string, string> answers);
     Task<bool> Verify2FAAsync(string code);
     Task<IReadOnlyList<string>> GetSecurityQuestionsAsync(string username);

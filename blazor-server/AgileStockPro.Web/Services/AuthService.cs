@@ -62,25 +62,28 @@ public class AuthService : IAuthService
 
     public async Task LogoutAsync() => await _store.SetCurrentUserAsync(null);
 
-    public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
+    public async Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string currentPassword, string newPassword)
     {
         var user = await _store.GetCurrentUserAsync();
-        if (user == null) return false;
+        if (user == null) return (false, "Usuario no encontrado");
         var currentHash = await Sha256Async(user.Username + currentPassword);
-        if (!string.Equals(currentHash, user.PasswordHash, StringComparison.Ordinal)) return false;
+        if (!string.Equals(currentHash, user.PasswordHash, StringComparison.Ordinal))
+            return (false, "La contraseña actual es incorrecta.");
 
         var policy = await _store.GetPolicyAsync();
-        if (!ValidatePassword(newPassword, user, policy)) return false;
+        if (!ValidatePassword(newPassword, user, policy))
+            return (false, "La nueva contraseña no cumple la política de seguridad.");
 
         var newHash = await Sha256Async(user.Username + newPassword);
-        if (policy.PreventReuse && user.PasswordHistory.Any(h => h.Hash == newHash)) return false;
+        if (policy.PreventReuse && user.PasswordHistory.Any(h => h.Hash == newHash))
+            return (false, "No puedes reutilizar una contraseña anterior.");
 
         user.PasswordHistory.Add(new PasswordHistoryEntry { Hash = user.PasswordHash, ChangedAt = DateTime.UtcNow });
         user.PasswordHash = newHash;
         user.MustChangePassword = false;
         await _store.SaveAsync(user);
         await _store.SetCurrentUserAsync(user);
-        return true;
+        return (true, null);
     }
 
     public async Task<ResetPasswordResult> ResetPasswordAsync(string username, IReadOnlyDictionary<string, string> answers)
