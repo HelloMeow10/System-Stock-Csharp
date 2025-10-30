@@ -1,5 +1,26 @@
 # Sistema de Gestión de Usuarios
 
+## 0. Instalar .NET (rápido)
+Si necesitas instalar .NET en Windows (recomendado .NET 8 para la capa de escritorio), aquí tienes comandos rápidos para PowerShell.
+
+- Instalación recomendada con winget:
+   ```powershell
+   winget install --id Microsoft.DotNet.SDK.8 -e
+   ```
+
+- Alternativa (script oficial), útil si no tienes winget:
+   ```powershell
+   Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+   .\dotnet-install.ps1 -Channel 8.0
+   ```
+
+- Verificar la instalación:
+   ```powershell
+   dotnet --info
+   ```
+
+Nota: la solución incluye también componentes Blazor que pueden necesitar .NET 9 para la parte web; si trabajas con Blazor, instala adicionalmente el SDK correspondiente o usa la versión especificada en la documentación de la carpeta `blazor-server`.
+
 ## 1. Descripción  
 Sistema de escritorio (.NET 8, Windows Forms) con arquitectura N-Capas para ABM de usuarios, autenticación SHA-256 y políticas de seguridad.
 
