@@ -1,10 +1,24 @@
 -- Seed demo Personas and Usuarios (idempotent)
 SET NOCOUNT ON;
 
-DECLARE @id_tipo_doc INT = (SELECT TOP 1 id_tipo_doc FROM tipo_doc WHERE tipo_doc = 'DNI');
-DECLARE @id_genero_m INT = (SELECT TOP 1 id_genero FROM generos WHERE genero = 'Masculino');
-DECLARE @id_genero_f INT = (SELECT TOP 1 id_genero FROM generos WHERE genero = 'Femenino');
-DECLARE @id_localidad INT = (SELECT TOP 1 id_localidad FROM localidades ORDER BY id_localidad);
+-- Declarar todas las variables al inicio
+DECLARE @id_tipo_doc INT;
+DECLARE @id_genero_m INT;
+DECLARE @id_genero_f INT;
+DECLARE @id_localidad INT;
+DECLARE @rol_admin INT;
+DECLARE @rol_user INT;
+DECLARE @id_persona_oper INT;
+DECLARE @id_persona_admin2 INT;
+DECLARE @pass VARBINARY(512);
+DECLARE @pass2 VARBINARY(512);
+
+-- Asignar valores iniciales
+SELECT @id_tipo_doc = id_tipo_doc FROM tipo_doc WHERE tipo_doc = 'DNI';
+SELECT @id_genero_m = id_genero FROM generos WHERE genero = 'Masculino';
+SELECT @id_genero_f = id_genero FROM generos WHERE genero = 'Femenino';
+SELECT @id_localidad = id_localidad FROM localidades ORDER BY id_localidad;
+
 IF @id_tipo_doc IS NULL OR @id_genero_m IS NULL OR @id_localidad IS NULL
 BEGIN
     RAISERROR('Catálogo mínimo faltante (tipo_doc/generos/localidades). Ejecuta el script de creación base primero.', 16, 1);
@@ -12,11 +26,13 @@ BEGIN
 END
 
 -- Roles
-IF NOT EXISTS (SELECT 1 FROM roles WHERE rol = 'Administrador') EXEC sp_insert_rol @rol = 'Administrador';
-IF NOT EXISTS (SELECT 1 FROM roles WHERE rol = 'Usuario') EXEC sp_insert_rol @rol = 'Usuario';
+IF NOT EXISTS (SELECT 1 FROM roles WHERE rol = 'Administrador') 
+    EXEC sp_insert_rol @rol = 'Administrador';
+IF NOT EXISTS (SELECT 1 FROM roles WHERE rol = 'Usuario') 
+    EXEC sp_insert_rol @rol = 'Usuario';
 
-DECLARE @rol_admin INT = (SELECT id_rol FROM roles WHERE rol = 'Administrador');
-DECLARE @rol_user  INT = (SELECT id_rol FROM roles WHERE rol = 'Usuario');
+SELECT @rol_admin = id_rol FROM roles WHERE rol = 'Administrador';
+SELECT @rol_user = id_rol FROM roles WHERE rol = 'Usuario';
 
 -- Persona y usuario: operador
 IF NOT EXISTS (SELECT 1 FROM personas WHERE num_doc = '20000001')
@@ -36,10 +52,12 @@ BEGIN
         @correo = 'operador@example.com',
         @celular = '1100000001';
 END
-DECLARE @id_persona_oper INT = (SELECT TOP 1 id_persona FROM personas WHERE num_doc = '20000001');
+
+SELECT @id_persona_oper = id_persona FROM personas WHERE num_doc = '20000001';
+
 IF NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'operador') AND @id_persona_oper IS NOT NULL
 BEGIN
-    DECLARE @pass VARBINARY(512) = HASHBYTES('SHA2_256', 'Operador123operador');
+    SET @pass = HASHBYTES('SHA2_256', 'Operador123operador');
     EXEC sp_insert_usuario
         @usuario = 'operador',
         @contrasena_script = @pass,
@@ -48,7 +66,7 @@ BEGIN
         @nombre_usuario_bloqueo = NULL,
         @fecha_ultimo_cambio = GETDATE(),
         @id_rol = @rol_user,
-        @CambioContrasenaObligatorio = 1;
+        @CambioContrasenaObligatorio = 1
 END
 
 -- Persona y usuario: admin2 (opcional, otro admin)
@@ -69,10 +87,12 @@ BEGIN
         @correo = 'admin2@example.com',
         @celular = '1100000002';
 END
-DECLARE @id_persona_admin2 INT = (SELECT TOP 1 id_persona FROM personas WHERE num_doc = '20000002');
+
+SELECT @id_persona_admin2 = id_persona FROM personas WHERE num_doc = '20000002';
+
 IF NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin2') AND @id_persona_admin2 IS NOT NULL
 BEGIN
-    DECLARE @pass2 VARBINARY(512) = HASHBYTES('SHA2_256', 'Admin123admin');
+    SET @pass2 = HASHBYTES('SHA2_256', 'Admin123admin');
     EXEC sp_insert_usuario
         @usuario = 'admin2',
         @contrasena_script = @pass2,
@@ -81,7 +101,9 @@ BEGIN
         @nombre_usuario_bloqueo = NULL,
         @fecha_ultimo_cambio = GETDATE(),
         @id_rol = @rol_admin,
-        @CambioContrasenaObligatorio = 1;
+        @CambioContrasenaObligatorio = 1
 END
+
+PRINT 'Seed demo users completed.';
 
 PRINT 'Seed demo users completed.';
