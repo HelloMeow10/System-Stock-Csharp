@@ -4,7 +4,7 @@ namespace AgileStockPro.Web.Services.Api;
 
 public class TokenProvider : ITokenProvider
 {
-    private const string CookieName = "agilestockpro_jwt";
+    private const string CookieName = "ums_auth";
     private readonly IHttpContextAccessor _http;
 
     public TokenProvider(IHttpContextAccessor http)

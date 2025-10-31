@@ -22,7 +22,10 @@ namespace Services.Controllers.V1
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
-            var username = User?.Identity?.Name ?? throw new UnauthorizedAccessException("No user identity available.");
+            // Si el Username viene en el body, úsalo; si no, usa el autenticado
+            var username = !string.IsNullOrWhiteSpace(request.Username)
+                ? request.Username
+                : User?.Identity?.Name ?? throw new UnauthorizedAccessException("No user identity available.");
             await _passwordService.ChangePasswordAsync(username, request.NewPassword, request.OldPassword);
             return NoContent();
         }

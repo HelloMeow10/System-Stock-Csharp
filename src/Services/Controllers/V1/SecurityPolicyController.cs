@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Services.Controllers.V1
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [ApiVersion("1.0")]
     public class SecurityPolicyController : BaseApiController
     {
@@ -26,6 +26,7 @@ namespace Services.Controllers.V1
         }
 
         [HttpPut(Name = "UpdateSecurityPolicyV1")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PoliticaSeguridadDto), StatusCodes.Status200OK)]
         public Task<PoliticaSeguridadDto> Put([FromBody] UpdatePoliticaSeguridadRequest request)
         {
