@@ -20,6 +20,8 @@ public class BackendApiClient
     private void AddAuth()
     {
         _http.DefaultRequestHeaders.Authorization = null;
+        // Prevent caching of API responses to ensure fresh policy/user data
+        _http.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true, NoStore = true, MustRevalidate = true };
         if (!string.IsNullOrWhiteSpace(_tokens.Token))
         {
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _tokens.Token);

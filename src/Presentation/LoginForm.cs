@@ -59,9 +59,33 @@ namespace Presentation
                 }
                 else
                 {
-                    // No 2FA required, proceed to show dashboard
-                    var userRole = loginResponse.Rol ?? string.Empty;
+                    // No 2FA required, verify if password change is mandatory
                     var nextUsername = loginResponse.Username ?? username;
+                    try
+                    {
+                        var currentUser = await _apiClient.GetCurrentUserAsync();
+                        if (currentUser != null && currentUser.CambioContrasenaObligatorio)
+                        {
+                            using (var changeForm = _serviceProvider.GetRequiredService<CambioContrasenaForm>())
+                            {
+                                changeForm.Initialize(nextUsername);
+                                var dlg = changeForm.ShowDialog();
+                                if (dlg != DialogResult.OK)
+                                {
+                                    // User cancelled or failed to change password; stay on login
+                                    this.Show();
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // If we can't fetch current user, continue but show dashboard based on role
+                    }
+
+                    // Proceed to dashboard
+                    var userRole = loginResponse.Rol ?? string.Empty;
                     if (userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                     {
                         ShowDashboard(_serviceProvider.GetRequiredService<AdminForm>(), nextUsername);

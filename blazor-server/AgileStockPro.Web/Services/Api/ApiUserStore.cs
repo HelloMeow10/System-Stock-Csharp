@@ -83,7 +83,7 @@ public class ApiUserStore : IUserStore
 
     public async Task<SecurityPolicy> GetPolicyAsync()
     {
-        var dto = await _api.GetAsync<PoliticaSeguridadDto>("api/v1/securitypolicy");
+        var dto = await _api.GetAsync<PoliticaSeguridadDto>($"api/v1/securitypolicy?ts={Uri.EscapeDataString(DateTime.UtcNow.Ticks.ToString())}");
         return new SecurityPolicy
         {
             MinLength = dto.MinCaracteres,
@@ -99,10 +99,21 @@ public class ApiUserStore : IUserStore
         };
     }
 
-    public Task SavePolicyAsync(SecurityPolicy policy)
+    public async Task SavePolicyAsync(SecurityPolicy policy)
     {
-        // Map back to backend
-        return Task.CompletedTask;
+        // Map back to backend request
+        var req = new UpdatePoliticaSeguridadRequest
+        {
+            MinCaracteres = policy.MinLength,
+            CantPreguntas = policy.QuestionsCount,
+            MayusYMinus = policy.RequireUpperLower,
+            LetrasYNumeros = policy.RequireNumber,
+            CaracterEspecial = policy.RequireSpecial,
+            Autenticacion2FA = policy.Require2FA,
+            NoRepetirAnteriores = policy.PreventReuse,
+            SinDatosPersonales = policy.CheckPersonalData
+        };
+        await _api.PutAsync<PoliticaSeguridadDto>("api/v1/securitypolicy", req);
     }
 
     private static AppUser Map(UserDto u) => new AppUser

@@ -41,8 +41,31 @@ namespace Presentation
                 this.DialogResult = DialogResult.OK;
                 this.Hide();
 
-                var userRole = loginResponse.Rol ?? string.Empty;
                 var nextUsername = loginResponse.Username ?? this.Username;
+                try
+                {
+                    var currentUser = await _apiClient.GetCurrentUserAsync();
+                    if (currentUser != null && currentUser.CambioContrasenaObligatorio)
+                    {
+                        using (var changeForm = _serviceProvider.GetRequiredService<CambioContrasenaForm>())
+                        {
+                            changeForm.Initialize(nextUsername);
+                            var dlg = changeForm.ShowDialog();
+                            if (dlg != DialogResult.OK)
+                            {
+                                // User cancelled or failed to change password; close and return to login
+                                this.Close();
+                                return;
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // If cannot fetch current user, continue
+                }
+
+                var userRole = loginResponse.Rol ?? string.Empty;
                 if (userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                 {
                     ShowDashboard(_serviceProvider.GetRequiredService<AdminForm>(), nextUsername);
