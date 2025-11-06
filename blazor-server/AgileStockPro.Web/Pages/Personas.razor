@@ -176,7 +176,8 @@
             <InputDate class="input" @bind-Value="editando.FechaIngreso" TValue="DateTime?" />
         </div>
         <div style="display:flex; gap:.5rem; margin-top:.75rem;">
-            <button class="btn btn-primary" disabled="@busy || !CanGuardar" @onclick="Guardar">@(busy ? "Guardando…" : "Guardar")</button>
+            <!-- Always allow click to show validation messages; rely on ValidatePersona() instead of disabling when !CanGuardar -->
+            <button class="btn btn-primary" disabled="@busy" @onclick="Guardar">@(busy ? "Guardando…" : "Guardar")</button>
             <button class="btn" disabled="@busy" @onclick="Cancelar">Cancelar</button>
         </div>
         @if (!string.IsNullOrWhiteSpace(info))
