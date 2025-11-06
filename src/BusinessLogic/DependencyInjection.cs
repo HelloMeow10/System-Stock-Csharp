@@ -30,6 +30,9 @@ namespace BusinessLogic
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPasswordService, PasswordService>();
             services.AddScoped<IPersonaService, PersonaService>();
+            // Stock/Product Catalog
+            services.AddScoped<IProductCatalogService, ProductCatalogService>();
+            services.AddScoped<IStockService, StockService>();
             services.AddScoped<IReferenceDataService, ReferenceDataService>();
             services.AddScoped<ISecurityPolicyService, SecurityPolicyService>();
             services.AddScoped<ISecurityQuestionService, SecurityQuestionService>();

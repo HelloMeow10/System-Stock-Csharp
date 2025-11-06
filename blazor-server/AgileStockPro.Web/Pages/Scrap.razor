@@ -1,9 +1,67 @@
 @page "/scrap"
 @using AgileStockPro.Web.Services
 @using AgileStockPro.Web.Models
+@using AgileStockPro.Web.Components
+@using AgileStockPro.Web.Components.Shared
 @inject IAppDataService Data
+@inject AgileStockPro.Web.Services.Api.IStockApiService StockApi
+@inject IUserStore UserStore
 
-<PageHeader Title="Scrap" />
+<PageHeader Title="Scrap">
+	<Actions>
+		<button class="btn" @onclick="ToggleForm">@((showForm?"Ocultar":"Registrar scrap"))</button>
+	</Actions>
+</PageHeader>
+
+@if (showForm)
+{
+	<div class="card" style="padding:1rem; margin-bottom:1rem; display:grid; gap:.75rem; grid-template-columns: repeat(4, minmax(180px,1fr));">
+		<div>
+			<label>Producto</label>
+			<select class="select" @bind="form.ProductoId">
+				<option value="0">Seleccione…</option>
+				@foreach (var p in products)
+				{
+					<option value="@p.Id">@p.Codigo - @p.Nombre</option>
+				}
+			</select>
+		</div>
+		<div>
+			<label>Motivo</label>
+			<select class="select" @bind="form.MotivoScrapId">
+				<option value="0">Seleccione…</option>
+				@foreach (var r in reasons)
+				{
+					<option value="@r.Id">@r.Descripcion</option>
+				}
+			</select>
+		</div>
+		<div>
+			<label>Cantidad</label>
+			<input type="number" min="1" class="input" @bind="form.Cantidad" />
+		</div>
+		<div style="display:flex; align-items:flex-end; gap:.5rem;">
+			<button class="btn" disabled="@isSubmitting" @onclick="SubmitScrap">Registrar</button>
+			@if (isSubmitting) { <span>Guardando…</span> }
+		</div>
+		@if (!string.IsNullOrWhiteSpace(error))
+		{
+			<div style="grid-column:1/-1; color:#b00020;">@error</div>
+		}
+		@if (!string.IsNullOrWhiteSpace(success))
+		{
+			<div style="grid-column:1/-1; color:#1b5e20;">@success</div>
+		}
+	</div>
+}
+
+<div class="toolbar" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin:.75rem 0;">
+	<label>Desde</label>
+	<input type="date" class="input" @bind-value="fromDate" @bind-value:event="onchange" />
+	<label>Hasta</label>
+	<input type="date" class="input" @bind-value="toDate" @bind-value:event="onchange" />
+	<button class="btn" @onclick="Reload">Buscar</button>
+</div>
 
 @if (items is null)
 {
@@ -38,8 +96,61 @@ else
 
 @code {
 	private IReadOnlyList<ScrapItem>? items;
+	private List<AgileStockPro.Web.Services.Api.ProductPickVm> products = new();
+	private List<AgileStockPro.Web.Services.Api.ScrapReasonVm> reasons = new();
+	private bool showForm = false;
+	private bool isSubmitting = false;
+	private string? error;
+	private string? success;
+	private ScrapForm form = new();
+	private DateOnly fromDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+	private DateOnly toDate = DateOnly.FromDateTime(DateTime.Today);
+	private int userId = 1; // fallback
+
 	protected override async Task OnInitializedAsync()
 	{
-		items = await Data.GetScrapAsync();
+	items = await StockApi.GetScrapAsync(fromDate, toDate);
+		// preload form options
+		products = (await StockApi.GetProductsAsync()).ToList();
+		reasons = (await StockApi.GetScrapReasonsAsync()).ToList();
+	var user = await UserStore.GetCurrentUserAsync();
+	if (user?.BackendIdUsuario is int id && id > 0) userId = id;
 	}
+
+	void ToggleForm() { showForm = !showForm; success = null; error = null; }
+
+	async Task SubmitScrap()
+	{
+		error = success = null;
+		if (form.ProductoId <= 0 || form.MotivoScrapId <= 0 || form.Cantidad <= 0)
+		{
+			error = "Complete producto, motivo y cantidad."; return;
+		}
+		try
+		{
+			isSubmitting = true;
+			await StockApi.CreateScrapAsync(form.ProductoId, form.Cantidad, usuarioId: userId, motivoScrapId: form.MotivoScrapId);
+			success = "Scrap registrado.";
+			// refresh list
+			items = await StockApi.GetScrapAsync(fromDate, toDate);
+			form = new();
+		}
+		catch (Exception ex)
+		{
+			error = ex.Message;
+		}
+		finally { isSubmitting = false; }
+	}
+
+	async Task Reload()
+	{
+		try
+		{
+			error = null;
+			items = await StockApi.GetScrapAsync(fromDate, toDate);
+		}
+		catch (Exception ex) { error = ex.Message; }
+	}
+
+	class ScrapForm { public int ProductoId { get; set; } public int MotivoScrapId { get; set; } public int Cantidad { get; set; } = 1; }
 }

@@ -1,0 +1,149 @@
+using System.Data;
+using Contracts;
+using Microsoft.Data.SqlClient;
+
+namespace DataAccess.Repositories;
+
+public class SqlStockRepository : IStockRepository
+{
+    private readonly DatabaseConnectionFactory _connectionFactory;
+    public SqlStockRepository(DatabaseConnectionFactory connectionFactory) => _connectionFactory = connectionFactory;
+
+    public async Task<IEnumerable<StockMovementDto>> GetMovementsAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+        using var cmd = new SqlCommand("sp_ReporteMovimientosStock", (SqlConnection)conn)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+        cmd.Parameters.Add(new SqlParameter("@fechaDesde", SqlDbType.Date) { Value = from.ToDateTime(TimeOnly.MinValue) });
+        cmd.Parameters.Add(new SqlParameter("@fechaHasta", SqlDbType.Date) { Value = to.ToDateTime(TimeOnly.MinValue) });
+
+        var list = new List<StockMovementDto>();
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            list.Add(new StockMovementDto(
+                Id: reader.GetInt32(0),
+                Fecha: reader.GetDateTime(1),
+                Usuario: reader.GetString(2),
+                Producto: reader.GetString(3),
+                TipoMovimiento: reader.GetString(4),
+                Cantidad: reader.GetInt32(5)
+            ));
+        }
+        return list;
+    }
+
+    public async Task IngresoMercaderiaAsync(IngresoMercaderiaRequest request, CancellationToken ct = default)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+        using var cmd = new SqlCommand("sp_IngresoMercaderia", (SqlConnection)conn)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+        cmd.Parameters.Add(new SqlParameter("@id_producto", SqlDbType.Int) { Value = request.ProductoId });
+        cmd.Parameters.Add(new SqlParameter("@id_usuario", SqlDbType.Int) { Value = request.UsuarioId });
+        cmd.Parameters.Add(new SqlParameter("@lote", SqlDbType.VarChar, 50) { Value = (object?)request.Lote ?? DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@cantidad", SqlDbType.Int) { Value = request.Cantidad });
+        cmd.Parameters.Add(new SqlParameter("@stockMinimo", SqlDbType.Int) { Value = (object?)request.StockMinimo ?? DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@stockIdeal", SqlDbType.Int) { Value = (object?)request.StockIdeal ?? DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@stockMaximo", SqlDbType.Int) { Value = (object?)request.StockMaximo ?? DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@tipoStock", SqlDbType.VarChar, 20) { Value = (object?)request.TipoStock ?? DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@puntoReposicion", SqlDbType.Int) { Value = (object?)request.PuntoReposicion ?? DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@fechaVencimiento", SqlDbType.Date) { Value = request.FechaVencimiento.HasValue ? request.FechaVencimiento.Value.ToDateTime(TimeOnly.MinValue) : DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@estadoHabilitaciones", SqlDbType.VarChar, 50) { Value = (object?)request.EstadoHabilitaciones ?? DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@id_movimientosStock", SqlDbType.Int) { Value = (object?)request.MovimientoStockId ?? DBNull.Value });
+
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task CreateScrapAsync(CreateScrapRequest request, CancellationToken ct = default)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+        using var cmd = new SqlCommand("sp_MoverStockAScrap", (SqlConnection)conn)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+        cmd.Parameters.Add(new SqlParameter("@id_producto", SqlDbType.Int) { Value = request.ProductoId });
+        cmd.Parameters.Add(new SqlParameter("@cantidad", SqlDbType.Int) { Value = request.Cantidad });
+        cmd.Parameters.Add(new SqlParameter("@id_usuario", SqlDbType.Int) { Value = request.UsuarioId });
+        cmd.Parameters.Add(new SqlParameter("@id_motivoScrap", SqlDbType.Int) { Value = request.MotivoScrapId });
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task<IEnumerable<ScrapReportItemDto>> GetScrapAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        // Build a motive string from boolean flags to avoid relying on a non-existent 'descripcion' column
+        var sql = @"
+            SELECT sp.id_scrapProducto,
+                   sp.fecha,
+                   u.nombre AS Usuario,
+                   p.nombre AS Producto,
+                   LTRIM(STUFF(
+                        CASE WHEN ms.dano = 1 THEN ', Daño' ELSE '' END +
+                        CASE WHEN ms.vencido = 1 THEN ', Vencido' ELSE '' END +
+                        CASE WHEN ms.obsoleto = 1 THEN ', Obsoleto' ELSE '' END +
+                        CASE WHEN ms.malaCalidad = 1 THEN ', Mala calidad' ELSE '' END
+                   , 1, 1, '')) AS Motivo,
+                   sp.cantidad
+            FROM ScrapProducto sp
+            INNER JOIN Usuarios u ON sp.id_usuario = u.id_usuario
+            INNER JOIN Productos p ON sp.id_producto = p.id_producto
+            INNER JOIN MotivoScrap ms ON sp.id_motivoScrap = ms.id_motivoScrap
+            WHERE sp.fecha BETWEEN @desde AND @hasta";
+
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+        using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+        cmd.Parameters.Add(new SqlParameter("@desde", SqlDbType.Date) { Value = from.ToDateTime(TimeOnly.MinValue) });
+        cmd.Parameters.Add(new SqlParameter("@hasta", SqlDbType.Date) { Value = to.ToDateTime(TimeOnly.MinValue) });
+
+        var list = new List<ScrapReportItemDto>();
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            list.Add(new ScrapReportItemDto(
+                Id: reader.GetInt32(0),
+                Fecha: reader.GetDateTime(1),
+                Usuario: reader.GetString(2),
+                Producto: reader.GetString(3),
+                Motivo: reader.GetString(4),
+                Cantidad: reader.GetInt32(5)
+            ));
+        }
+        return list;
+    }
+
+    public async Task<IEnumerable<ScrapReasonDto>> GetScrapReasonsAsync(CancellationToken ct = default)
+    {
+        const string sql = @"SELECT id_motivoScrap, dano, vencido, obsoleto, malaCalidad FROM MotivoScrap";
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+        using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+        var list = new List<ScrapReasonDto>();
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            list.Add(new ScrapReasonDto(
+                Id: reader.GetInt32(0),
+                Dano: reader.GetBoolean(1),
+                Vencido: reader.GetBoolean(2),
+                Obsoleto: reader.GetBoolean(3),
+                MalaCalidad: reader.GetBoolean(4)
+            ));
+        }
+        return list;
+    }
+
+    private static async Task EnsureOpenAsync(IDbConnection connection, CancellationToken ct)
+    {
+        if (connection is SqlConnection sqlConn && sqlConn.State != ConnectionState.Open)
+        {
+            await sqlConn.OpenAsync(ct);
+        }
+    }
+}

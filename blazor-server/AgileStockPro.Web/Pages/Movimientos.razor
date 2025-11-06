@@ -3,9 +3,63 @@
 @using AgileStockPro.Web.Models
 @using AgileStockPro.Web.Components
 @inject IAppDataService Data
+@inject AgileStockPro.Web.Services.Api.IStockApiService StockApi
+@inject IUserStore UserStore
 
 <AuthGuard>
-<PageHeader Title="Movimientos" />
+<PageHeader Title="Movimientos">
+	<Actions>
+		<button class="btn" @onclick="ToggleForm">@((showForm?"Ocultar":"Registrar ingreso"))</button>
+	</Actions>
+</PageHeader>
+
+@if (showForm)
+{
+	<div class="card" style="padding:1rem; margin-bottom:1rem; display:grid; gap:.75rem; grid-template-columns: repeat(5, minmax(160px,1fr));">
+		<div>
+			<label>Producto</label>
+			<select class="select" @bind="ingreso.ProductoId">
+				<option value="0">Seleccione…</option>
+				@foreach (var p in products)
+				{
+					<option value="@p.Id">@p.Codigo - @p.Nombre</option>
+				}
+			</select>
+		</div>
+		<div>
+			<label>Cantidad</label>
+			<input type="number" min="1" class="input" @bind="ingreso.Cantidad" />
+		</div>
+		<div>
+			<label>Lote (opcional)</label>
+			<input class="input" @bind="ingreso.Lote" />
+		</div>
+		<div>
+			<label>Vencimiento (opcional)</label>
+			<input type="date" class="input" @bind-value="fechaVenc" @bind-value:event="onchange" />
+		</div>
+		<div style="display:flex; align-items:flex-end; gap:.5rem;">
+			<button class="btn" disabled="@isSubmitting" @onclick="SubmitIngreso">Registrar</button>
+			@if (isSubmitting) { <span>Guardando…</span> }
+		</div>
+		@if (!string.IsNullOrWhiteSpace(error))
+		{
+			<div style="grid-column:1/-1; color:#b00020;">@error</div>
+		}
+		@if (!string.IsNullOrWhiteSpace(success))
+		{
+			<div style="grid-column:1/-1; color:#1b5e20;">@success</div>
+		}
+	</div>
+}
+
+<div class="toolbar" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin:.75rem 0;">
+	<label>Desde</label>
+	<input type="date" class="input" @bind-value="fromDate" @bind-value:event="onchange" />
+	<label>Hasta</label>
+	<input type="date" class="input" @bind-value="toDate" @bind-value:event="onchange" />
+	<button class="btn" @onclick="Reload">Buscar</button>
+</div>
 
 @if (!string.IsNullOrWhiteSpace(error))
 {
@@ -49,9 +103,73 @@ else
 @code {
 	private IReadOnlyList<Movimiento>? items;
 	private string? error;
+	private string? success;
+	private bool showForm = false;
+	private bool isSubmitting = false;
+	private List<AgileStockPro.Web.Services.Api.ProductPickVm> products = new();
+	private IngresoForm ingreso = new();
+	private DateOnly? fechaVenc;
+	private DateOnly fromDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+	private DateOnly toDate = DateOnly.FromDateTime(DateTime.Today);
+	private int userId = 1; // fallback
 	protected override async Task OnInitializedAsync()
 	{
-		try { items = await Data.GetMovementsAsync(); }
+		try {
+			items = await StockApi.GetMovementsAsync(fromDate, toDate);
+			products = (await StockApi.GetProductsAsync()).ToList();
+			var user = await UserStore.GetCurrentUserAsync();
+			if (user?.BackendIdUsuario is int id && id > 0) userId = id;
+		}
 		catch (Exception ex) { error = ex.Message; }
 	}
+
+	void ToggleForm() { showForm = !showForm; success = null; error = null; }
+
+	async Task SubmitIngreso()
+	{
+		error = success = null;
+		if (ingreso.ProductoId <= 0 || ingreso.Cantidad <= 0)
+		{
+			error = "Complete producto y cantidad."; return;
+		}
+		try
+		{
+			isSubmitting = true;
+			var req = new AgileStockPro.Web.Services.Api.IngresoMercaderiaVm(
+				ProductoId: ingreso.ProductoId,
+				UsuarioId: userId,
+				Cantidad: ingreso.Cantidad,
+				Lote: ingreso.Lote,
+				StockMinimo: null,
+				StockIdeal: null,
+				StockMaximo: null,
+				TipoStock: null,
+				PuntoReposicion: null,
+				FechaVencimiento: fechaVenc,
+				EstadoHabilitaciones: null,
+				MovimientoStockId: null
+			);
+			await StockApi.IngresoAsync(req);
+			success = "Ingreso registrado.";
+			items = await StockApi.GetMovementsAsync(fromDate, toDate);
+			ingreso = new(); fechaVenc = null;
+		}
+		catch (Exception ex)
+		{
+			error = ex.Message;
+		}
+		finally { isSubmitting = false; }
+	}
+
+	async Task Reload()
+	{
+		try
+		{
+			error = null;
+			items = await StockApi.GetMovementsAsync(fromDate, toDate);
+		}
+		catch (Exception ex) { error = ex.Message; }
+	}
+
+	class IngresoForm { public int ProductoId { get; set; } public int Cantidad { get; set; } = 1; public string? Lote { get; set; } }
 }

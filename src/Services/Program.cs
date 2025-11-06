@@ -15,7 +15,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddApiServices();
 builder.Services.AddApiVersioningServices();
 builder.Services.AddBusinessLogic(builder.Configuration);
-builder.Services.AddDataAccess();
+builder.Services.AddDataAccess(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddHealthChecks()
