@@ -29,4 +29,10 @@ public class ProductCatalogService : IProductCatalogService
         var (items, total) = await _repo.GetProductsAsync(search, pageNumber, pageSize, ct);
         return new PagedResponse<ProductDto>(items, pageNumber, pageSize, total);
     }
+
+    public async Task<ProductDto> CreateProductAsync(CreateProductRequest request, CancellationToken ct = default)
+    {
+        var prod = await _repo.AddProductAsync(request, ct);
+        return prod;
+    }
 }

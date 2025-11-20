@@ -87,4 +87,22 @@ public class StubProductCatalogRepository : IProductCatalogRepository
 
         return Task.FromResult((items.AsEnumerable(), total));
     }
+
+    public Task<ProductDto> AddProductAsync(CreateProductRequest request, CancellationToken ct = default)
+    {
+        var newId = (_products.Any() ? _products.Max(p => p.Id) : 0) + 1;
+        var prod = new ProductDto(
+            Id: newId,
+            Codigo: request.Codigo,
+            Nombre: request.Nombre,
+            Categoria: string.Empty,
+            Marca: string.Empty,
+            Precio: request.PrecioVenta ?? 0m,
+            StockActual: 0,
+            StockMinimo: 0,
+            StockMaximo: 0
+        );
+        _products.Add(prod);
+        return Task.FromResult(prod);
+    }
 }

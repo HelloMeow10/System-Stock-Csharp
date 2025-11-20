@@ -10,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- Service Registration ---
 
+// SignalR
+builder.Services.AddSignalR();
+
 // Add services to the container.
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddApiServices();
@@ -75,6 +78,10 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = (_) => false
 });
+
+
+// Map SignalR hub for notifications
+app.MapHub<Services.Hubs.NotificationHub>("/hubs/notifications");
 
 
 app.Run();

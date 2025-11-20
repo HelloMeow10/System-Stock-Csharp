@@ -3,6 +3,7 @@ using BusinessLogic.Services;
 using Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Services.Controllers.V1;
 
@@ -11,10 +12,12 @@ namespace Services.Controllers.V1;
 public class ProductsController : BaseApiController
 {
     private readonly IProductCatalogService _service;
+    private readonly Microsoft.AspNetCore.SignalR.IHubContext<Services.Hubs.NotificationHub> _hubContext;
 
-    public ProductsController(IProductCatalogService service)
+    public ProductsController(IProductCatalogService service, Microsoft.AspNetCore.SignalR.IHubContext<Services.Hubs.NotificationHub> hubContext)
     {
         _service = service;
+        _hubContext = hubContext;
     }
 
     /// <summary>
@@ -39,5 +42,24 @@ public class ProductsController : BaseApiController
         var prod = await _service.GetProductByIdAsync(id, ct);
         if (prod is null) return NotFound();
         return Ok(prod);
+    }
+
+    [HttpPost(Name = "CreateProductV1")]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
+    public async Task<ActionResult<ProductDto>> Create(CreateProductRequest request, CancellationToken ct = default)
+    {
+        var created = await _service.CreateProductAsync(request, ct);
+
+        // Broadcast to connected desktop/web clients
+        try
+        {
+            await _hubContext.Clients.All.SendAsync("ProductCreated", created, ct);
+        }
+        catch
+        {
+            // Non-fatal: continue even if broadcasting fails
+        }
+
+        return CreatedAtRoute("GetProductByIdV1", new { id = created.Id }, created);
     }
 }

@@ -182,6 +182,40 @@ public class SqlProductCatalogRepository : IProductCatalogRepository
         return (items, total);
     }
 
+    public async Task<ProductDto> AddProductAsync(CreateProductRequest request, CancellationToken ct = default)
+    {
+        const string sql = @"
+            INSERT INTO Productos (codigo, codBarras, nombre, descripcion, id_marca, precioCompra, precioVenta, estado, ubicacion, habilitado, id_categoria)
+            OUTPUT INSERTED.id_producto
+            VALUES (@codigo, @codBarras, @nombre, @descripcion, @id_marca, @precioCompra, @precioVenta, @estado, @ubicacion, @habilitado, @id_categoria);
+        ";
+
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+
+        int newId;
+        using (var cmd = new SqlCommand(sql, (SqlConnection)conn))
+        {
+            cmd.Parameters.Add(new SqlParameter("@codigo", System.Data.SqlDbType.VarChar, 50) { Value = request.Codigo });
+            cmd.Parameters.Add(new SqlParameter("@codBarras", System.Data.SqlDbType.VarChar, 50) { Value = (object?)request.CodBarras ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@nombre", System.Data.SqlDbType.VarChar, 100) { Value = request.Nombre });
+            cmd.Parameters.Add(new SqlParameter("@descripcion", System.Data.SqlDbType.VarChar, 255) { Value = (object?)request.Descripcion ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@id_marca", System.Data.SqlDbType.Int) { Value = (object?)request.IdMarca ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@precioCompra", System.Data.SqlDbType.Decimal) { Value = (object?)request.PrecioCompra ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@precioVenta", System.Data.SqlDbType.Decimal) { Value = (object?)request.PrecioVenta ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@estado", System.Data.SqlDbType.VarChar, 50) { Value = (object?)request.Estado ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@ubicacion", System.Data.SqlDbType.VarChar, 100) { Value = (object?)request.Ubicacion ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@habilitado", System.Data.SqlDbType.Bit) { Value = (object?)request.Habilitado ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@id_categoria", System.Data.SqlDbType.Int) { Value = (object?)request.IdCategoria ?? DBNull.Value });
+
+            var result = await cmd.ExecuteScalarAsync(ct);
+            newId = Convert.ToInt32(result);
+        }
+
+        var prod = await GetProductByIdAsync(newId, ct);
+        return prod ?? throw new InvalidOperationException("Failed to retrieve inserted product");
+    }
+
     private static async Task EnsureOpenAsync(IDbConnection connection, CancellationToken ct)
     {
         if (connection is SqlConnection sqlConn && sqlConn.State != ConnectionState.Open)

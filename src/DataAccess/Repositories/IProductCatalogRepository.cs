@@ -8,4 +8,5 @@ public interface IProductCatalogRepository
     Task<ProductDto?> GetProductByIdAsync(int id, CancellationToken ct = default);
     Task<IEnumerable<CategoryDto>> GetCategoriesAsync(CancellationToken ct = default);
     Task<IEnumerable<BrandDto>> GetBrandsAsync(CancellationToken ct = default);
+    Task<ProductDto> AddProductAsync(CreateProductRequest request, CancellationToken ct = default);
 }
