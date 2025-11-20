@@ -488,13 +488,14 @@ AS
 BEGIN
     SELECT ms.id_movimientosStock,
            ms.fecha,
-           u.nombre AS Usuario,
-           p.nombre AS Producto,
+           per.nombre AS Usuario,
+           prod.nombre AS Producto,
            ms.tipoMovimiento,
            ms.cantidad
     FROM MovimientosStock ms
     INNER JOIN Usuarios u ON ms.id_usuario = u.id_usuario
-    INNER JOIN Productos p ON ms.id_producto = p.id_producto
+    INNER JOIN personas per ON u.id_persona = per.id_persona
+    INNER JOIN Productos prod ON ms.id_producto = prod.id_producto
     WHERE ms.fecha BETWEEN @fechaDesde AND @fechaHasta
 END
 GO
@@ -526,17 +527,18 @@ AS
 BEGIN
     SELECT sp.id_scrapProducto,
            sp.fecha,
-           u.nombre AS Usuario,
-           p.nombre AS Producto,
+           per.nombre AS Usuario,
+           prod.nombre AS Producto,
            /* Nota: MotivoScrap aquí no tiene columna 'descripcion' en la estructura original.
               Si antes usabas una columna descripcion en MotivoScrap, adaptala.
               Actualmente MotivoScrap tiene flags (dano, vencido, ...) */
-           ms.id_motivoScrap AS MotivoId,
+           msc.id_motivoScrap AS MotivoId,
            sp.cantidad
     FROM ScrapProducto sp
     INNER JOIN Usuarios u ON sp.id_usuario = u.id_usuario
-    INNER JOIN Productos p ON sp.id_producto = p.id_producto
-    INNER JOIN MotivoScrap ms ON sp.id_motivoScrap = ms.id_motivoScrap
+    INNER JOIN personas per ON u.id_persona = per.id_persona
+    INNER JOIN Productos prod ON sp.id_producto = prod.id_producto
+    INNER JOIN MotivoScrap msc ON sp.id_motivoScrap = msc.id_motivoScrap
     WHERE sp.fecha BETWEEN @fechaDesde AND @fechaHasta
 END
 GO
