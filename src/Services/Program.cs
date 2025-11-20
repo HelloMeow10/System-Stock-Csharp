@@ -63,6 +63,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowBlazer");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
