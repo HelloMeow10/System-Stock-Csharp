@@ -77,30 +77,14 @@ public class SqlStockRepository : IStockRepository
 
     public async Task<IEnumerable<ScrapReportItemDto>> GetScrapAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
     {
-        // Build a motive string from boolean flags to avoid relying on a non-existent 'descripcion' column
-        var sql = @"
-            SELECT sp.id_scrapProducto,
-                   sp.fecha,
-                   u.nombre AS Usuario,
-                   p.nombre AS Producto,
-                   LTRIM(STUFF(
-                        CASE WHEN ms.dano = 1 THEN ', Daño' ELSE '' END +
-                        CASE WHEN ms.vencido = 1 THEN ', Vencido' ELSE '' END +
-                        CASE WHEN ms.obsoleto = 1 THEN ', Obsoleto' ELSE '' END +
-                        CASE WHEN ms.malaCalidad = 1 THEN ', Mala calidad' ELSE '' END
-                   , 1, 1, '')) AS Motivo,
-                   sp.cantidad
-            FROM ScrapProducto sp
-            INNER JOIN Usuarios u ON sp.id_usuario = u.id_usuario
-            INNER JOIN Productos p ON sp.id_producto = p.id_producto
-            INNER JOIN MotivoScrap ms ON sp.id_motivoScrap = ms.id_motivoScrap
-            WHERE sp.fecha BETWEEN @desde AND @hasta";
-
         using var conn = _connectionFactory.CreateConnection();
         await EnsureOpenAsync(conn, ct);
-        using var cmd = new SqlCommand(sql, (SqlConnection)conn);
-        cmd.Parameters.Add(new SqlParameter("@desde", SqlDbType.Date) { Value = from.ToDateTime(TimeOnly.MinValue) });
-        cmd.Parameters.Add(new SqlParameter("@hasta", SqlDbType.Date) { Value = to.ToDateTime(TimeOnly.MinValue) });
+        using var cmd = new SqlCommand("sp_ReporteScrap", (SqlConnection)conn)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+        cmd.Parameters.Add(new SqlParameter("@fechaDesde", SqlDbType.Date) { Value = from.ToDateTime(TimeOnly.MinValue) });
+        cmd.Parameters.Add(new SqlParameter("@fechaHasta", SqlDbType.Date) { Value = to.ToDateTime(TimeOnly.MinValue) });
 
         var list = new List<ScrapReportItemDto>();
         using var reader = await cmd.ExecuteReaderAsync(ct);
@@ -120,10 +104,12 @@ public class SqlStockRepository : IStockRepository
 
     public async Task<IEnumerable<ScrapReasonDto>> GetScrapReasonsAsync(CancellationToken ct = default)
     {
-        const string sql = @"SELECT id_motivoScrap, dano, vencido, obsoleto, malaCalidad FROM MotivoScrap";
         using var conn = _connectionFactory.CreateConnection();
         await EnsureOpenAsync(conn, ct);
-        using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+        using var cmd = new SqlCommand("sp_get_motivos_scrap", (SqlConnection)conn)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
         var list = new List<ScrapReasonDto>();
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
@@ -141,20 +127,12 @@ public class SqlStockRepository : IStockRepository
 
     public async Task<IEnumerable<StockItemDto>> GetStockAsync(CancellationToken ct = default)
     {
-        // Join Stock with Productos to get names and details
-        var sql = @"
-            SELECT s.id_stock,
-                   p.nombre AS Producto,
-                   p.ubicacion AS Almacen,
-                   s.stock,
-                   s.stockMinimo,
-                   s.stockMaximo
-            FROM Stock s
-            INNER JOIN Productos p ON s.id_producto = p.id_producto";
-
         using var conn = _connectionFactory.CreateConnection();
         await EnsureOpenAsync(conn, ct);
-        using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+        using var cmd = new SqlCommand("sp_get_stock", (SqlConnection)conn)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
         
         var list = new List<StockItemDto>();
         using var reader = await cmd.ExecuteReaderAsync(ct);

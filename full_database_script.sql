@@ -2504,6 +2504,271 @@ BEGIN
     WHERE v.fecha BETWEEN @fechaDesde AND @fechaHasta
 END
 GO
+
+-- =============================================
+-- Helper procedures for repositories that currently use SQL directo
+-- =============================================
+
+-- Politica de seguridad (GetPoliticaSeguridadAsync)
+IF OBJECT_ID('dbo.sp_get_politica_seguridad', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_politica_seguridad;
+GO
+CREATE PROCEDURE sp_get_politica_seguridad
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT TOP 1 *
+    FROM politicas_seguridad;
+END
+GO
+
+-- Preguntas de seguridad (GetPreguntasSeguridadAsync)
+IF OBJECT_ID('dbo.sp_get_preguntas_seguridad', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_preguntas_seguridad;
+GO
+CREATE PROCEDURE sp_get_preguntas_seguridad
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT id_pregunta, pregunta
+    FROM preguntas_seguridad;
+END
+GO
+
+-- Respuestas por usuario (GetRespuestasSeguridadByUsuarioIdAsync)
+IF OBJECT_ID('dbo.sp_get_respuestas_seguridad_by_usuario', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_respuestas_seguridad_by_usuario;
+GO
+CREATE PROCEDURE sp_get_respuestas_seguridad_by_usuario
+    @id_usuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT id_usuario, id_pregunta, respuesta
+    FROM respuestas_seguridad
+    WHERE id_usuario = @id_usuario;
+END
+GO
+
+-- Borrar respuestas por usuario (DeleteRespuestasSeguridadByUsuarioIdAsync)
+IF OBJECT_ID('dbo.sp_delete_respuestas_seguridad_by_usuario', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_delete_respuestas_seguridad_by_usuario;
+GO
+CREATE PROCEDURE sp_delete_respuestas_seguridad_by_usuario
+    @id_usuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM respuestas_seguridad
+    WHERE id_usuario = @id_usuario;
+END
+GO
+
+-- Personas: listado y detalle con joins (para SqlPersonaRepository)
+IF OBJECT_ID('dbo.sp_get_persona_by_id', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_persona_by_id;
+GO
+CREATE PROCEDURE sp_get_persona_by_id
+    @id_persona INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        p.id_persona, p.legajo, p.nombre, p.apellido, p.id_tipo_doc, p.num_doc, p.fecha_nacimiento, p.cuil,
+        p.calle, p.altura, p.id_localidad, p.id_genero, p.correo, p.celular, p.fecha_ingreso,
+        td.tipo_doc AS TipoDocNombre,
+        l.localidad AS LocalidadNombre,
+        pa.id_partido AS IdPartido,
+        pa.partido AS PartidoNombre,
+        pr.id_provincia AS IdProvincia,
+        pr.provincia AS ProvinciaNombre,
+        g.genero AS GeneroNombre
+    FROM personas p
+    LEFT JOIN tipo_doc td ON p.id_tipo_doc = td.id_tipo_doc
+    LEFT JOIN localidades l ON p.id_localidad = l.id_localidad
+    LEFT JOIN partidos pa ON l.id_partido = pa.id_partido
+    LEFT JOIN provincias pr ON pa.id_provincia = pr.id_provincia
+    LEFT JOIN generos g ON p.id_genero = g.id_genero
+    WHERE p.id_persona = @id_persona;
+END
+GO
+
+IF OBJECT_ID('dbo.sp_get_personas', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_personas;
+GO
+CREATE PROCEDURE sp_get_personas
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        p.id_persona, p.legajo, p.nombre, p.apellido, p.id_tipo_doc, p.num_doc, p.fecha_nacimiento, p.cuil,
+        p.calle, p.altura, p.id_localidad, p.id_genero, p.correo, p.celular, p.fecha_ingreso,
+        td.tipo_doc AS TipoDocNombre,
+        l.localidad AS LocalidadNombre,
+        pa.id_partido AS IdPartido,
+        pa.partido AS PartidoNombre,
+        pr.id_provincia AS IdProvincia,
+        pr.provincia AS ProvinciaNombre,
+        g.genero AS GeneroNombre
+    FROM personas p
+    LEFT JOIN tipo_doc td ON p.id_tipo_doc = td.id_tipo_doc
+    LEFT JOIN localidades l ON p.id_localidad = l.id_localidad
+    LEFT JOIN partidos pa ON l.id_partido = pa.id_partido
+    LEFT JOIN provincias pr ON pa.id_provincia = pr.id_provincia
+    LEFT JOIN generos g ON p.id_genero = g.id_genero;
+END
+GO
+
+-- Motivos de scrap (GetScrapReasonsAsync)
+IF OBJECT_ID('dbo.sp_get_motivos_scrap', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_motivos_scrap;
+GO
+CREATE PROCEDURE sp_get_motivos_scrap
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT id_motivoScrap, dano, vencido, obsoleto, malaCalidad
+    FROM MotivoScrap;
+END
+GO
+
+-- Stock completo (GetStockAsync)
+IF OBJECT_ID('dbo.sp_get_stock', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_stock;
+GO
+CREATE PROCEDURE sp_get_stock
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT s.id_stock,
+           p.nombre AS Producto,
+           p.ubicacion AS Almacen,
+           s.stock,
+           s.stockMinimo,
+           s.stockMaximo
+    FROM Stock s
+    INNER JOIN Productos p ON s.id_producto = p.id_producto;
+END
+GO
+
+-- Catálogo: marcas habilitadas (GetBrandsAsync)
+IF OBJECT_ID('dbo.sp_get_marcas', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_marcas;
+GO
+CREATE PROCEDURE sp_get_marcas
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT id_marca AS Id, marca AS Nombre
+    FROM MarcasProducto
+    WHERE estado IS NULL OR estado = 'Habilitado';
+END
+GO
+
+-- Catálogo: categorías habilitadas (GetCategoriesAsync)
+IF OBJECT_ID('dbo.sp_get_categorias', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_categorias;
+GO
+CREATE PROCEDURE sp_get_categorias
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT id_categoria AS Id, categoria AS Nombre
+    FROM CategoriasProducto
+    WHERE estado IS NULL OR estado = 'Habilitado';
+END
+GO
+
+-- Producto por Id con stock agregado (GetProductByIdAsync)
+IF OBJECT_ID('dbo.sp_get_product_by_id_with_stock', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_product_by_id_with_stock;
+GO
+CREATE PROCEDURE sp_get_product_by_id_with_stock
+    @id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    WITH StockAgg AS (
+        SELECT s.id_producto,
+               SUM(COALESCE(s.stock,0)) AS StockActual,
+               MAX(COALESCE(s.stockMinimo,0)) AS StockMinimo,
+               MAX(COALESCE(s.stockMaximo,0)) AS StockMaximo
+        FROM Stock s
+        GROUP BY s.id_producto
+    )
+    SELECT p.id_producto,
+           p.codigo,
+           p.nombre,
+           c.categoria,
+           m.marca,
+           COALESCE(p.precioVenta, 0) AS precioVenta,
+           COALESCE(sa.StockActual, 0) AS StockActual,
+           COALESCE(sa.StockMinimo, 0) AS StockMinimo,
+           COALESCE(sa.StockMaximo, 0) AS StockMaximo
+    FROM Productos p
+    LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
+    LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
+    LEFT JOIN StockAgg sa ON sa.id_producto = p.id_producto
+    WHERE p.id_producto = @id;
+END
+GO
+
+-- Listado paginado de productos con stock (GetProductsAsync)
+IF OBJECT_ID('dbo.sp_get_products_with_stock_paged', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_get_products_with_stock_paged;
+GO
+CREATE PROCEDURE sp_get_products_with_stock_paged
+    @Search NVARCHAR(200) = NULL,
+    @PageNumber INT = 1,
+    @PageSize INT = 10
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    WITH StockAgg AS (
+        SELECT s.id_producto,
+               SUM(COALESCE(s.stock,0)) AS StockActual,
+               MAX(COALESCE(s.stockMinimo,0)) AS StockMinimo,
+               MAX(COALESCE(s.stockMaximo,0)) AS StockMaximo
+        FROM Stock s
+        GROUP BY s.id_producto
+    ),
+    Filtered AS (
+        SELECT p.id_producto,
+               p.codigo,
+               p.nombre,
+               c.categoria,
+               m.marca,
+               COALESCE(p.precioVenta, 0) AS precioVenta,
+               COALESCE(sa.StockActual, 0) AS StockActual,
+               COALESCE(sa.StockMinimo, 0) AS StockMinimo,
+               COALESCE(sa.StockMaximo, 0) AS StockMaximo
+        FROM Productos p
+        LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
+        LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
+        LEFT JOIN StockAgg sa ON sa.id_producto = p.id_producto
+        WHERE @Search IS NULL
+           OR @Search = ''
+           OR p.codigo LIKE '%' + @Search + '%'
+           OR p.nombre LIKE '%' + @Search + '%'
+           OR c.categoria LIKE '%' + @Search + '%'
+           OR m.marca LIKE '%' + @Search + '%'
+    )
+    SELECT *
+    FROM Filtered
+    ORDER BY id_producto
+    OFFSET (@PageNumber - 1) * @PageSize ROWS
+    FETCH NEXT @PageSize ROWS ONLY;
+
+    -- total para paginación
+    SELECT COUNT(1) AS TotalCount
+    FROM Filtered;
+END
+GO
+
 -- Update sp_get_users to support @RoleId filter
 SET ANSI_NULLS ON
 GO
