@@ -134,4 +134,10 @@ public class StubStockRepository : IStockRepository
         if (r.MalaCalidad) parts.Add("Mala calidad");
         return parts.Count == 0 ? "Otro" : string.Join(", ", parts);
     }
+
+    public Task<IEnumerable<StockItemDto>> GetStockAsync(CancellationToken ct = default)
+    {
+        // Stub implementation: return empty list or dummy data
+        return Task.FromResult(Enumerable.Empty<StockItemDto>());
+    }
 }

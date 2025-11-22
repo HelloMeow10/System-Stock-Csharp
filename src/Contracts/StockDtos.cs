@@ -1,73 +1,62 @@
-namespace Contracts;
+namespace Contracts
+{
+    public class StockItemDto
+    {
+        public int Id { get; set; }
+        public string Product { get; set; } = string.Empty;
+        public string Warehouse { get; set; } = string.Empty; // Ubicacion
+        public int Quantity { get; set; }
+        public int Min { get; set; }
+        public int Max { get; set; }
+    }
 
-public record ProductDto
-(
-    int Id,
-    string Codigo,
-    string Nombre,
-    string Categoria,
-    string Marca,
-    decimal Precio,
-    int StockActual,
-    int StockMinimo,
-    int StockMaximo
-);
+    public record StockMovementDto(
+        int Id,
+        DateTime Fecha,
+        string Usuario,
+        string Producto,
+        string TipoMovimiento,
+        int Cantidad
+    );
 
-public record CategoryDto(int Id, string Nombre);
+    public record ScrapReportItemDto(
+        int Id,
+        DateTime Fecha,
+        string Usuario,
+        string Producto,
+        string Motivo,
+        int Cantidad
+    );
 
-public record BrandDto(int Id, string Nombre);
+    public record ScrapReasonDto(
+        int Id,
+        bool Dano,
+        bool Vencido,
+        bool Obsoleto,
+        bool MalaCalidad
+    );
 
-// Stock movements and scrap
-public record StockMovementDto
-(
-    int Id,
-    DateTime Fecha,
-    string Usuario,
-    string Producto,
-    string TipoMovimiento,
-    int Cantidad
-);
+    public class IngresoMercaderiaRequest
+    {
+        public int ProductoId { get; set; }
+        public int UsuarioId { get; set; }
+        public string? Lote { get; set; }
+        public int Cantidad { get; set; }
+        public int? StockMinimo { get; set; }
+        public int? StockIdeal { get; set; }
+        public int? StockMaximo { get; set; }
+        public string? TipoStock { get; set; }
+        public int? PuntoReposicion { get; set; }
+        public DateTime? FechaVencimiento { get; set; }
+        public string? EstadoHabilitaciones { get; set; }
+        public int? MovimientoStockId { get; set; }
+    }
 
-public record ScrapReportItemDto
-(
-    int Id,
-    DateTime Fecha,
-    string Usuario,
-    string Producto,
-    string Motivo,
-    int Cantidad
-);
-
-public record ScrapReasonDto
-(
-    int Id,
-    bool Dano,
-    bool Vencido,
-    bool Obsoleto,
-    bool MalaCalidad
-);
-
-public record CreateScrapRequest
-(
-    int ProductoId,
-    int Cantidad,
-    int UsuarioId,
-    int MotivoScrapId
-);
-
-public record IngresoMercaderiaRequest
-(
-    int ProductoId,
-    int UsuarioId,
-    int Cantidad,
-    string? Lote,
-    int? StockMinimo,
-    int? StockIdeal,
-    int? StockMaximo,
-    string? TipoStock,
-    int? PuntoReposicion,
-    DateOnly? FechaVencimiento,
-    string? EstadoHabilitaciones,
-    int? MovimientoStockId
-);
-
+    public class CreateScrapRequest
+    {
+        public int ProductoId { get; set; }
+        public int Cantidad { get; set; }
+        public int UsuarioId { get; set; }
+        public int MotivoScrapId { get; set; }
+    }
+}

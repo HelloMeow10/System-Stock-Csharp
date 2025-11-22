@@ -22,4 +22,7 @@ public class StockService : IStockService
 
     public Task IngresoMercaderiaAsync(IngresoMercaderiaRequest request, CancellationToken ct = default)
         => _repo.IngresoMercaderiaAsync(request, ct);
+
+    public Task<IEnumerable<StockItemDto>> GetStockAsync(CancellationToken ct = default)
+        => _repo.GetStockAsync(ct);
 }

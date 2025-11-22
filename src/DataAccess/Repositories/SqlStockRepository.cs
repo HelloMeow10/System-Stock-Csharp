@@ -53,7 +53,7 @@ public class SqlStockRepository : IStockRepository
         cmd.Parameters.Add(new SqlParameter("@stockMaximo", SqlDbType.Int) { Value = (object?)request.StockMaximo ?? DBNull.Value });
         cmd.Parameters.Add(new SqlParameter("@tipoStock", SqlDbType.VarChar, 20) { Value = (object?)request.TipoStock ?? DBNull.Value });
         cmd.Parameters.Add(new SqlParameter("@puntoReposicion", SqlDbType.Int) { Value = (object?)request.PuntoReposicion ?? DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@fechaVencimiento", SqlDbType.Date) { Value = request.FechaVencimiento.HasValue ? request.FechaVencimiento.Value.ToDateTime(TimeOnly.MinValue) : DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@fechaVencimiento", SqlDbType.Date) { Value = request.FechaVencimiento.HasValue ? request.FechaVencimiento.Value : DBNull.Value });
         cmd.Parameters.Add(new SqlParameter("@estadoHabilitaciones", SqlDbType.VarChar, 50) { Value = (object?)request.EstadoHabilitaciones ?? DBNull.Value });
         cmd.Parameters.Add(new SqlParameter("@id_movimientosStock", SqlDbType.Int) { Value = (object?)request.MovimientoStockId ?? DBNull.Value });
 
@@ -135,6 +135,40 @@ public class SqlStockRepository : IStockRepository
                 Obsoleto: reader.GetBoolean(3),
                 MalaCalidad: reader.GetBoolean(4)
             ));
+        }
+        return list;
+    }
+
+    public async Task<IEnumerable<StockItemDto>> GetStockAsync(CancellationToken ct = default)
+    {
+        // Join Stock with Productos to get names and details
+        var sql = @"
+            SELECT s.id_stock,
+                   p.nombre AS Producto,
+                   p.ubicacion AS Almacen,
+                   s.stock,
+                   s.stockMinimo,
+                   s.stockMaximo
+            FROM Stock s
+            INNER JOIN Productos p ON s.id_producto = p.id_producto";
+
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+        using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+        
+        var list = new List<StockItemDto>();
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            list.Add(new StockItemDto
+            {
+                Id = reader.GetInt32(0),
+                Product = reader.GetString(1),
+                Warehouse = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                Quantity = reader.GetInt32(3),
+                Min = reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
+                Max = reader.IsDBNull(5) ? 0 : reader.GetInt32(5)
+            });
         }
         return list;
     }

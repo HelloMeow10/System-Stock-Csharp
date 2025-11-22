@@ -1,0 +1,56 @@
+@page "/login"
+@using AgileStockPro.Web.Auth
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@layout AgileStockPro.Web.Components.LoginLayout
+
+<FluentCard Width="400px" Style="padding: 20px;">
+    <h3 style="text-align: center;">AgileStockPro Login</h3>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        <FluentTextField @bind-Value="Username" Label="Username" Required="true" Placeholder="Enter your username" />
+        <FluentTextField @bind-Value="Password" Label="Password" TextFieldType="TextFieldType.Password" Required="true" Placeholder="Enter your password" />
+        
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleLogin" Loading="@IsLoading">Login</FluentButton>
+        
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <FluentMessageBar Intent="MessageIntent.Error">
+                @ErrorMessage
+            </FluentMessageBar>
+        }
+    </div>
+</FluentCard>
+
+@code {
+    private string Username { get; set; } = "";
+    private string Password { get; set; } = "";
+    private string ErrorMessage { get; set; } = "";
+    private bool IsLoading { get; set; } = false;
+
+    private async Task HandleLogin()
+    {
+        IsLoading = true;
+        ErrorMessage = "";
+        try
+        {
+            var auth = (CustomAuthenticationStateProvider)AuthStateProvider;
+            var success = await auth.LoginAsync(Username, Password);
+            if (success)
+            {
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                ErrorMessage = "Invalid username or password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

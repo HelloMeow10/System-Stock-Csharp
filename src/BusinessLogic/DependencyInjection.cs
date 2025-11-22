@@ -37,6 +37,10 @@ namespace BusinessLogic
             services.AddScoped<ISecurityPolicyService, SecurityPolicyService>();
             services.AddScoped<ISecurityQuestionService, SecurityQuestionService>();
             services.AddScoped<IUserService, UserManagementService>();
+            services.AddScoped<ISupplierService, SupplierService>();
+            services.AddScoped<IClientService, ClientService>();
+            services.AddScoped<IPurchaseService, PurchaseService>();
+            services.AddScoped<ISalesService, SalesService>();
 
             return services;
         }

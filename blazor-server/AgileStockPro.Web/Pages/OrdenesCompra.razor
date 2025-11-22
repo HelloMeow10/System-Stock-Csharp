@@ -1,55 +1,71 @@
 @page "/ordenes-compra"
-@using AgileStockPro.Web.Services
-@using AgileStockPro.Web.Models
-@using AgileStockPro.Web.Components
-@inject IAppDataService Data
+@using BusinessLogic.Services
+@using Contracts
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPurchaseService PurchaseService
+@inject IDialogService DialogService
 
-<AuthGuard>
-<PageHeader Title="Órdenes de compra" />
+<PageTitle>Órdenes de Compra</PageTitle>
 
-@if (!string.IsNullOrWhiteSpace(error))
-{
-    <div class="error">@error</div>
-}
-else if (items is null)
-{
-	<p>Cargando...</p>
-}
-else
-{
-	<table>
-		<thead>
-			<tr>
-				<th>#</th>
-				<th>Proveedor</th>
-				<th>Fecha</th>
-				<th>Estado</th>
-				<th>Total</th>
-			</tr>
-		</thead>
-		<tbody>
-		@foreach (var oc in items)
-		{
-			<tr>
-				<td>@oc.Id</td>
-				<td>@oc.Supplier</td>
-				<td>@oc.Date.ToString("dd/MM/yyyy")</td>
-				<td>@oc.Status</td>
-				<td>$@oc.Total</td>
-			</tr>
-		}
-		</tbody>
-	</table>
-}
+<div style="padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>Órdenes de Compra</h1>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@CreateOrder">Nueva Orden</FluentButton>
+    </div>
 
-</AuthGuard>
+    <div style="margin-bottom: 20px;">
+        <FluentCheckbox @bind-Value="showDelivered" Label="Mostrar Entregadas" @onchange="@(e => LoadData())" />
+    </div>
+
+    @if (orders == null)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+        <FluentDataGrid Items="@orders.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.5fr 1fr 1fr 1fr 1fr">
+            <PropertyColumn Property="@(p => p.Id)" Sortable="true" Title="#" />
+            <PropertyColumn Property="@(p => p.Proveedor)" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Total)" Format="C2" Sortable="true" />
+            <TemplateColumn Title="Entregado">
+                @if (context.Entregado)
+                {
+                    <FluentBadge Appearance="Appearance.Accent">Sí</FluentBadge>
+                }
+                else
+                {
+                    <FluentBadge Appearance="Appearance.Neutral">No</FluentBadge>
+                }
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+</div>
 
 @code {
-	private IReadOnlyList<OrdenCompra>? items;
-	private string? error;
-	protected override async Task OnInitializedAsync()
-	{
-		try { items = await Data.GetPurchaseOrdersAsync(); }
-		catch (Exception ex) { error = ex.Message; }
-	}
+    private IEnumerable<PurchaseOrderDto>? orders;
+    private bool showDelivered = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        // Toggle logic: if showDelivered is true, we might want to see ALL or just delivered?
+        // The SP param is @entregado. If null, it shows all. If true/false, filters.
+        // Let's assume checkbox "Show Delivered" means "Show ONLY Delivered" or "Include Delivered"?
+        // Usually "Show Delivered" implies a filter.
+        // Let's make it a tri-state or just simple filter.
+        // For now, let's pass null to see all, or specific value.
+        // Let's just show ALL by default (param null).
+        orders = await PurchaseService.GetOrdersAsync(null);
+    }
+
+    private async Task CreateOrder()
+    {
+        // TODO: Implement Dialog for creating order
+    }
 }

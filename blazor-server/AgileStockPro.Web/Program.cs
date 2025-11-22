@@ -1,68 +1,49 @@
 using Microsoft.FluentUI.AspNetCore.Components;
 using AgileStockPro.Web.Services;
-using AgileStockPro.Web.Services.Api;
+using BusinessLogic;
+using DataAccess;
+using Microsoft.AspNetCore.Components.Authorization;
+using AgileStockPro.Web.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container (classic Blazor Server)
+// Add services to the container.
 builder.Services.AddRazorPages();
-var blazorBuilder = builder.Services.AddServerSideBlazor();
-if (builder.Environment.IsDevelopment())
-{
-    blazorBuilder.AddCircuitOptions(o => o.DetailedErrors = true);
-}
+builder.Services.AddServerSideBlazor()
+    .AddCircuitOptions(o => o.DetailedErrors = true);
 builder.Services.AddHttpContextAccessor();
 
-// Per Fluent docs, register HttpClient before AddFluentUIComponents
+// Fluent UI
 builder.Services.AddHttpClient();
 builder.Services.AddFluentUIComponents();
 
-// Register app services (start with Products; add more as you port them)
-var useApiProducts = builder.Configuration.GetValue<bool>("Features:Products:UseApi", true);
-if (useApiProducts)
-{
-    builder.Services.AddScoped<IProductService, AgileStockPro.Web.Services.Api.ApiProductService>();
-}
-else
-{
-    builder.Services.AddSingleton<IProductService, ProductService>();
-}
-builder.Services.AddSingleton<IDashboardService, DashboardService>();
+// Backend Services (N-Layer)
+builder.Services.AddDataAccess(builder.Configuration);
+builder.Services.AddBusinessLogic(builder.Configuration);
 
-// App data (movements/scrap from API with fallback to local mock)
-var useApiAppData = builder.Configuration.GetValue<bool>("Features:AppData:UseApi", true);
-if (useApiAppData)
-{
-    builder.Services.AddSingleton<AppDataService>(); // fallback instance
-    builder.Services.AddScoped<IAppDataService, AgileStockPro.Web.Services.Api.ApiAppDataService>();
-}
-else
-{
-    builder.Services.AddSingleton<IAppDataService, AppDataService>();
-}
-
-// API integration
-builder.Services.AddSingleton(new ApiOptions { BaseUrl = "http://localhost:5000/" });
-builder.Services.AddScoped<ITokenProvider, TokenProvider>();
-builder.Services.AddHttpClient<BackendApiClient>()
-    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-    {
-        UseCookies = true,
-        CookieContainer = new System.Net.CookieContainer()
-    });
-builder.Services.AddScoped<IUserStore, ApiUserStore>();
-builder.Services.AddScoped<IAuthService, ApiAuthService>();
-builder.Services.AddScoped<IStockApiService, StockApiService>();
+// Authentication
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies");
 
 var app = builder.Build();
 
+// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
 }
 
+app.UseHttpsRedirection();
+
 app.UseStaticFiles();
+
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
