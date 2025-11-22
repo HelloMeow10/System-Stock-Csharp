@@ -1,4 +1,7 @@
-﻿-- Step 1: Terminate all connections to the login2 database
+﻿USE master;
+GO
+
+-- Step 1: Terminate all connections to the login2 database
 IF DB_ID('login2') IS NOT NULL
 BEGIN
     -- Set database to single-user mode to terminate connections
@@ -981,7 +984,7 @@ SET @fecha_ultimo_cambio = GETDATE();
 
 IF @id_persona IS NOT NULL AND @id_rol IS NOT NULL
 BEGIN
-    -- ContraseÃ±a "admin123" encriptada con SHA256 (concatenada con 'admin')
+    -- ContraseÃ±a "admin123" encriptada with SHA256 (concatenada con 'admin')
     DECLARE @password VARBINARY(512) = HASHBYTES('SHA2_256', 'admin123admin');
     EXEC sp_insert_usuario
         @usuario = 'admin',
@@ -1121,8 +1124,6 @@ BEGIN
 
 END
 GO
-USE login2;
-GO
 
 -- ============================================
 -- ðŸ”¹ LIMPIEZA AUTOMÃTICA DE OBJETOS EXISTENTES
@@ -1196,6 +1197,7 @@ IF OBJECT_ID('dbo.MotivoScrap','U') IS NULL
 BEGIN
 CREATE TABLE MotivoScrap (
     id_motivoScrap INT IDENTITY(1,1) PRIMARY KEY,
+    descripcion VARCHAR(50),
     dano BIT DEFAULT 0,
     vencido BIT DEFAULT 0,
     obsoleto BIT DEFAULT 0,
@@ -1293,6 +1295,8 @@ CREATE TABLE Proveedores (
     nombre VARCHAR(50),
     razonSocial VARCHAR(100),
     CUIT VARCHAR(20),
+    email VARCHAR(100),
+    formaPago VARCHAR(100),
     TiempoEntrega INT,
     Descuento DECIMAL(5,2),
     id_formaPago INT,
@@ -1306,6 +1310,7 @@ BEGIN
 CREATE TABLE ProveedorTelefonos (
     id_telefonoProveedor INT PRIMARY KEY IDENTITY(1,1),
     id_proveedor INT,
+    contacto VARCHAR(50),
     telefono VARCHAR(20),
     sector VARCHAR(50),
     horario VARCHAR(50),
@@ -1386,6 +1391,107 @@ CREATE TABLE DevolucionesProveedor (
     motivo VARCHAR(100),
     fecha DATE DEFAULT GETDATE(),
     CONSTRAINT FK_Devoluciones_DetalleCompras FOREIGN KEY (id_detalleCompra) REFERENCES DetalleCompras(id_detalleCompra)
+);
+END
+GO
+
+-- ============================================
+-- MISSING TABLES FOR PURCHASING MODULE
+-- ============================================
+
+IF OBJECT_ID('dbo.PresupuestoCompra','U') IS NULL
+BEGIN
+CREATE TABLE PresupuestoCompra (
+    id_presupuesto INT PRIMARY KEY IDENTITY(1,1),
+    id_proveedor INT,
+    fecha DATE,
+    total DECIMAL(18,2),
+    FOREIGN KEY (id_proveedor) REFERENCES Proveedores(id_proveedor)
+);
+END
+GO
+
+IF OBJECT_ID('dbo.OrdenCompra','U') IS NULL
+BEGIN
+CREATE TABLE OrdenCompra (
+    id_ordenCompra INT PRIMARY KEY IDENTITY(1,1),
+    id_presupuesto INT,
+    id_proveedor INT,
+    fecha DATE,
+    total DECIMAL(18,2),
+    entregado BIT DEFAULT 0,
+    FOREIGN KEY (id_presupuesto) REFERENCES PresupuestoCompra(id_presupuesto),
+    FOREIGN KEY (id_proveedor) REFERENCES Proveedores(id_proveedor)
+);
+END
+GO
+
+IF OBJECT_ID('dbo.Remito','U') IS NULL
+BEGIN
+CREATE TABLE Remito (
+    id_remito INT PRIMARY KEY IDENTITY(1,1),
+    id_ordenCompra INT,
+    numeroRemito VARCHAR(50),
+    fecha DATE,
+    conFactura BIT,
+    visadoAlmacen BIT DEFAULT 0,
+    FOREIGN KEY (id_ordenCompra) REFERENCES OrdenCompra(id_ordenCompra)
+);
+END
+GO
+
+IF OBJECT_ID('dbo.FacturaCompra','U') IS NULL
+BEGIN
+CREATE TABLE FacturaCompra (
+    id_factura INT PRIMARY KEY IDENTITY(1,1),
+    id_proveedor INT,
+    id_remito INT,
+    numeroFactura VARCHAR(50),
+    fecha DATE,
+    total DECIMAL(18,2),
+    visadoAlmacen BIT,
+    FOREIGN KEY (id_proveedor) REFERENCES Proveedores(id_proveedor),
+    FOREIGN KEY (id_remito) REFERENCES Remito(id_remito)
+);
+END
+GO
+
+IF OBJECT_ID('dbo.NotaCredito','U') IS NULL
+BEGIN
+CREATE TABLE NotaCredito (
+    id_notaCredito INT PRIMARY KEY IDENTITY(1,1),
+    id_factura INT,
+    fecha DATE,
+    monto DECIMAL(18,2),
+    motivo VARCHAR(255),
+    FOREIGN KEY (id_factura) REFERENCES FacturaCompra(id_factura)
+);
+END
+GO
+
+IF OBJECT_ID('dbo.NotaDebito','U') IS NULL
+BEGIN
+CREATE TABLE NotaDebito (
+    id_notaDebito INT PRIMARY KEY IDENTITY(1,1),
+    id_factura INT,
+    fecha DATE,
+    monto DECIMAL(18,2),
+    motivo VARCHAR(255),
+    FOREIGN KEY (id_factura) REFERENCES FacturaCompra(id_factura)
+);
+END
+GO
+
+IF OBJECT_ID('dbo.DetalleFacturaCompra','U') IS NULL
+BEGIN
+CREATE TABLE DetalleFacturaCompra (
+    id_detalleFactura INT PRIMARY KEY IDENTITY(1,1),
+    id_factura INT,
+    id_producto INT,
+    cantidad INT,
+    precioUnitario DECIMAL(18,2),
+    FOREIGN KEY (id_factura) REFERENCES FacturaCompra(id_factura),
+    FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
 );
 END
 GO
@@ -1535,45 +1641,26 @@ GO
 -- Vistas para compatibilidad con nombres usados en procedures (no modificamos logic)
 IF OBJECT_ID('dbo.Producto','V') IS NOT NULL DROP VIEW dbo.Producto;
 GO
-CREATE VIEW dbo.Producto
-AS
-SELECT id_producto, codigo, codBarras, nombre, descripcion, id_marca, precioCompra, precioVenta, estado, ubicacion, habilitado, id_categoria
-FROM dbo.Productos;
-GO
+-- View removed as it conflicts with potential table usage or is unnecessary if SPs are updated
+-- CREATE VIEW dbo.Producto ...
 
 IF OBJECT_ID('dbo.Proveedor','V') IS NOT NULL DROP VIEW dbo.Proveedor;
 GO
-CREATE VIEW dbo.Proveedor
-AS
-SELECT id_proveedor, codigo, nombre, razonSocial, CUIT, TiempoEntrega, Descuento, id_formaPago
-FROM dbo.Proveedores;
-GO
+-- View removed
 
 -- FacturaCompra y DetalleFacturaCompra son nombres que aparecen en SPs; mapearlos a Compras/DetalleCompras
-IF OBJECT_ID('dbo.FacturaCompra','V') IS NOT NULL DROP VIEW dbo.FacturaCompra;
-GO
-CREATE VIEW dbo.FacturaCompra
-AS
-SELECT id_compra AS id_factura, id_proveedor, fecha, numeroDocumento AS numeroFactura, tipoDocumento, montoTotal AS total, id_estadoCompras
-FROM dbo.Compras;
-GO
+-- IF OBJECT_ID('dbo.FacturaCompra','V') IS NOT NULL DROP VIEW dbo.FacturaCompra;
+-- GO
+-- View removed because FacturaCompra is now a real table
 
-IF OBJECT_ID('dbo.DetalleFacturaCompra','V') IS NOT NULL DROP VIEW dbo.DetalleFacturaCompra;
-GO
-CREATE VIEW dbo.DetalleFacturaCompra
-AS
-SELECT id_detalleCompra AS id_detalleFactura, id_compra AS id_factura, id_producto, cantidad, precioUnitario, subtotal
-FROM dbo.DetalleCompras;
-GO
+-- IF OBJECT_ID('dbo.DetalleFacturaCompra','V') IS NOT NULL DROP VIEW dbo.DetalleFacturaCompra;
+-- GO
+-- View removed because DetalleFacturaCompra is now a real table
 
 -- ProductoProveedor alias (por si los SPs usan Producto/Proveedor)
-IF OBJECT_ID('dbo.ProductoProveedor_V','V') IS NOT NULL DROP VIEW dbo.ProductoProveedor_V;
-GO
-CREATE VIEW dbo.ProductoProveedor_V
-AS
-SELECT id_productoProveedor, id_producto, id_proveedor, precioCompra, tiempoEntrega, descuento
-FROM dbo.ProductoProveedor;
-GO
+-- IF OBJECT_ID('dbo.ProductoProveedor_V','V') IS NOT NULL DROP VIEW dbo.ProductoProveedor_V;
+-- GO
+-- View removed
 
 -- ============================================
 -- Stored Procedures for AgileStockPro
@@ -1609,7 +1696,7 @@ AS
 BEGIN
     SELECT ms.id_movimientosStock,
            ms.fecha,
-           u.nombre AS Usuario,
+           u.usuario AS Usuario,
            p.nombre AS Producto,
            ms.tipoMovimiento,
            ms.cantidad
@@ -1643,7 +1730,7 @@ AS
 BEGIN
     SELECT sp.id_scrapProducto,
            sp.fecha,
-           u.nombre AS Usuario,
+           u.usuario AS Usuario,
            p.nombre AS Producto,
            ms.descripcion AS Motivo,
            sp.cantidad
@@ -1807,7 +1894,7 @@ BEGIN
         oc.total,
         oc.entregado
     FROM OrdenCompra oc
-    INNER JOIN Proveedor p ON oc.id_proveedor = p.id_proveedor
+    INNER JOIN Proveedores p ON oc.id_proveedor = p.id_proveedor
     WHERE (@entregado IS NULL OR oc.entregado = @entregado)
 END
 GO
@@ -1876,9 +1963,9 @@ BEGIN
         fc.fecha,
         fc.total
     FROM FacturaCompra fc
-    INNER JOIN Proveedor p ON fc.id_proveedor = p.id_proveedor
+    INNER JOIN Proveedores p ON fc.id_proveedor = p.id_proveedor
     INNER JOIN DetalleFacturaCompra df ON fc.id_factura = df.id_factura
-    INNER JOIN Producto pr ON df.id_producto = pr.id_producto
+    INNER JOIN Productos pr ON df.id_producto = pr.id_producto
     WHERE 
         (@fechaInicio IS NULL OR fc.fecha >= @fechaInicio) AND
         (@fechaFin IS NULL OR fc.fecha <= @fechaFin) AND
@@ -1898,9 +1985,11 @@ BEGIN
         pr.nombre AS producto,
         d.fecha,
         d.motivo
-    FROM DevolucionProveedor d
-    INNER JOIN Proveedor p ON d.id_proveedor = p.id_proveedor
-    INNER JOIN Producto pr ON d.id_producto = pr.id_producto
+    FROM DevolucionesProveedor d
+    INNER JOIN DetalleCompras dc ON d.id_detalleCompra = dc.id_detalleCompra
+    INNER JOIN Compras c ON dc.id_compra = c.id_compra
+    INNER JOIN Proveedores p ON c.id_proveedor = p.id_proveedor
+    INNER JOIN Productos pr ON dc.id_producto = pr.id_producto
     WHERE 
         (@fechaInicio IS NULL OR d.fecha >= @fechaInicio) AND
         (@fechaFin IS NULL OR d.fecha <= @fechaFin)
@@ -1920,8 +2009,8 @@ CREATE PROCEDURE sp_AgregarProveedor
     @descuento DECIMAL(5,2)
 AS
 BEGIN
-    INSERT INTO Proveedor (codigo, razonSocial, cuit, email, formaPago, tiempoEntrega, descuento)
-    VALUES (@codigo, @razonSocial, @cuit, @email, @formaPago, @tiempoEntrega, @descuento)
+    INSERT INTO Proveedores (codigo, razonSocial, CUIT, email, formaPago, TiempoEntrega, Descuento)
+    VALUES (@codigo, @razonSocial, @cuit, @email, @formaPago, CAST(@tiempoEntrega AS INT), @descuento)
 END
 GO
 
@@ -1936,14 +2025,14 @@ CREATE PROCEDURE sp_ModificarProveedor
     @descuento DECIMAL(5,2)
 AS
 BEGIN
-    UPDATE Proveedor
+    UPDATE Proveedores
     SET codigo = @codigo,
         razonSocial = @razonSocial,
-        cuit = @cuit,
+        CUIT = @cuit,
         email = @email,
         formaPago = @formaPago,
-        tiempoEntrega = @tiempoEntrega,
-        descuento = @descuento
+        TiempoEntrega = CAST(@tiempoEntrega AS INT),
+        Descuento = @descuento
     WHERE id_proveedor = @id_proveedor
 END
 GO
@@ -1952,7 +2041,7 @@ CREATE PROCEDURE sp_EliminarProveedor
     @id_proveedor INT
 AS
 BEGIN
-    DELETE FROM Proveedor WHERE id_proveedor = @id_proveedor
+    DELETE FROM Proveedores WHERE id_proveedor = @id_proveedor
 END
 GO
 
@@ -1964,12 +2053,12 @@ BEGIN
         id_proveedor,
         codigo,
         razonSocial,
-        cuit,
+        CUIT,
         email,
         formaPago,
-        tiempoEntrega,
-        descuento
-    FROM Proveedor
+        TiempoEntrega,
+        Descuento
+    FROM Proveedores
     WHERE razonSocial LIKE '%' + @nombre + '%'
 END
 GO
@@ -1982,13 +2071,13 @@ BEGIN
         id_proveedor,
         codigo,
         razonSocial,
-        cuit,
+        CUIT,
         email,
         formaPago,
-        tiempoEntrega,
-        descuento
-    FROM Proveedor
-    WHERE cuit LIKE '%' + @cuit + '%'
+        TiempoEntrega,
+        Descuento
+    FROM Proveedores
+    WHERE CUIT LIKE '%' + @cuit + '%'
 END
 GO
 
@@ -2001,7 +2090,7 @@ CREATE PROCEDURE sp_AgregarTelefonoProveedor
     @horario VARCHAR(100)
 AS
 BEGIN
-    INSERT INTO TelefonoProveedor (id_proveedor, contacto, sector, telefono, email, horario)
+    INSERT INTO ProveedorTelefonos (id_proveedor, contacto, sector, telefono, email, horario)
     VALUES (@id_proveedor, @contacto, @sector, @telefono, @email, @horario)
 END
 GO
@@ -2013,8 +2102,8 @@ CREATE PROCEDURE sp_AgregarDireccionProveedor
     @provincia VARCHAR(100)
 AS
 BEGIN
-    INSERT INTO DireccionProveedor (id_proveedor, direccion, localidad, provincia)
-    VALUES (@id_proveedor, @direccion, @localidad, @provincia)
+    INSERT INTO ProveedorUbicacion (id_proveedor, direccion, localidad, provincia, tipo)
+    VALUES (@id_proveedor, @direccion, @localidad, @provincia, 'Principal')
 END
 GO
 
@@ -2032,14 +2121,15 @@ CREATE PROCEDURE sp_ConsultarProductosPorProveedor
     @id_proveedor INT
 AS
 BEGIN
+
     SELECT 
         p.id_producto,
         p.codigo,
         p.nombre,
         p.descripcion,
-        p.precio
+        pp.precioCompra AS precio
     FROM ProductoProveedor pp
-    INNER JOIN Producto p ON pp.id_producto = p.id_producto
+    INNER JOIN Productos p ON pp.id_producto = p.id_producto
     WHERE pp.id_proveedor = @id_proveedor
 END
 GO
@@ -2051,11 +2141,11 @@ BEGIN
     SELECT 
         pr.id_proveedor,
         pr.razonSocial,
-        pr.cuit,
+        pr.CUIT,
         pr.formaPago,
-        pr.descuento
+        pr.Descuento
     FROM ProductoProveedor pp
-    INNER JOIN Proveedor pr ON pp.id_proveedor = pr.id_proveedor
+    INNER JOIN Proveedores pr ON pp.id_proveedor = pr.id_proveedor
     WHERE pp.id_producto = @id_producto
 END
 GO
@@ -2124,10 +2214,10 @@ GO
 CREATE PROCEDURE sp_ObtenerProductos
 AS
 BEGIN
-    SELECT p.id_producto, p.codigo, p.nombre, p.descripcion, m.nombre AS Marca, c.categoria AS Categoria,
+    SELECT p.id_producto, p.codigo, p.nombre, p.descripcion, m.marca AS Marca, c.categoria AS Categoria,
            p.precioCompra, p.precioVenta, p.estado, p.ubicacion, p.habilitado
     FROM Productos p
-    LEFT JOIN Marcas m ON p.id_marca = m.id_marca
+    LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
     LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
 END
 GO
@@ -2136,13 +2226,13 @@ CREATE PROCEDURE sp_BuscarProducto
     @busqueda VARCHAR(100)
 AS
 BEGIN
-    SELECT p.*, m.nombre AS Marca, c.categoria AS Categoria
+    SELECT p.*, m.marca AS Marca, c.categoria AS Categoria
     FROM Productos p
-    LEFT JOIN Marcas m ON p.id_marca = m.id_marca
+    LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
     LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
     WHERE p.nombre LIKE '%' + @busqueda + '%'
        OR p.codigo LIKE '%' + @busqueda + '%'
-       OR m.nombre LIKE '%' + @busqueda + '%'
+       OR m.marca LIKE '%' + @busqueda + '%'
        OR c.categoria LIKE '%' + @busqueda + '%'
 END
 GO
@@ -2174,9 +2264,9 @@ CREATE PROCEDURE sp_ConsultarProductoPorNombre
     @nombre VARCHAR(100)
 AS
 BEGIN
-    SELECT p.*, m.nombre AS Marca, c.categoria AS Categoria
+    SELECT p.*, m.marca AS Marca, c.categoria AS Categoria
     FROM Productos p
-    LEFT JOIN Marcas m ON p.id_marca = m.id_marca
+    LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
     LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
     WHERE p.nombre LIKE '%' + @nombre + '%'
 END
@@ -2186,9 +2276,9 @@ CREATE PROCEDURE sp_ConsultarProductoPorCodigo
     @codigo VARCHAR(50)
 AS
 BEGIN
-    SELECT p.*, m.nombre AS Marca, c.categoria AS Categoria
+    SELECT p.*, m.marca AS Marca, c.categoria AS Categoria
     FROM Productos p
-    LEFT JOIN Marcas m ON p.id_marca = m.id_marca
+    LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
     LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
     WHERE p.codigo = @codigo
 END
@@ -2490,6 +2580,7 @@ BEGIN
     EXEC sp_executesql @Query,
         N'@PageNumber INT, @PageSize INT, @Username NVARCHAR(30), @Email NVARCHAR(100), @RoleId INT',
         @PageNumber, @PageSize, @Username, @Email, @RoleId;
+
 END
 GO
 -- Seed demo Personas and Usuarios (idempotent)
@@ -2552,13 +2643,14 @@ SELECT @id_persona_oper = id_persona FROM personas WHERE num_doc = '20000001';
 IF NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'operador') AND @id_persona_oper IS NOT NULL
 BEGIN
     SET @pass = HASHBYTES('SHA2_256', 'Operador123operador');
+    DECLARE @now DATETIME = GETDATE();
     EXEC sp_insert_usuario
         @usuario = 'operador',
         @contrasena_script = @pass,
         @id_persona = @id_persona_oper,
         @fecha_bloqueo = '9999-12-31',
         @nombre_usuario_bloqueo = NULL,
-        @fecha_ultimo_cambio = GETDATE(),
+        @fecha_ultimo_cambio = @now,
         @id_rol = @rol_user,
         @CambioContrasenaObligatorio = 1
 END
@@ -2587,13 +2679,14 @@ SELECT @id_persona_admin2 = id_persona FROM personas WHERE num_doc = '20000002';
 IF NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin2') AND @id_persona_admin2 IS NOT NULL
 BEGIN
     SET @pass2 = HASHBYTES('SHA2_256', 'Admin123admin');
+    DECLARE @now2 DATETIME = GETDATE();
     EXEC sp_insert_usuario
         @usuario = 'admin2',
         @contrasena_script = @pass2,
         @id_persona = @id_persona_admin2,
         @fecha_bloqueo = '9999-12-31',
         @nombre_usuario_bloqueo = NULL,
-        @fecha_ultimo_cambio = GETDATE(),
+        @fecha_ultimo_cambio = @now2,
         @id_rol = @rol_admin,
         @CambioContrasenaObligatorio = 1
 END
