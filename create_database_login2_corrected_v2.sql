@@ -402,9 +402,9 @@ CREATE PROCEDURE sp_insert_usuario
     @usuario VARCHAR(30),
     @contrasena_script VARBINARY(512),
     @id_persona INT,
-    @fecha_bloqueo DATETIME,
+    @fecha_bloqueo DATETIME = NULL,
     @nombre_usuario_bloqueo VARCHAR(30),
-    @fecha_ultimo_cambio DATETIME,
+    @fecha_ultimo_cambio DATETIME = NULL,
     @id_rol INT,
     @CambioContrasenaObligatorio BIT = 0,
     @Codigo2FA VARCHAR(10) = NULL,
@@ -412,6 +412,12 @@ CREATE PROCEDURE sp_insert_usuario
     @FechaExpiracion DATETIME = NULL
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Asegurar valores por defecto si se pasan NULLs (evita insertar NULL en columnas NOT NULL)
+    SET @fecha_bloqueo = COALESCE(@fecha_bloqueo, GETDATE());
+    SET @fecha_ultimo_cambio = COALESCE(@fecha_ultimo_cambio, GETDATE());
+
     INSERT INTO usuarios (
         usuario, contrasena_script, id_persona, fecha_bloqueo,
         nombre_usuario_bloqueo, fecha_ultimo_cambio, id_rol, CambioContrasenaObligatorio,
@@ -983,6 +989,10 @@ IF @id_persona IS NOT NULL AND @id_rol IS NOT NULL
 BEGIN
     -- Contraseña "admin123" encriptada con SHA256 (concatenada con 'admin')
     DECLARE @password VARBINARY(512) = HASHBYTES('SHA2_256', 'admin123admin');
+    -- Usar DATEFROMPARTS para evitar problemas de conversión por formato regional
+    SET @fecha_bloqueo = DATEFROMPARTS(9999,12,31);
+    SET @fecha_ultimo_cambio = GETDATE();
+
     EXEC sp_insert_usuario
         @usuario = 'admin',
         @contrasena_script = @password,

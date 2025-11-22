@@ -1,13 +1,28 @@
 @inherits LayoutComponentBase
 @using Microsoft.FluentUI.AspNetCore.Components
 @using AgileStockPro.App.Components.Layout
+@inject NavigationManager NavigationManager
+
+@{
+    // Determina si estamos en la ruta de login/raiz para ocultar header/nav en esa vista
+    var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri) ?? string.Empty;
+    bool showShell = !(string.IsNullOrEmpty(relativePath) || relativePath.StartsWith("login", System.StringComparison.OrdinalIgnoreCase));
+}
 
 <FluentLayout>
-    <FluentHeader>
-        <Header />
-    </FluentHeader>
-    <FluentStack Class="main-stack" Orientation="Orientation.Horizontal" Style="height: calc(100vh - 60px);">
-        <NavMenu />
+    @if (showShell)
+    {
+        <FluentHeader>
+            <Header />
+        </FluentHeader>
+    }
+
+    <FluentStack Class="main-stack" Orientation="Orientation.Horizontal" Style="height: @(showShell ? "calc(100vh - 60px)" : "100vh");">
+        @if (showShell)
+        {
+            <NavMenu />
+        }
+
         <FluentBodyContent Class="body-content">
             <div class="content">
                 @Body

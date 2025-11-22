@@ -31,6 +31,15 @@ a:hover { text-decoration: underline; }
 .layout-body.collapsed { grid-template-columns: 72px 1fr; }
 .content { padding: 1rem 1.25rem; }
 
+/* Cuando la página es sólo el login: ocupar todo el espacio y centrar el contenido */
+.content.login-only {
+	padding: 0; /* el panel establece su propio padding */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+}
+
 /* Sidebar */
 .sidebar { border-right: 1px solid var(--stroke-color); background: var(--neutral-layer-1); color: var(--neutral-foreground-rest); min-height: calc(100vh - 56px); position: sticky; top: 56px; overflow: hidden; }
 .sidebar.is-collapsed .title, .sidebar.is-collapsed .nav-text, .sidebar.is-collapsed .nav-section { display: none; }

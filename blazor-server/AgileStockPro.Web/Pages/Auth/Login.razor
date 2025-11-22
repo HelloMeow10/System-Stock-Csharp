@@ -4,35 +4,43 @@
 @inject IToastService Toast
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.FluentUI.AspNetCore.Components
 
-<PageHeader Title="Ingreso" />
+<div class="login-wrapper">
+    <h1 class="login-title">Ingreso</h1>
+    <EditForm Model="model" OnValidSubmit="HandleLogin" OnInvalidSubmit="OnInvalidLogin">
+        <DataAnnotationsValidator />
+        <div class="panel login-panel">
+            <div class="panel-header">
+                <div class="panel-header-main">Credenciales</div>
+                <div class="panel-header-sub">Ingrese sus credenciales para acceder al sistema</div>
+            </div>
+            <div class="panel-body">
+                <div class="form-field">
+                    <label class="field-label"><FluentIcon Icon="@(Icons.Regular.Size16.Person)" class="label-icon" /> Usuario</label>
+                    <InputText class="input input-center" @bind-Value="model.Username" />
+                    <ValidationMessage For="() => model.Username" />
+                </div>
 
-<EditForm Model="model" OnValidSubmit="HandleLogin" OnInvalidSubmit="OnInvalidLogin">
-    <DataAnnotationsValidator />
-    <div class="panel">
-        <div class="panel-header">Credenciales</div>
-        <div style="display:grid; grid-template-columns: 160px 1fr; gap:.25rem .5rem; align-items:center;">
-            <label>Usuario</label>
-            <div>
-                <InputText class="input" @bind-Value="model.Username" />
-                <ValidationMessage For="() => model.Username" />
+                <div class="form-field">
+                    <label class="field-label"><FluentIcon Icon="@(Icons.Regular.Size16.LockClosed)" class="label-icon" /> Contraseña</label>
+                    <InputText type="password" class="input input-center" @bind-Value="model.Password" />
+                    <ValidationMessage For="() => model.Password" />
+                </div>
+
+                <div class="actions actions-center">
+                    <button class="btn btn-primary" disabled="@busy">@(busy ? "Ingresando…" : "Ingresar")</button>
+                    <a href="/forgot-password" class="btn">Olvidé mi contraseña</a>
+                </div>
             </div>
-            <label>Contraseña</label>
-            <div>
-                <InputText type="password" class="input" @bind-Value="model.Password" />
-                <ValidationMessage For="() => model.Password" />
-            </div>
+
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="error" style="margin-top:.5rem; color:var(--danger-foreground)">@error</div>
+            }
         </div>
-        <div style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
-            <button class="btn btn-primary" disabled="@busy">@(busy ? "Ingresando…" : "Ingresar")</button>
-            <a href="/forgot-password" class="btn">Olvidé mi contraseña</a>
-        </div>
-        @if (!string.IsNullOrEmpty(error))
-        {
-            <div class="error" style="margin-top:.5rem; color:var(--danger-foreground)">@error</div>
-        }
-    </div>
-</EditForm>
+    </EditForm>
+</div>
 
 @if (require2FA)
 {

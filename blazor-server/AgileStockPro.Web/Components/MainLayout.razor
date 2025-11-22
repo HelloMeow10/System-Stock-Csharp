@@ -7,38 +7,63 @@
 @inject AgileStockPro.Web.Services.IAuthService Auth
 @inject AgileStockPro.Web.Services.Api.ITokenProvider Tokens
 @inject IToastService Toast
+@inject NavigationManager Navigation
+
+@{
+    var relative = Navigation.ToBaseRelativePath(Navigation.Uri) ?? string.Empty;
+    var relLower = relative.ToLowerInvariant();
+    // Si la ruta contiene 'login' asumimos que es la pantalla de autenticación
+    bool isAuthPage = !string.IsNullOrEmpty(relLower) && relLower.Contains("login");
+    bool showShell = !isAuthPage;
+}
 
 <div class="layout-root">
-    <header class="site-header">
-        <button class="btn" title="Contraer/Expandir menú" @onclick="ToggleSidebar">≡</button>
-        <div class="brand">AgileStockPro</div>
-        <input class="search" placeholder="Buscar..." />
-        <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
-            @if (currentUser is not null)
-            {
-                <span class="muted">@currentUser.Username (@(currentUser.IsAdmin ? "Admin" : "Usuario"))</span>
-                <a class="btn" href="/change-password">Cambiar contraseña</a>
-                <button class="btn" @onclick="Logout">Salir</button>
-            }
-            else
-            {
-                <a class="btn" href="/login">Ingresar</a>
-            }
+    @if (showShell)
+    {
+        <header class="site-header">
+            <button class="btn" title="Contraer/Expandir menú" @onclick="ToggleSidebar">≡</button>
+            <div class="brand">AgileStockPro</div>
+            <input class="search" placeholder="Buscar..." />
+            <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+                @if (currentUser is not null)
+                {
+                    <span class="muted">@currentUser.Username (@(currentUser.IsAdmin ? "Admin" : "Usuario"))</span>
+                    <a class="btn" href="/change-password">Cambiar contraseña</a>
+                    <button class="btn" @onclick="Logout">Salir</button>
+                }
+                else
+                {
+                    <a class="btn" href="/login">Ingresar</a>
+                }
+            </div>
+        </header>
+    }
+
+    @if (showShell)
+    {
+        <div class="layout-body @(collapsed ? "collapsed" : null)">
+            <AgileStockPro.Web.Components.NavMenu Collapsed="collapsed" User="currentUser" />
+            <main class="content">
+                <CascadingValue Value="Toast">
+                    @Body
+                </CascadingValue>
+            </main>
         </div>
-    </header>
-    <div class="layout-body @(collapsed ? "collapsed" : null)">
-        <AgileStockPro.Web.Components.NavMenu Collapsed="collapsed" User="currentUser" />
-        <main class="content">
+    }
+    else
+    {
+        <main class="content login-only">
             <CascadingValue Value="Toast">
                 @Body
             </CascadingValue>
         </main>
-    </div>
-        <FluentToastProvider />
-        <FluentDialogProvider />
-        <FluentTooltipProvider />
-        <FluentMessageBarProvider />
-        <FluentMenuProvider />
+    }
+
+    <FluentToastProvider />
+    <FluentDialogProvider />
+    <FluentTooltipProvider />
+    <FluentMessageBarProvider />
+    <FluentMenuProvider />
 </div>
 
 @code {
