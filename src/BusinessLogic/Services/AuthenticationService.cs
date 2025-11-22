@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
+using System.Text;
 using BusinessLogic.Exceptions;
 using Contracts;
 using BusinessLogic.Security;
@@ -44,22 +46,42 @@ namespace BusinessLogic.Services
                     return AuthenticationResult.Failed("Usuario o contraseña no pueden estar vacíos.");
 
                 var usuario = await _userRepository.GetUsuarioByNombreUsuarioAsync(username);
+                if (usuario == null)
+                    return AuthenticationResult.Failed("Usuario o contraseña incorrectos.");
 
-                var validationResult = ValidateCredentials(usuario, username, password) ?? CheckAccountStatus(usuario!);
-                if (validationResult != null)
+                // Primary check: Argon2id hash
+                var argonHash = _passwordHasher.Hash(username, password);
+                if (!argonHash.SequenceEqual(usuario.ContrasenaScript))
                 {
-                    return validationResult;
+                    // Legacy fallback: SHA256(password + username) as seeded in initial SQL script
+                    var legacyComposite = password + username; // matches 'admin123admin'
+                    using var sha = SHA256.Create();
+                    var legacyHash = sha.ComputeHash(Encoding.UTF8.GetBytes(legacyComposite));
+                    if (legacyHash.SequenceEqual(usuario.ContrasenaScript))
+                    {
+                        // Upgrade stored hash to Argon2id transparently
+                        usuario.ChangePassword(argonHash);
+                        await _userRepository.UpdateUsuarioAsync(usuario);
+                    }
+                    else
+                    {
+                        return AuthenticationResult.Failed("Usuario o contraseña incorrectos.");
+                    }
                 }
+
+                var accountStatus = CheckAccountStatus(usuario);
+                if (accountStatus != null)
+                    return accountStatus;
 
                 var politica = await _securityPolicyService.GetPoliticaSeguridadAsync();
                 if (politica?.Autenticacion2FA ?? false)
                 {
-                    return await HandleTwoFactorAuthentication(username, usuario!.IdPersona);
+                    return await HandleTwoFactorAuthentication(username, usuario.IdPersona);
                 }
 
                 var userResponse = new UserResponse
                 {
-                    Username = usuario!.UsuarioNombre,
+                    Username = usuario.UsuarioNombre,
                     Rol = usuario.Rol?.Nombre,
                     CambioContrasenaObligatorio = usuario.CambioContrasenaObligatorio,
                     IdPersona = usuario.IdPersona

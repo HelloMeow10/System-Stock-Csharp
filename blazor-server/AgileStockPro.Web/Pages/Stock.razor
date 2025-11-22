@@ -1,84 +1,27 @@
 @page "/stock"
-@using BusinessLogic.Services
-@using Contracts
-@using Microsoft.AspNetCore.Authorization
-@attribute [Authorize]
-@inject IStockService StockService
-@inject Microsoft.JSInterop.IJSRuntime JS
+@inject BusinessLogic.Services.IStockService StockService
 
-<PageTitle>Stock</PageTitle>
+<h1>Stock (simplificado)</h1>
 
-<div style="padding: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>Stock</h1>
-        <FluentButton Appearance="Appearance.Accent" OnClick="@ExportCsv" Disabled="@(stockItems == null || !stockItems.Any())">Exportar CSV</FluentButton>
-    </div>
-
-    <FluentTextField @bind-Value="searchTerm" Placeholder="Buscar por producto o almacén..." Style="width: 300px; margin-bottom: 20px;" @oninput="@(e => Search(e.Value?.ToString()))" />
-
-    @if (stockItems == null)
-    {
-        <FluentProgressRing />
-    }
-    else
-    {
-        <FluentDataGrid Items="@filteredItems.AsQueryable()" ResizableColumns="true" GridTemplateColumns="1fr 1fr 0.5fr 0.5fr 0.5fr">
-            <PropertyColumn Property="@(p => p.Product)" Sortable="true" Title="Producto" />
-            <PropertyColumn Property="@(p => p.Warehouse)" Sortable="true" Title="Almacén" />
-            <PropertyColumn Property="@(p => p.Quantity)" Sortable="true" Title="Cantidad" />
-            <PropertyColumn Property="@(p => p.Min)" Sortable="true" Title="Mínimo" />
-            <PropertyColumn Property="@(p => p.Max)" Sortable="true" Title="Máximo" />
-        </FluentDataGrid>
-    }
-</div>
+@if (stockItems == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <ul>
+        @foreach (var s in stockItems)
+        {
+            <li>@s.Product (@s.Warehouse): @s.Quantity</li>
+        }
+    </ul>
+}
 
 @code {
-    private IEnumerable<StockItemDto>? stockItems;
-    private IEnumerable<StockItemDto> filteredItems = new List<StockItemDto>();
-    private string searchTerm = "";
+    private IEnumerable<Contracts.StockItemDto>? stockItems;
 
     protected override async Task OnInitializedAsync()
     {
         stockItems = await StockService.GetStockAsync();
-        filteredItems = stockItems;
-    }
-
-    private void Search(string? term)
-    {
-        searchTerm = term ?? "";
-        if (string.IsNullOrWhiteSpace(searchTerm))
-        {
-            filteredItems = stockItems ?? new List<StockItemDto>();
-        }
-        else
-        {
-            filteredItems = stockItems?.Where(i => 
-                (i.Product?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) || 
-                (i.Warehouse?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
-            ) ?? new List<StockItemDto>();
-        }
-    }
-
-    private async Task ExportCsv()
-    {
-        if (filteredItems == null || !filteredItems.Any()) return;
-
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("Producto,Almacén,Cantidad,Mín,Máx");
-        foreach (var s in filteredItems)
-        {
-            sb.AppendLine($"{Escape(s.Product)},{Escape(s.Warehouse)},{s.Quantity},{s.Min},{s.Max}");
-        }
-        await JS.InvokeVoidAsync("app.downloadFile", "stock.csv", sb.ToString(), "text/csv;charset=utf-8");
-    }
-
-    private string Escape(string s)
-    {
-        if (string.IsNullOrEmpty(s)) return "";
-        if (s.Contains(",") || s.Contains("\"") || s.Contains("\n"))
-        {
-            return $"\"{s.Replace("\"", "\"\"")}\"";
-        }
-        return s;
     }
 }
