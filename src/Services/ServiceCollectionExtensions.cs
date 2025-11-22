@@ -36,6 +36,18 @@ namespace Services
             // Register the generic factory for paged responses by its concrete type
             services.AddScoped(typeof(PagedResponseLinksFactory<>));
 
+            // Add CORS to allow requests from Blazor web app
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowBlazer", builder =>
+                {
+                    builder.WithOrigins("http://localhost:5173", "https://localhost:5173")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+                });
+            });
+
             return services;
         }
 

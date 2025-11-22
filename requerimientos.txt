@@ -1,0 +1,184 @@
+Ok tenemos que terminar el proyecto anual de 7mo, con esto me recibo de técnico en programación de la técnica n°7 de banfield.
+el proyecto se dividio en 2, la primer parte del año es un sistema de login con los siguientes requerimientos: "Requerimientos para Sistema de Gestión de Usuarios
+A través de este trabajo práctico, se evaluará gran parte del primer cuatrimestre, constando de
+dos calificaciones, una grupal, y una segunda individual en base a la defensa oral del trabajo
+realizado.
+Si bien el trabajo se realizará en equipos de 4 o 5 participantes, cuyas tareas serán diversas
+dentro del equipo de trabajo, cada participante del grupo deberá saber todos los contenidos
+abordados en dicho trabajo práctico, dado que los conocimientos en cada tema particular,
+forman parte de los saberes que deben adquirir como técnicos en programación.
+Cabe aclarar, que tomando parte de la modalidad de trabajo de la metodología ágil “Scrum”, si
+bien cada participante del equipo tendrá una responsabilidad sobre determinadas tareas, al
+momento de finalizar su tarea particular, deberá ponerse a disposición del equipo para
+colaborar con el compañero que lo requiera; está disposición al trabajo en equipo, también
+conformará una calificación de “desempeño global”.
+
+Todo el sistema deberá estar realizado bajo el paradigma de Programación Orientada a
+Objetos (POO) con sus respectivas clases y en arquitectura N-Capas, conteniendo al menos 5
+capas (Vista, Lógica, Datos, Sesión y Servicios), opcionalmente sería recomendable adjuntar
+la capa de “Sistema”. La base de datos del sistema deberá ser realizada en el motor de
+bases de datos SQL Server.
+1)El formulario de Login deberá enviar la contraseña encriptada en SHA256.
+2) Al momento de guardar la contraseña elegida por el usuario, a la misma se le deberá adosar
+el nombre de usuario, encriptando ambos y guardando como contraseña la concatenación de
+ambos campos.
+3) Deberá generar una primera contraseña aleatoria al momento de dar de alta al usuario la
+cual el sistema reconocerá como primera contraseña, y obligará al usuario a cambiarla antes
+de ingresar al sistema. En ese mismo acto, le proporcionará una serie de preguntas de
+seguridad a las cuales dicho usuario deberá dejar grabada en el sistema la respuesta.
+4) El sistema deberá contar con un botón o link en su pantalla de logueo, para recuperar la
+contraseña en caso de haber sido olvidada, la cual se generará automática y aleatoriamente
+por el sistema, siendo esta enviada a un correo registrado al momento de dar de alta al
+usuario, dicho proceso será efectivo posterior a que el usuario responda correctamente las
+preguntas de seguridad del punto 3. Acto seguido a la generación de la nueva contraseña, el
+sistema deberá obligar nuevamente al usuario a cambiarla por una a su elección.
+5) El sistema deberá contemplar y proporcionar una pantalla de configuración del mismo, solo
+accedida por el administrador, donde se podrá optar por diversas políticas de seguridad tales
+como:
+
+a) Verificación de mínimo de caracteres en contraseña.
+b) Cantidad de preguntas a responder por el usuario (Ej: 2 – 3 – 5)
+c) Si se obligara combinación de mayúsculas y minúsculas.
+d) Si se obligara a que contenga números y letras.
+e) Si se obligara a que contenga al menos un carácter especial.
+f) Si se pedirá autenticación en dos FA (autenticación en 2 pasos) utilizando para
+ello el correo del usuario.
+
+g) Si no permitirá repetir contraseñas anteriores (para ello el sistema deberá
+guardar un registro de todas las contraseñas utilizadas por el usuario
+anteriormente)
+h) Verificar no contener datos personales, o parte de ellos, registrados al
+momento del alta del sistema (como por ejemplo parte del nombre, parte del
+apellido, la fecha de nacimiento, etc.)
+
+6) Al ingresar al sistema, el mismo deberá abrir una pantalla general con un menú el cual le
+dará acceso al usuario a un formulario de mantenimiento de usuarios, donde dependiendo de
+los permisos (administrador o usuario general) podrá siendo administrador, dar de alta, baja o
+modificación de usuarios en un formulario, y en otro manejar la configuración del sistema.
+Para el caso de los usuarios generales solamente podrán cambiar su propia contraseña o sus
+preguntas de seguridad." y la segunda parte del año un sistema de stock con los siguientes requerimientos : "Documento de Requerimientos
+
+Sistema de Compras, Ventas y Gestión de Stock
+
+1. Introducción
+El presente documento describe los requerimientos funcionales y no funcionales de un sistema
+destinado a la gestión administrativa de un comercio genérico. El sistema permitirá la
+administración de productos, compras a proveedores, ventas a clientes y control de stock.
+2. Objetivos del sistema
+Automatizar el registro de compras y ventas.
+Mantener actualizado el stock de productos en tiempo real.
+Generar reportes de movimientos, compras y ventas.
+Facilitar la consulta rápida de productos, clientes y proveedores.
+3. Alcance
+El sistema estará diseñado para un comercio de rubro genérico.
+Permitirá:
+Cargar productos con precios y stock.
+Registrar compras a proveedores.
+Registrar ventas a clientes.
+Consultar movimientos de stock.
+Emitir reportes básicos de gestión.
+
+4. Requerimientos funcionales
+4.1 Módulo Compras
+4.1.1 Productos
+RF-01: Alta, baja y modificación de productos.
+RF-02: Cada producto tendrá: Código, Categoría, Nombre, Descripción, Marca,
+Vencimiento, Lote, unidades de tiempo para aviso de “Próximo a vencer”, Precio
+de compra, Precio de venta, Stock actual, Stock mínimo, Stock Ideal, Stock
+Máximo punto de reposición, Tipo de Stock (existencia o JIT).
+RF-03: Consulta de productos por código, nombre, categoría, Marca.
+RF-04: Al ingresar al módulo, el sistema deberá mostrar de manera automática (si lo
+hubiera) un aviso con los productos por debajo del punto de reposición.
+RF-05: Reporte de productos por debajo del stock mínimo, punto de reposición,
+vencidos y próximos a vencer.
+4.1.2 Proveedores
+RF-06: Alta, baja y modificación de proveedores.
+
+RF-07: Cada proveedor tendrá: Código, Nombre/Razón Social, Teléfonos, Email,
+Dirección, Formas de Pago, tiempos de entrega, Descuentos Otorgados,
+Categorías de Productos ofrecidos.
+RF-08: Un proveedor puede tener múltiples teléfonos registrados (deberá contar con
+una agenda para cada proveedor. - Contacto – Sector – Horarios – email - etc.).
+RF-09: Un proveedor puede tener múltiples direcciones (por ejemplo, sucursales o
+depósitos).
+RF-10: Deberá considerar persistir: Forma de Pago, Descuentos obtenidos, Tiempos de
+entrega de la mercadería, catálogo de productos del proveedor - etc.
+RF-11: Consulta de proveedores por nombre, CUIT.
+RF-12: El módulo deberá contar con un formulario/pantalla donde se pueda relacionar
+Producto/Proveedor o viceversa, es decir que el usuario pueda buscar y modificar
+en caso de ser necesario, que proveedores comercializan un determinado
+producto, o visualizar todos los productos que comercializa un determinado
+proveedor.
+4.1.3 Compras y Estados Contables
+RF-13: Emisión/Registración de Presupuestos. (Compras a proveedores).
+RF-14: Emisión/Registración de Orden de Compra (Compras a proveedores).
+RF-15: Consulta de pedidos realizados (Entregado y sin entregar).
+RF-16: Posibilidad de visualizar el ingreso del remito, realizado por el sector Depósito
+(entrada al stock, con o sin factura inmediata).
+RF-17: Ingreso y registro de Facturas Compras. (Las mismas deben ser visadas por
+Almacenes en cuanto al ingreso de la mercadería, o así también que se puedan
+relacionar los remitos ingresados por Almacenes que se encuentran afectados a
+dicha factura) (solo a los fines de registro contable, ya que el ingreso de la
+mercadería lo realiza el sector almacenes)
+RF-18: Ingreso y registro de Notas de Crédito.
+RF-19: Ingreso y registro de Notas de Débito.
+RF-20: Reporte de compras por fecha, proveedor o producto.
+RF-21: Reporte de productos devueltos a proveedores, con motivo y rango de fechas.
+
+4.2 Módulo Ventas
+4.2.1 Clientes
+RF-22: Alta, baja y modificación de clientes.
+RF-23: Cada cliente tendrá: Código, Nombre/Razón Social, Teléfonos, Email, Dirección
+Formas de Pago, Descuentos otorgados y Límite de crédito.
+RF-24: Un cliente puede tener múltiples teléfonos registrados. (deberá contar con una
+agenda para cada proveedor. - Contacto – Sector – Horarios – email - etc.).
+RF-25: Un cliente puede tener múltiples direcciones (por ejemplo, sucursales o
+depósitos).
+RF-26: Consultar clientes por Nombre/Razón Social o DNI/CUIT.
+4.2.2 Ventas
+RF-27: Emisión/Registración de Presupuesto de Ventas.
+
+RF-28: Emisión/Registración de Nota de Pedido (Ventas) teniendo en cuenta tiempos de
+entrega del producto al cliente. La misma al momento de realizarse, deberá
+validar que el producto se encuentre en existencia en el Stock (o que el producto
+tenga un tipo de Stock JIT, para este caso deberá enviar un mensaje a Compras
+para que realice la misma). Todos los productos ingresados a la Nota de Pedido,
+serán enviados a un stock de “Productos Reservados”, actualizando el stock
+automáticamente al confirmar la venta.
+RF-29: Emisión/Registración de Nota de Crédito.
+RF-30: Emisión/Registración de Nota de Débito.
+RF-31: Devolución del producto al stock en caso de anulación/cancelación de facturas.
+RF-32: Reporte de ventas por fecha o rango de fechas de cliente, producto, categoría,
+devoluciones.
+
+4.3 Módulo Almacenes (Gestión de Stock/Control de Mercadería)
+RF-33: Ingreso de Mercadería (Registración de remitos o mercadería ingresada en
+factura de compra). El ingreso de esta mercadería deberá consignarse sobre las
+ordenes de compra realizadas al proveedor por el sector Compras. En caso de
+devoluciones el sistema deberá considerar el motivo de dicha devolución, sin
+ingreso de la mercadería al Stock.
+RF-34: Reporte de movimientos de stock (entradas/salidas).
+RF-35: Manejo de Scrap: Este módulo deberá contar con un manejo del Scrap (Productos
+a pérdida) donde deberán poder moverse del Stock a Scrap por los siguientes
+motivos: por daños, vencidos, obsoletos o no cumplir con los estándares de
+calidad. En este apartado deberán figurar los datos del usuario que deriva el
+producto, la fecha de derivación y el motivo por el cual se envía a Scrap (daños,
+vencidos, obsoletos, etc.). Además, deberán contemplarse los reportes
+correspondientes como por ejemplo: Por producto, por motivo de ingreso al
+Scrap, por rango de fechas o una fecha específica, por usuario que envió a Scrap,
+etc. (estos reportes deberán estar valorizados). Este módulo será accedido tanto
+por el sector Almacenes como por el sector compra (el primero para poder
+realizar los movimientos y el segundo para poder consultar y visualizar)
+
+5. Requerimientos no funcionales
+RNF-01: El sistema debe desarrollarse en lenguaje C# (Windows Forms) utilizando una
+arquitectura en N Capas.
+RNF-02: La persistencia de datos se realizará en SQL Server.
+RFN-03: La manipulación de los datos deberá ser a través de Procedimientos
+Almacenados.
+RNF-04: El sistema debe permitir operar en una PC de escritorio estándar.
+RNF-05: La interfaz debe ser intuitiva y amigable.
+RNF-06: El sistema debe manejar validaciones de campos obligatorios.
+RFN-07: El sistema deberá contar con un formulario de configuración del mismo, solo
+accedido por un administrador principal del sistema. En el mismo se deberán
+consignar por ejemplo las diferentes rutas (persistencia de datos, etc)" el profesor me dijo que en cuanto a la encriptacion no use hash 256 ya que es antiguo que use algo mas moderno y me dijo que lo primordial es que termine el apartado web, que tiene que tener una estetica con fluent ui, hecho con blazor server. asi que nada, analiza que le falta al proyecto para estar terminado al 100% con stock de blazor server. Tanto frontend como backend completos, en un futuro terminaremos la parte de escritorio.

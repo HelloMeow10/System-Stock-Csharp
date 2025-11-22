@@ -21,7 +21,7 @@ namespace DataAccess.Repositories
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private async Task<T> ExecuteReaderAsync<T>(string sql, Func<SqlDataReader, Task<T>> map, Action<SqlParameterCollection>? addParameters = null, CommandType commandType = CommandType.Text)
+    private async Task<T> ExecuteReaderAsync<T>(string sql, Func<SqlDataReader, Task<T>> map, Action<SqlParameterCollection>? addParameters = null, CommandType commandType = CommandType.Text)
         {
             using (var connection = (SqlConnection)_connectionFactory.CreateConnection())
             {
@@ -63,7 +63,7 @@ namespace DataAccess.Repositories
             }
         }
 
-        public async Task<PoliticaSeguridad?> GetPoliticaSeguridadAsync() => await ExecuteReaderAsync("SELECT TOP 1 * FROM politicas_seguridad;", async reader =>
+        public async Task<PoliticaSeguridad?> GetPoliticaSeguridadAsync() => await ExecuteReaderAsync("sp_get_politica_seguridad", async reader =>
         {
             if (!await reader.ReadAsync()) return null;
             return new PoliticaSeguridad(
@@ -77,7 +77,7 @@ namespace DataAccess.Repositories
                 reader["min_caracteres"] as int? ?? 8,
                 reader["cant_preguntas"] as int? ?? 3
             );
-        });
+        }, null, CommandType.StoredProcedure);
 
         public async Task UpdatePoliticaSeguridadAsync(PoliticaSeguridad politica) => await ExecuteNonQueryAsync("sp_update_politica_seguridad", p =>
         {
@@ -92,7 +92,7 @@ namespace DataAccess.Repositories
             p.AddWithValue("@sin_datos_personales", (object)politica.SinDatosPersonales ?? DBNull.Value);
         }, CommandType.StoredProcedure);
 
-        public async Task<List<PreguntaSeguridad>> GetPreguntasSeguridadAsync() => await ExecuteReaderAsync("SELECT id_pregunta, pregunta FROM preguntas_seguridad;", async reader =>
+        public async Task<List<PreguntaSeguridad>> GetPreguntasSeguridadAsync() => await ExecuteReaderAsync("sp_get_preguntas_seguridad", async reader =>
         {
             var list = new List<PreguntaSeguridad>();
             while (await reader.ReadAsync())
@@ -100,7 +100,7 @@ namespace DataAccess.Repositories
                 list.Add(new PreguntaSeguridad { IdPregunta = (int)reader["id_pregunta"], Pregunta = (string)reader["pregunta"] });
             }
             return list;
-        });
+        }, null, CommandType.StoredProcedure);
 
         public async Task<List<PreguntaSeguridad>> GetPreguntasSeguridadByIdsAsync(List<int> ids)
         {
@@ -109,34 +109,13 @@ namespace DataAccess.Repositories
                 return new List<PreguntaSeguridad>();
             }
 
-            var parameterNames = new List<string>();
-            for (int i = 0; i < ids.Count; i++)
-            {
-                parameterNames.Add($"@id{i}");
-            }
-
-            var sql = $"SELECT id_pregunta, pregunta FROM preguntas_seguridad WHERE id_pregunta IN ({string.Join(",", parameterNames)})";
-
-            Action<SqlParameterCollection> addParametersAction = p =>
-            {
-                for (int i = 0; i < ids.Count; i++)
-                {
-                    p.AddWithValue(parameterNames[i], ids[i]);
-                }
-            };
-
-            return await ExecuteReaderAsync(sql, async reader =>
-            {
-                var list = new List<PreguntaSeguridad>();
-                while (await reader.ReadAsync())
-                {
-                    list.Add(new PreguntaSeguridad { IdPregunta = (int)reader["id_pregunta"], Pregunta = (string)reader["pregunta"] });
-                }
-                return list;
-            }, addParametersAction, CommandType.Text);
+            // Para simplificar y mantener todo por SP, reutilizamos el SP de todas las preguntas
+            // y filtramos en memoria. Esto sigue cumpliendo el requisito de no usar SQL directo.
+            var all = await GetPreguntasSeguridadAsync();
+            return all.Where(p => ids.Contains(p.IdPregunta)).ToList();
         }
 
-        public async Task<List<RespuestaSeguridad>?> GetRespuestasSeguridadByUsuarioIdAsync(int idUsuario) => await ExecuteReaderAsync("SELECT id_usuario, id_pregunta, respuesta FROM respuestas_seguridad WHERE id_usuario = @id_usuario;", async reader =>
+        public async Task<List<RespuestaSeguridad>?> GetRespuestasSeguridadByUsuarioIdAsync(int idUsuario) => await ExecuteReaderAsync("sp_get_respuestas_seguridad_by_usuario", async reader =>
         {
             var list = new List<RespuestaSeguridad>();
             while (await reader.ReadAsync())
@@ -144,7 +123,7 @@ namespace DataAccess.Repositories
                 list.Add(new RespuestaSeguridad { IdUsuario = (int)reader["id_usuario"], IdPregunta = (int)reader["id_pregunta"], Respuesta = (string)reader["respuesta"] });
             }
             return list;
-        }, p => p.AddWithValue("@id_usuario", idUsuario));
+        }, p => p.AddWithValue("@id_usuario", idUsuario), CommandType.StoredProcedure);
 
         public async Task AddRespuestaSeguridadAsync(RespuestaSeguridad respuesta) => await ExecuteNonQueryAsync("sp_insert_respuesta_seguridad", p =>
         {
@@ -154,9 +133,9 @@ namespace DataAccess.Repositories
         }, CommandType.StoredProcedure);
 
         public async Task DeleteRespuestasSeguridadByUsuarioIdAsync(int usuarioId) => await ExecuteNonQueryAsync(
-            "DELETE FROM respuestas_seguridad WHERE id_usuario = @id_usuario",
+            "sp_delete_respuestas_seguridad_by_usuario",
             p => p.AddWithValue("@id_usuario", usuarioId),
-            CommandType.Text
+            CommandType.StoredProcedure
         );
     }
 }

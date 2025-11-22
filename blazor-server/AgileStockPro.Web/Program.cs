@@ -1,47 +1,62 @@
 using Microsoft.FluentUI.AspNetCore.Components;
 using AgileStockPro.Web.Services;
+using BusinessLogic;
+using DataAccess;
+using Microsoft.AspNetCore.Components.Authorization;
+using AgileStockPro.Web.Auth;
+using AgileStockPro.Web.Services.Api;
+using AgileStockPro.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container (classic Blazor Server)
+// Add services to the container.
 builder.Services.AddRazorPages();
-var blazorBuilder = builder.Services.AddServerSideBlazor();
-if (builder.Environment.IsDevelopment())
-{
-    blazorBuilder.AddCircuitOptions(o => o.DetailedErrors = true);
-}
+builder.Services.AddServerSideBlazor()
+    .AddCircuitOptions(o => o.DetailedErrors = true);
 builder.Services.AddHttpContextAccessor();
 
-// Per Fluent docs, register HttpClient before AddFluentUIComponents
+// Fluent UI
 builder.Services.AddHttpClient();
 builder.Services.AddFluentUIComponents();
 
-// Register app services (start with Products; add more as you port them)
-builder.Services.AddSingleton<IProductService, ProductService>();
-builder.Services.AddSingleton<IDashboardService, DashboardService>();
-builder.Services.AddSingleton<IAppDataService, AppDataService>();
+// Backend Services (N-Layer)
+builder.Services.AddDataAccess(builder.Configuration);
+builder.Services.AddBusinessLogic(builder.Configuration);
 
-// API integration
-builder.Services.AddSingleton(new AgileStockPro.Web.Services.Api.ApiOptions { BaseUrl = "http://localhost:5000/" });
-builder.Services.AddScoped<AgileStockPro.Web.Services.Api.ITokenProvider, AgileStockPro.Web.Services.Api.TokenProvider>();
-builder.Services.AddHttpClient<AgileStockPro.Web.Services.Api.BackendApiClient>()
-    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-    {
-        UseCookies = true,
-        CookieContainer = new System.Net.CookieContainer()
-    });
-builder.Services.AddScoped<IUserStore, AgileStockPro.Web.Services.Api.ApiUserStore>();
-builder.Services.AddScoped<IAuthService, AgileStockPro.Web.Services.Api.ApiAuthService>();
+// Authentication
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies");
+
+// API options & token provider & backend client
+builder.Services.AddScoped<ITokenProvider, TokenProvider>();
+builder.Services.AddSingleton(new ApiOptions { BaseUrl = "http://localhost:5000/" });
+builder.Services.AddScoped<BackendApiClient>();
+
+// App services (Auth, User store, Toast, etc.)
+// Switch to API-backed auth service (real backend + JWT) instead of in-memory AuthService
+builder.Services.AddScoped<IAuthService, ApiAuthService>();
+builder.Services.AddSingleton<AgileStockPro.Web.Services.IUserStore, AgileStockPro.Web.Services.UserStoreInMemory>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 var app = builder.Build();
 
+// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
 }
 
+app.UseHttpsRedirection();
+
 app.UseStaticFiles();
+
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

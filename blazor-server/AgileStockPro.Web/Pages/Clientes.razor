@@ -1,65 +1,83 @@
 @page "/clientes"
-@using AgileStockPro.Web.Services
-@using AgileStockPro.Web.Models
-@using AgileStockPro.Web.Components
-@inject IAppDataService Data
+@using BusinessLogic.Services
+@using Contracts
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IClientService ClientService
+@inject IDialogService DialogService
 
-<AuthGuard>
-<PageHeader Title="Clientes" />
+<PageTitle>Clientes</PageTitle>
 
-<div style="margin-bottom:.75rem">
-	<input class="search" placeholder="Buscar por nombre o email..." @bind-value="term" @bind-value:event="oninput" />
-  </div>
+<div style="padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>Clientes</h1>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@AddClient">Nuevo Cliente</FluentButton>
+    </div>
 
-@if (items is null)
-{
-	<p>Cargando...</p>
-}
+    <FluentTextField @bind-Value="searchTerm" Placeholder="Buscar por nombre o CUIT..." Style="width: 300px; margin-bottom: 20px;" @oninput="@(e => Search(e.Value?.ToString()))" />
 
-@if (!string.IsNullOrWhiteSpace(error))
-{
-	<div class="error">@error</div>
-}
-else
-{
-	<table>
-		<thead>
-			<tr>
-				<th>Id</th>
-				<th>Nombre</th>
-				<th>Email</th>
-				<th>Teléfono</th>
-			</tr>
-		</thead>
-		<tbody>
-		@foreach (var c in View)
-		{
-			<tr>
-				<td>@c.Id</td>
-				<td>@c.Name</td>
-				<td>@c.Email</td>
-				<td>@c.Phone</td>
-			</tr>
-		}
-		</tbody>
-	</table>
-}
-
-</AuthGuard>
+    @if (clients == null)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+        <FluentDataGrid Items="@clients.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.5fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr">
+            <PropertyColumn Property="@(p => p.Id)" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Codigo)" Sortable="true" Title="Código" />
+            <PropertyColumn Property="@(p => p.Nombre)" Sortable="true" />
+            <PropertyColumn Property="@(p => p.RazonSocial)" Sortable="true" Title="Razón Social" />
+            <PropertyColumn Property="@(p => p.CuitDni)" Sortable="true" Title="CUIT/DNI" />
+            <PropertyColumn Property="@(p => p.LimiteCredito)" Sortable="true" Title="Límite Crédito" />
+            <PropertyColumn Property="@(p => p.Descuento)" Sortable="true" Title="Descuento %" />
+            <TemplateColumn Title="Acciones">
+                <FluentButton IconEnd="@(new Icons.Regular.Size16.Edit())" OnClick="@(() => Edit(context))" Appearance="Appearance.Lightweight" />
+                <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => Delete(context))" Appearance="Appearance.Lightweight" />
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+</div>
 
 @code {
-	private IReadOnlyList<Customer>? items;
-	private string? error;
-	private string term = string.Empty;
+    private IEnumerable<ClientDto>? clients;
+    private string searchTerm = "";
 
-	protected override async Task OnInitializedAsync()
-	{
-		try { items = await Data.GetCustomersAsync(); }
-		catch (Exception ex) { error = ex.Message; }
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
 
-	private IEnumerable<Customer> View => (items ?? Array.Empty<Customer>())
-		.Where(s => string.IsNullOrWhiteSpace(term)
-			|| (s.Name?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
-			|| (s.Email?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+    private async Task LoadData()
+    {
+        clients = await ClientService.GetAllAsync();
+    }
+
+    private async Task Search(string? term)
+    {
+        searchTerm = term ?? "";
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadData();
+        }
+        else
+        {
+            clients = await ClientService.SearchAsync(searchTerm);
+        }
+    }
+
+    private async Task AddClient()
+    {
+        // TODO: Implement Dialog
+    }
+
+    private async Task Edit(ClientDto client)
+    {
+        // TODO: Implement Dialog
+    }
+
+    private async Task Delete(ClientDto client)
+    {
+        await ClientService.DeleteAsync(client.Id);
+        await LoadData();
+    }
 }

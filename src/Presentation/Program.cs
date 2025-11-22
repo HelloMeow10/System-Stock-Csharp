@@ -51,6 +51,15 @@ namespace Presentation
                                      throw new InvalidOperationException("API Base URL not found in configuration.");
                     services.AddSingleton(new ApiClient.ApiClient(apiBaseUrl));
 
+                    // Register SignalR client pointing to backend hub
+                    var hubUrl = apiBaseUrl.TrimEnd('/') + "/hubs/notifications";
+                    var signalRClient = new Presentation.Services.SignalRClient(hubUrl);
+                    services.AddSingleton(signalRClient);
+
+                    // Start signalR connection after host built - we'll start it synchronously here
+                    // (non-blocking). If this throws, it won't break the app startup.
+                    _ = signalRClient.StartAsync();
+
                     // Register Forms
                     services.AddTransient<LoginForm>();
                     services.AddTransient<AdminForm>();

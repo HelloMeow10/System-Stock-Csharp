@@ -1,162 +1,59 @@
 @page "/ventas"
-@using AgileStockPro.Web.Components.Dashboard
-@using AgileStockPro.Web.Services
-@using AgileStockPro.Web.Models
-@inject IAppDataService Data
+@using BusinessLogic.Services
+@using Contracts
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ISalesService SalesService
+@inject IDialogService DialogService
 
-<AgileStockPro.Web.Components.AuthGuard>
-<PageHeader Title="Ventas" Subtitle="Resumen de los últimos 30 días" />
+<PageTitle>Ventas</PageTitle>
 
-@if (invoices is null || orders is null)
-{
-	<p>Cargando...</p>
-}
+<div style="padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>Ventas</h1>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@CreateSale">Nueva Venta</FluentButton>
+    </div>
 
-</AgileStockPro.Web.Components.AuthGuard>
-else
-{
-	<div class="dashboard-cards">
-		<StatCard Model="kpiIngresos" />
-		<StatCard Model="kpiOrdenes" />
-		<StatCard Model="kpiTicket" />
-	</div>
+    <div style="margin-bottom: 20px;">
+        <FluentDatePicker @bind-Value="startDate" Label="Desde" />
+        <FluentDatePicker @bind-Value="endDate" Label="Hasta" />
+        <FluentButton OnClick="@LoadData">Filtrar</FluentButton>
+    </div>
 
-	<div class="dashboard-panels">
-		<section class="panel">
-			<div class="panel-header">Top clientes</div>
-			<table>
-				<thead>
-					<tr>
-						<th>Cliente</th>
-						<th>Facturas</th>
-						<th>Total</th>
-					</tr>
-				</thead>
-				<tbody>
-				@foreach (var c in topClientes)
-				{
-					<tr>
-						<td>@c.Customer</td>
-						<td>@c.Count</td>
-						<td>@c.Total.ToString("C")</td>
-					</tr>
-				}
-				</tbody>
-			</table>
-		</section>
-		<section class="panel">
-			<div class="panel-header">Últimas facturas</div>
-			<table>
-				<thead>
-					<tr>
-						<th>#</th>
-						<th>Cliente</th>
-						<th>Fecha</th>
-						<th>Total</th>
-						<th>Estado</th>
-					</tr>
-				</thead>
-				<tbody>
-				@foreach (var f in ultimasFacturas)
-				{
-					<tr>
-						<td>@f.Id</td>
-						<td>@f.Customer</td>
-						<td>@f.Date.ToString("dd/MM/yyyy")</td>
-						<td>@f.Total.ToString("C")</td>
-						<td>@f.Status</td>
-					</tr>
-				}
-				</tbody>
-			</table>
-		</section>
-	</div>
-}
+    @if (sales == null)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+        <FluentDataGrid Items="@sales.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.5fr 1fr 1fr 1fr 1fr 1fr">
+            <PropertyColumn Property="@(p => p.Id)" Sortable="true" Title="#" />
+            <PropertyColumn Property="@(p => p.Cliente)" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Sortable="true" />
+            <PropertyColumn Property="@(p => p.TipoDocumento)" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Total)" Format="C2" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Estado)" Sortable="true" />
+        </FluentDataGrid>
+    }
+</div>
 
 @code {
-	private IReadOnlyList<Factura>? invoices;
-	private IReadOnlyList<Pedido>? orders;
+    private IEnumerable<SaleOrderDto>? sales;
+    private DateTime? startDate = DateTime.Today.AddDays(-30);
+    private DateTime? endDate = DateTime.Today;
 
-	private DateTime desde;
-	private DateTime hasta;
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
 
-	private decimal ingresos;
-	private decimal ticketPromedio;
-	private int cantPedidos;
-	private double deltaIngresos;
-	private double deltaPedidos;
+    private async Task LoadData()
+    {
+        sales = await SalesService.GetSalesAsync(startDate, endDate, null);
+    }
 
-	private List<(string Customer, int Count, decimal Total)> topClientes = new();
-	private List<Factura> ultimasFacturas = new();
-
-	private StatsCardModel kpiIngresos = new();
-	private StatsCardModel kpiOrdenes = new();
-	private StatsCardModel kpiTicket = new();
-
-	protected override async Task OnInitializedAsync()
-	{
-		hasta = DateTime.Today;
-		desde = hasta.AddDays(-30);
-		invoices = await Data.GetInvoicesAsync();
-		orders = await Data.GetOrdersAsync();
-
-		CalcularMetricas();
-	}
-
-	private void CalcularMetricas()
-	{
-		var invPeriodo = invoices!.Where(i => i.Date >= desde && i.Date <= hasta).ToList();
-		var invAnterior = invoices!.Where(i => i.Date >= desde.AddDays(-30) && i.Date < desde).ToList();
-
-		ingresos = invPeriodo.Sum(i => i.Total);
-		var ingresosAnterior = invAnterior.Sum(i => i.Total);
-		deltaIngresos = ingresosAnterior == 0 ? 0 : (double)((ingresos - ingresosAnterior) / ingresosAnterior * 100);
-
-		var facturasPeriodo = invPeriodo.Count;
-		ticketPromedio = facturasPeriodo == 0 ? 0 : ingresos / facturasPeriodo;
-
-		var pedidosPeriodo = orders!.Count(o => o.Date >= desde && o.Date <= hasta);
-		var pedidosAnterior = orders!.Count(o => o.Date >= desde.AddDays(-30) && o.Date < desde);
-		cantPedidos = pedidosPeriodo;
-		deltaPedidos = pedidosAnterior == 0 ? 0 : (double)((pedidosPeriodo - pedidosAnterior) / (double)pedidosAnterior * 100);
-
-		topClientes = invPeriodo
-			.GroupBy(i => i.Customer)
-			.Select(g => (Customer: g.Key, Count: g.Count(), Total: g.Sum(x => x.Total)))
-			.OrderByDescending(x => x.Total)
-			.Take(5)
-			.ToList();
-
-		ultimasFacturas = invPeriodo
-			.OrderByDescending(i => i.Date)
-			.Take(10)
-			.ToList();
-
-		kpiIngresos = new StatsCardModel
-		{
-			Title = "Ingresos",
-			Subtitle = "últimos 30 días",
-			Value = ingresos.ToString("C"),
-			Delta = $"{(deltaIngresos >= 0 ? "+" : "-")}{Math.Abs(deltaIngresos):0}%",
-			DeltaAria = "Variación respecto al período anterior",
-			Accent = "success"
-		};
-
-		kpiOrdenes = new StatsCardModel
-		{
-			Title = "Órdenes",
-			Subtitle = "últimos 30 días",
-			Value = cantPedidos.ToString(),
-			Delta = $"{(deltaPedidos >= 0 ? "+" : "-")}{Math.Abs(deltaPedidos):0}%",
-			Accent = "accent"
-		};
-
-		kpiTicket = new StatsCardModel
-		{
-			Title = "Ticket promedio",
-			Subtitle = "facturas",
-			Value = ticketPromedio.ToString("C"),
-			Accent = "warning"
-		};
-	}
+    private async Task CreateSale()
+    {
+        // TODO: Implement Dialog for creating sale
+    }
 }

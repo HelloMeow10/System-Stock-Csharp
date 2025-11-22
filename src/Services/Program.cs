@@ -10,12 +10,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- Service Registration ---
 
+// SignalR
+builder.Services.AddSignalR();
+
 // Add services to the container.
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddApiServices();
 builder.Services.AddApiVersioningServices();
 builder.Services.AddBusinessLogic(builder.Configuration);
-builder.Services.AddDataAccess();
+builder.Services.AddDataAccess(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddHealthChecks()
@@ -60,6 +63,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowBlazer");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -75,6 +80,10 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = (_) => false
 });
+
+
+// Map SignalR hub for notifications
+app.MapHub<Services.Hubs.NotificationHub>("/hubs/notifications");
 
 
 app.Run();

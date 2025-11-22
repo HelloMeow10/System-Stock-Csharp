@@ -75,25 +75,16 @@ namespace DataAccess.Repositories
 
         public async Task<Persona?> GetPersonaByIdAsync(int id)
         {
-            var sql = GetBasePersonaQuery() + " WHERE p.id_persona = @id";
-
-            return await ExecuteReaderAsync(sql, async reader =>
+            return await ExecuteReaderAsync("sp_get_persona_by_id", async reader =>
             {
                 if (!await reader.ReadAsync()) return null;
                 return MapToPersona(reader);
-            }, p => p.AddWithValue("@id", id));
+            }, p => p.AddWithValue("@id_persona", id), CommandType.StoredProcedure);
         }
 
         public async Task<PagedList<Persona>> GetPersonasAsync(PaginationParams paginationParams)
         {
-            var allPersonas = await GetAllPersonasAsync();
-            return PagedList<Persona>.ToPagedList(allPersonas, paginationParams.PageNumber, paginationParams.PageSize);
-        }
-
-        private async Task<List<Persona>> GetAllPersonasAsync()
-        {
-            var sql = GetBasePersonaQuery();
-            return await ExecuteReaderAsync(sql, async reader =>
+            var allPersonas = await ExecuteReaderAsync("sp_get_personas", async reader =>
             {
                 var personas = new List<Persona>();
                 while (await reader.ReadAsync())
@@ -101,7 +92,9 @@ namespace DataAccess.Repositories
                     personas.Add(MapToPersona(reader));
                 }
                 return personas;
-            });
+            }, null, CommandType.StoredProcedure);
+
+            return PagedList<Persona>.ToPagedList(allPersonas, paginationParams.PageNumber, paginationParams.PageSize);
         }
 
         public async Task AddPersonaAsync(Persona persona)
@@ -129,31 +122,7 @@ namespace DataAccess.Repositories
             });
         }
 
-        private static string GetBasePersonaQuery()
-        {
-            return @"
-                SELECT
-                    p.id_persona, p.legajo, p.nombre, p.apellido, p.id_tipo_doc, p.num_doc, p.fecha_nacimiento, p.cuil, p.calle, p.altura, p.id_localidad, p.id_genero, p.correo, p.celular, p.fecha_ingreso,
-                    td.tipo_doc AS TipoDocNombre,
-                    l.localidad AS LocalidadNombre,
-                    pa.id_partido AS IdPartido,
-                    pa.partido AS PartidoNombre,
-                    pr.id_provincia AS IdProvincia,
-                    pr.provincia AS ProvinciaNombre,
-                    g.genero AS GeneroNombre
-                FROM
-                    personas p
-                LEFT JOIN
-                    tipo_doc td ON p.id_tipo_doc = td.id_tipo_doc
-                LEFT JOIN
-                    localidades l ON p.id_localidad = l.id_localidad
-                LEFT JOIN
-                    partidos pa ON l.id_partido = pa.id_partido
-                LEFT JOIN
-                    provincias pr ON pa.id_provincia = pr.id_provincia
-                LEFT JOIN
-                    generos g ON p.id_genero = g.id_genero";
-        }
+        // Consulta base de personas ahora está encapsulada en los SP sp_get_persona_by_id y sp_get_personas
 
         private static Persona MapToPersona(SqlDataReader reader)
         {
