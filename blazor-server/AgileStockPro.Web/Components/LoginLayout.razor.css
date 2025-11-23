@@ -1,0 +1,69 @@
+/* Layout base */
+.login-layout { --lgn-accent:#4f46e5; --lgn-accent-alt:#4338ca; --lgn-danger:#ef4444; --lgn-bg:#ffffff; --lgn-shadow:0 26px 72px rgba(2,6,23,0.14),0 10px 28px rgba(2,6,23,0.08); min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#f7f8fb 0%, #ffffff 100%); padding:0 1.5rem; box-sizing:border-box; }
+.login-layout-inner { width:100%; display:flex; align-items:center; justify-content:center; }
+.login-layout .login-wrapper { width:100%; }
+.login-layout ::deep .login-wrapper { width:100%; display:flex; justify-content:center; }
+
+/* Card principal */
+.login-layout ::deep .lgn-card { position:relative; max-width:540px; margin:0 auto; padding:3rem 3.25rem 2.75rem; background:var(--lgn-bg); border:1px solid rgba(15,23,42,0.08); border-radius:26px; box-shadow:var(--lgn-shadow); display:flex; flex-direction:column; gap:1.9rem; overflow:hidden; transition:box-shadow .35s cubic-bezier(.22,.9,.32,1), transform .35s cubic-bezier(.22,.9,.32,1); }
+.login-layout ::deep .lgn-card::after { content:""; position:absolute; inset:0; background:radial-gradient(circle at 65% 15%, rgba(99,102,241,0.12), transparent 60%); pointer-events:none; }
+.login-layout ::deep .lgn-card:hover { box-shadow:0 32px 88px -8px rgba(2,6,23,0.20),0 12px 32px rgba(2,6,23,0.12),0 0 0 4px rgba(79,70,229,0.20); transform:translateY(-6px); }
+.login-layout ::deep .lgn-card::before { content:""; position:absolute; inset:0; padding:2px; border-radius:inherit; background:linear-gradient(135deg, var(--lgn-accent) 0%, var(--lgn-accent-alt) 55%, transparent 90%); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite:exclude; pointer-events:none; opacity:.55; }
+.login-layout ::deep .lgn-card-2fa { padding:1.25rem 1.5rem; border-radius:20px; gap:.75rem; }
+
+/* Header */
+.login-layout ::deep .lgn-header { padding:.2rem 0 1.15rem 0; border-bottom:1px solid rgba(15,23,42,0.08); display:flex; flex-direction:column; gap:.4rem; }
+.login-layout ::deep .lgn-header-main { font-size:1.6rem; font-weight:700; letter-spacing:normal; color:var(--lgn-accent); }
+.login-layout ::deep .lgn-header-sub { font-size:.95rem; line-height:1.4; color:#475569; max-width:620px; }
+/* Secciones dentro del card */
+.login-layout ::deep .lgn-section { display:flex; flex-direction:column; gap:.85rem; }
+.login-layout ::deep .lgn-section-2fa { animation:lgn2faSwap .45s cubic-bezier(.22,.9,.32,1); }
+@keyframes lgn2faSwap { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* Campos (sin labels visibles) */
+.login-layout .login-wrapper .lgn-field { margin-bottom:.35rem; width:100%; }
+.login-layout .login-wrapper .lgn-label { display:none; }
+.login-layout .login-wrapper .validation-message { color:#ef4444; font-size:.8rem; margin-top:.4rem; }
+
+/* Eliminar fila antigua con iconos */
+.login-layout ::deep .lgn-row { display:none; }
+
+/* Input standalone */
+.login-layout ::deep .lgn-input { width:100%; box-sizing:border-box; background:#ffffff !important; border:1px solid rgba(15,23,42,0.20); border-radius:12px; color:#0f172a; font-size:1rem; line-height:1.3; padding:.78rem 1rem; min-height:52px; transition:border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.login-layout ::deep .lgn-input::placeholder { color:#64748b; opacity:1; }
+.login-layout ::deep .lgn-input:hover { border-color:rgba(79,70,229,0.55); }
+.login-layout ::deep .lgn-input:focus { border-color:var(--lgn-accent); box-shadow:0 0 0 3px rgba(79,70,229,0.28); outline:none; }
+
+/* Iconos eliminados (limpieza) */
+
+/* Botones */
+.login-layout ::deep .lgn-actions { display:flex; gap:.75rem; align-items:center; justify-content:space-between; margin-top:.5rem; }
+.login-layout ::deep .lgn-btn { appearance:none; border:1px solid rgba(15,23,42,0.18); background:#fff; color:#0f172a; padding:.65rem 1rem; border-radius:10px; font-weight:600; cursor:pointer; transition:background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.login-layout ::deep .lgn-btn:hover { background:#f1f5f9; border-color:rgba(15,23,42,0.32); }
+.login-layout ::deep .lgn-btn:focus { outline:none; box-shadow:0 0 0 3px rgba(79,70,229,0.30); }
+.login-layout ::deep .lgn-btn:active { transform:translateY(1px); }
+.login-layout ::deep .lgn-btn:disabled { opacity:.55; cursor:not-allowed; }
+.login-layout ::deep .lgn-btn-primary { background:linear-gradient(135deg,#6246ea,#4f46e5); color:#fff; border-color:var(--lgn-accent); box-shadow:0 10px 28px rgba(79,70,229,.18); position:relative; }
+.login-layout ::deep .lgn-btn-primary:hover { background:linear-gradient(135deg,var(--lgn-accent),var(--lgn-accent-alt)); box-shadow:0 14px 34px -4px rgba(79,70,229,.30); transform:translateY(-2px); }
+.login-layout ::deep .lgn-btn-primary:active { transform:translateY(0); box-shadow:0 8px 20px rgba(79,70,229,.22); }
+.login-layout ::deep .lgn-btn-secondary { background:#fff; text-decoration:none; }
+.login-layout ::deep .lgn-btn-secondary:hover { text-decoration:none; }
+.login-layout ::deep .lgn-error { color:var(--lgn-danger); font-size:.85rem; font-weight:600; animation:lgnErrorPop .3s ease; }
+@keyframes lgnErrorPop { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+/* Hint */
+.login-layout .login-wrapper .lgn-hint { font-size:.75rem; color:#64748b; margin-top:.35rem; }
+
+/* Responsive */
+@media (max-width: 640px) {
+	.login-layout ::deep .lgn-card { padding:2.3rem 1.55rem 2rem; border-radius:22px; max-width:100%; }
+	.login-layout ::deep .lgn-header-main { font-size:1.4rem; }
+	.login-layout ::deep .lgn-actions { flex-direction:column; align-items:stretch; }
+	.login-layout ::deep .lgn-btn { width:100%; }
+}
+
+/* Título auxiliar si se usa */
+.login-layout ::deep .login-title { text-align:center; font-size:1.1rem; font-weight:700; margin:0 0 .75rem; color:#0f172a; }
+
+/* Utilidades */
+.login-layout .flex { display:flex; }
+.login-layout .center { justify-content:center; align-items:center; }

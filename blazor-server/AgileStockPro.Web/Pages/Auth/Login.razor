@@ -1,62 +1,70 @@
-@page "/auth/login"
+@page "/login"
 @inject NavigationManager Nav
 @inject AgileStockPro.Web.Services.IAuthService Auth
 @inject IToastService Toast
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.FluentUI.AspNetCore.Components
+@layout AgileStockPro.Web.Components.LoginLayout
 
-<div class="login-wrapper">
-    <h1 class="login-title">Ingreso</h1>
+<div class="login-wrapper login-page">
     <EditForm Model="model" OnValidSubmit="HandleLogin" OnInvalidSubmit="OnInvalidLogin">
         <DataAnnotationsValidator />
-        <div class="panel login-panel">
-            <div class="panel-header">
-                <div class="panel-header-main">Credenciales</div>
-                <div class="panel-header-sub">Ingrese sus credenciales para acceder al sistema</div>
-            </div>
-            <div class="panel-body">
-                <div class="form-field">
-                    <label class="field-label"><FluentIcon Icon="@(Icons.Regular.Size16.Person)" class="label-icon" /> Usuario</label>
-                    <InputText class="input input-center" @bind-Value="model.Username" />
-                    <ValidationMessage For="() => model.Username" />
-                </div>
-
-                <div class="form-field">
-                    <label class="field-label"><FluentIcon Icon="@(Icons.Regular.Size16.LockClosed)" class="label-icon" /> Contraseña</label>
-                    <InputText type="password" class="input input-center" @bind-Value="model.Password" />
-                    <ValidationMessage For="() => model.Password" />
-                </div>
-
-                <div class="actions actions-center">
-                    <button class="btn btn-primary" disabled="@busy">@(busy ? "Ingresando…" : "Ingresar")</button>
-                    <a href="/forgot-password" class="btn">Olvidé mi contraseña</a>
+        <div class="lgn-card">
+            <div class="lgn-header">
+                <div class="lgn-header-main">Ingreso</div>
+                <div class="lgn-header-sub">
+                    @if (!require2FA)
+                    {
+                        <span>Ingrese sus credenciales para acceder al sistema</span>
+                    }
+                    else
+                    {
+                        <span>Ingrese el código enviado. Mejora la seguridad de su cuenta.</span>
+                    }
                 </div>
             </div>
 
-            @if (!string.IsNullOrEmpty(error))
+            @if (!require2FA)
             {
-                <div class="error" style="margin-top:.5rem; color:var(--danger-foreground)">@error</div>
+                <div class="lgn-section lgn-section-credentials">
+                    <div class="lgn-field">
+                        <input id="login-username" class="lgn-input" @bind="model.Username" placeholder="Usuario" aria-label="Usuario" required />
+                    </div>
+                    <div class="lgn-field">
+                        <input id="login-password" type="password" class="lgn-input" @bind="model.Password" placeholder="Contraseña" aria-label="Contraseña" required />
+                    </div>
+                </div>
+                <div class="lgn-actions">
+                    <button type="submit" class="lgn-btn lgn-btn-primary" disabled="@busy">@(busy ? "Ingresando…" : "Ingresar")</button>
+                    <a href="/forgot-password" class="lgn-btn lgn-btn-secondary">Olvidé mi contraseña</a>
+                </div>
+            }
+            else
+            {
+                <div class="lgn-section lgn-section-2fa">
+                    <div class="lgn-field">
+                        <input class="lgn-input" placeholder="Código 2FA" aria-label="Código 2FA" @bind-value="twoFactorCode" />
+                        @if (!string.IsNullOrEmpty(error2FA))
+                        {
+                            <div class="lgn-error">@error2FA</div>
+                        }
+                    </div>
+                    <div class="lgn-actions">
+                        <button type="button" class="lgn-btn lgn-btn-primary" disabled="@busy2fa" @onclick="VerifyCode">@(busy2fa ? "Verificando…" : "Verificar")</button>
+                        <button type="button" class="lgn-btn lgn-btn-secondary" @onclick="()=>{ require2FA=false; twoFactorCode=string.Empty; }">Volver</button>
+                    </div>
+                    <div class="lgn-hint">Se envió un código al correo (simulado). Revisa la consola.</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(error) && !require2FA)
+            {
+                <div class="lgn-error">@error</div>
             }
         </div>
     </EditForm>
 </div>
-
-@if (require2FA)
-{
-    <div class="panel" style="margin-top:1rem;">
-        <div class="panel-header">Autenticación en dos pasos</div>
-        <div style="display:flex; gap:.5rem; align-items:center;">
-            <input class="input" placeholder="Código de verificación" @bind-value="twoFactorCode" />
-            <button class="btn btn-primary" disabled="@busy2fa" @onclick="VerifyCode">@(busy2fa ? "Verificando…" : "Verificar")</button>
-        </div>
-        <div class="muted" style="margin-top:.5rem">Se envió un código al correo (simulado). Revisa la consola para verlo en esta demo.</div>
-        @if (!string.IsNullOrEmpty(error2FA))
-        {
-            <div class="error" style="margin-top:.5rem; color:var(--danger-foreground)">@error2FA</div>
-        }
-    </div>
-}
 
 @code {
     class LoginModel
@@ -85,7 +93,7 @@
     {
     busy = true; error = null; require2FA = false;
         var result = await Auth.LoginAsync(model.Username, model.Password);
-        busy = false;
+    busy = false;
         if (!result.Success)
         {
             error = result.Error ?? "Login inválido";
