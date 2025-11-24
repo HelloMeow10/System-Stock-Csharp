@@ -34,6 +34,17 @@
 .login-layout ::deep .lgn-input:hover { border-color:rgba(79,70,229,0.55); }
 .login-layout ::deep .lgn-input:focus { border-color:var(--lgn-accent); box-shadow:0 0 0 3px rgba(79,70,229,0.28); outline:none; }
 
+/* Floating label + underline */
+.login-layout ::deep .input-wrap { position:relative; }
+.login-layout ::deep .input-wrap .lgn-input { background:transparent !important; padding-top:1.35rem; padding-bottom:.6rem; }
+.login-layout ::deep .input-wrap label { position:absolute; left:16px; top:50%; transform:translateY(-50%); font-size:.95rem; line-height:1; color:#64748b; pointer-events:none; transition:top .18s ease, font-size .18s ease, color .18s ease; }
+.login-layout ::deep .input-wrap .lgn-input:focus + label,
+.login-layout ::deep .input-wrap .lgn-input:not(:placeholder-shown) + label { top:10px; font-size:.68rem; color:var(--lgn-accent); }
+.login-layout ::deep .input-wrap .input-underline { position:absolute; left:14px; right:14px; bottom:10px; height:2px; background:linear-gradient(90deg,#6246ea,#4f46e5); transform:scaleX(0); transform-origin:left; transition:transform .25s cubic-bezier(.22,.9,.32,1); border-radius:2px; }
+.login-layout ::deep .input-wrap .lgn-input:focus ~ .input-underline,
+.login-layout ::deep .input-wrap .lgn-input:not(:placeholder-shown) ~ .input-underline { transform:scaleX(1); }
+@media (prefers-reduced-motion: reduce) { .login-layout ::deep .input-wrap label, .login-layout ::deep .input-wrap .input-underline { transition:none !important; } }
+
 /* Iconos eliminados (limpieza) */
 
 /* Botones */

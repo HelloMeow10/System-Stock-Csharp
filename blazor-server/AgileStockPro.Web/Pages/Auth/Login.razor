@@ -28,11 +28,15 @@
             @if (!require2FA)
             {
                 <div class="lgn-section lgn-section-credentials">
-                    <div class="lgn-field">
-                        <input id="login-username" class="lgn-input" @bind="model.Username" placeholder="Usuario" aria-label="Usuario" required />
+                    <div class="lgn-field input-wrap">
+                        <input id="login-username" class="lgn-input" @bind="model.Username" placeholder=" " aria-labelledby="label-username" required />
+                        <label id="label-username" for="login-username">Usuario</label>
+                        <span class="input-underline"></span>
                     </div>
-                    <div class="lgn-field">
-                        <input id="login-password" type="password" class="lgn-input" @bind="model.Password" placeholder="Contraseña" aria-label="Contraseña" required />
+                    <div class="lgn-field input-wrap">
+                        <input id="login-password" type="password" class="lgn-input" @bind="model.Password" placeholder=" " aria-labelledby="label-password" required />
+                        <label id="label-password" for="login-password">Contraseña</label>
+                        <span class="input-underline"></span>
                     </div>
                 </div>
                 <div class="lgn-actions">
