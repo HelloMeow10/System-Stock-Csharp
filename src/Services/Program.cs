@@ -63,7 +63,11 @@ if (app.Environment.IsDevelopment())
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseHttpsRedirection();
+    // Disabled HTTPS redirection in Development to avoid 307 + SSL issues with dev cert
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
 }
 
 app.UseCors("AllowBlazer");

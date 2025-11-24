@@ -54,7 +54,8 @@ public class ApiAuthService : IAuthService
         catch (Exception ex)
         {
             // Try to parse ProblemDetails for a clearer message
-            var msg = TryGetProblemDetails(ex.Message) ?? "Usuario o contraseña incorrectos.";
+            var detailed = ex is ApiException api ? api.Message : ex.Message;
+            var msg = TryGetProblemDetails(detailed) ?? detailed;
             return new LoginResult(false, false, msg);
         }
     }

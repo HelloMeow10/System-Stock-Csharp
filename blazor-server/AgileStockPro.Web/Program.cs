@@ -30,6 +30,7 @@ builder.Services.AddAuthentication("Cookies")
 
 // API options & token provider & backend client
 builder.Services.AddScoped<ITokenProvider, TokenProvider>();
+// Development: use HTTP base URL (backend HTTPS redirection disabled for now)
 builder.Services.AddSingleton(new ApiOptions { BaseUrl = "http://localhost:5000/" });
 builder.Services.AddScoped<BackendApiClient>();
 
