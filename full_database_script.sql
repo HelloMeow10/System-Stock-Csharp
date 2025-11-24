@@ -2859,6 +2859,7 @@ DECLARE @id_localidad INT;
 DECLARE @rol_admin INT;
 DECLARE @rol_user INT;
 DECLARE @id_persona_oper INT;
+DECLARE @id_persona_admin INT;
 DECLARE @id_persona_admin2 INT;
 DECLARE @pass VARBINARY(512);
 DECLARE @pass2 VARBINARY(512);
@@ -2918,6 +2919,43 @@ BEGIN
         @fecha_ultimo_cambio = @now,
         @id_rol = @rol_user,
         @CambioContrasenaObligatorio = 1
+END
+
+-- Persona y usuario: admin (Principal)
+IF NOT EXISTS (SELECT 1 FROM personas WHERE num_doc = '20000000')
+BEGIN
+    EXEC sp_insert_persona
+        @legajo = 1,
+        @nombre = 'System',
+        @apellido = 'Admin',
+        @id_tipo_doc = @id_tipo_doc,
+        @num_doc = '20000000',
+        @fecha_nacimiento = '1980-01-01',
+        @cuil = '20200000000',
+        @calle = 'Calle Admin',
+        @altura = '1',
+        @id_localidad = @id_localidad,
+        @id_genero = @id_genero_m,
+        @correo = 'admin@example.com',
+        @celular = '1100000000';
+END
+
+SELECT @id_persona_admin = id_persona FROM personas WHERE num_doc = '20000000';
+
+IF NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin') AND @id_persona_admin IS NOT NULL
+BEGIN
+    -- Password: admin123 -> SHA256('admin123admin')
+    SET @pass = HASHBYTES('SHA2_256', 'admin123admin');
+    DECLARE @now_admin DATETIME = GETDATE();
+    EXEC sp_insert_usuario
+        @usuario = 'admin',
+        @contrasena_script = @pass,
+        @id_persona = @id_persona_admin,
+        @fecha_bloqueo = '9999-12-31',
+        @nombre_usuario_bloqueo = NULL,
+        @fecha_ultimo_cambio = @now_admin,
+        @id_rol = @rol_admin,
+        @CambioContrasenaObligatorio = 0
 END
 
 -- Persona y usuario: admin2 (opcional, otro admin)
