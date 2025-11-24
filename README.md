@@ -61,7 +61,7 @@ dotnet restore .\UserManagementSystem.sln
 ```powershell
 # Con SSMS puedes abrir y ejecutar create_database_login2_corrected_v2.sql
 # O con sqlcmd (si usas SQL Auth, ajusta -U/-P)
-sqlcmd -S localhost -E -i .\create_database_login2_corrected_v2.sql
+sqlcmd -S localhost -E -i .\full_database_script.sql
 ```
 
 3) Configuración rápida
