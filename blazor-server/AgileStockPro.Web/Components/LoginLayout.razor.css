@@ -45,6 +45,17 @@
 .login-layout ::deep .input-wrap .lgn-input:not(:placeholder-shown) ~ .input-underline { transform:scaleX(1); }
 @media (prefers-reduced-motion: reduce) { .login-layout ::deep .input-wrap label, .login-layout ::deep .input-wrap .input-underline { transition:none !important; } }
 
+/* Alertas (info / error / success) */
+.login-layout ::deep .lgn-alert { position:relative; padding:.85rem 1rem .85rem 1rem; border-radius:12px; font-size:.85rem; line-height:1.3; display:flex; gap:.6rem; align-items:flex-start; animation:lgnAlertIn .35s cubic-bezier(.22,.9,.32,1); border:1px solid; }
+.login-layout ::deep .lgn-alert::before { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; }
+.login-layout ::deep .lgn-alert-info { background:linear-gradient(135deg,#f1f5ff 0%, #eef2ff 100%); border-color:#c7d2fe; color:#1e3a8a; }
+.login-layout ::deep .lgn-alert-error { background:linear-gradient(135deg,#fef2f2 0%, #fee2e2 100%); border-color:#fecaca; color:#991b1b; }
+.login-layout ::deep .lgn-alert-success { background:linear-gradient(135deg,#ecfdf5 0%, #d1fae5 100%); border-color:#a7f3d0; color:#065f46; }
+.login-layout ::deep .lgn-alert-success::before { box-shadow:0 0 0 1px rgba(16,185,129,.15) inset; }
+.login-layout ::deep .lgn-alert-error::before { box-shadow:0 0 0 1px rgba(239,68,68,.18) inset; }
+.login-layout ::deep .lgn-alert-info::before { box-shadow:0 0 0 1px rgba(79,70,229,.18) inset; }
+@keyframes lgnAlertIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
 /* Iconos eliminados (limpieza) */
 
 /* Botones */

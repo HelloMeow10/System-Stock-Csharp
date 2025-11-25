@@ -51,20 +51,20 @@
                         <input class="lgn-input" placeholder="Código 2FA" aria-label="Código 2FA" @bind-value="twoFactorCode" />
                         @if (!string.IsNullOrEmpty(error2FA))
                         {
-                            <div class="lgn-error">@error2FA</div>
+                            <div class="lgn-alert lgn-alert-error">@error2FA</div>
                         }
                     </div>
                     <div class="lgn-actions">
                         <button type="button" class="lgn-btn lgn-btn-primary" disabled="@busy2fa" @onclick="VerifyCode">@(busy2fa ? "Verificando…" : "Verificar")</button>
                         <button type="button" class="lgn-btn lgn-btn-secondary" @onclick="()=>{ require2FA=false; twoFactorCode=string.Empty; }">Volver</button>
                     </div>
-                    <div class="lgn-hint">Se envió un código al correo (simulado). Revisa la consola.</div>
+                    <div class="lgn-alert lgn-alert-info">Se envió un código al correo (simulado). Revisa la consola.</div>
                 </div>
             }
 
             @if (!string.IsNullOrEmpty(error) && !require2FA)
             {
-                <div class="lgn-error">@error</div>
+                <div class="lgn-alert lgn-alert-error">@error</div>
             }
         </div>
     </EditForm>
