@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
 @layout AgileStockPro.Web.Components.LoginLayout
 
 <div class="login-wrapper login-page">
@@ -34,9 +35,19 @@
                         <span class="input-underline"></span>
                     </div>
                     <div class="lgn-field input-wrap">
-                        <input id="login-password" type="password" class="lgn-input" @bind="model.Password" placeholder=" " aria-labelledby="label-password" required />
+                        <input id="login-password" type="@(showPassword ? "text" : "password")" class="lgn-input" @bind="model.Password" placeholder=" " aria-labelledby="label-password" required />
                         <label id="label-password" for="login-password">Contraseña</label>
                         <span class="input-underline"></span>
+                        <button type="button" class="lgn-password-toggle" data-active="@showPassword" @onclick="TogglePassword" aria-label="@(showPassword?"Ocultar contraseña":"Mostrar contraseña")">
+                            @if (showPassword)
+                            {
+                                <FluentIcon Value="@(new Icons.Regular.Size20.Eye())" />
+                            }
+                            else
+                            {
+                                <FluentIcon Value="@(new Icons.Regular.Size20.EyeOff())" />
+                            }
+                        </button>
                     </div>
                 </div>
                 <div class="lgn-actions">
@@ -86,11 +97,17 @@
     private string twoFactorCode = string.Empty;
     private bool busy2fa;
     private string? error2FA;
+    private bool showPassword = false;
 
     private void OnInvalidLogin()
     {
         error = "Complete usuario y contraseña";
         Toast.ShowError(error);
+    }
+
+    private void TogglePassword()
+    {
+        showPassword = !showPassword;
     }
 
     private async Task HandleLogin()
