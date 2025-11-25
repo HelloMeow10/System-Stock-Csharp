@@ -1053,7 +1053,7 @@ GO
 DECLARE @id_persona INT, @id_rol INT, @fecha_bloqueo DATETIME, @fecha_ultimo_cambio DATETIME;
 SELECT @id_persona = id_persona FROM personas WHERE nombre = 'Admin';
 SELECT @id_rol = id_rol FROM roles WHERE rol = 'Administrador';
-SET @fecha_bloqueo = CAST('9999-12-31' AS DATETIME);
+SET @fecha_bloqueo = CAST('99991231' AS DATETIME);
 SET @fecha_ultimo_cambio = GETDATE();
 
 IF @id_persona IS NOT NULL AND @id_rol IS NOT NULL
@@ -2278,17 +2278,6 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE sp_RegistrarOrdenCompra
-    @id_presupuesto INT,
-    @fecha DATE,
-    @total DECIMAL(18,2)
-AS
-BEGIN
-    INSERT INTO OrdenCompra (id_presupuesto, fecha, total)
-    VALUES (@id_presupuesto, @fecha, @total)
-END
-GO
-
 CREATE PROCEDURE sp_ConsultarPedidos
     @entregado BIT = NULL
 AS
@@ -2419,27 +2408,6 @@ BEGIN
     VALUES (@codigo, @razonSocial, @cuit, @email, @formaPago, CAST(@tiempoEntrega AS INT), @descuento)
 END
 GO
-CREATE PROCEDURE sp_AgregarProveedorExtended
-    @codigo VARCHAR(50),
-    @razonSocial VARCHAR(100),
-    @cuit VARCHAR(20),
-    @Email VARCHAR(100),
-    @formaPago VARCHAR(100),
-    @tiempoEntrega VARCHAR(50),
-    @descuento DECIMAL(5,2),
-    @Telefono VARCHAR(50),
-    @Direccion VARCHAR(150),
-    @Provincia VARCHAR(60),
-    @Ciudad VARCHAR(60),
-    @CondicionIVA VARCHAR(60),
-    @PlazoPagoDias INT,
-    @Observaciones VARCHAR(255)
-AS
-BEGIN
-    INSERT INTO Proveedores (codigo, razonSocial, CUIT, Email, formaPago, TiempoEntrega, Descuento, Telefono, Direccion, Provincia, Ciudad, CondicionIVA, PlazoPagoDias, Observaciones)
-    VALUES (@codigo, @razonSocial, @cuit, @Email, @formaPago, CAST(@tiempoEntrega AS INT), @descuento, @Telefono, @Direccion, @Provincia, @Ciudad, @CondicionIVA, @PlazoPagoDias, @Observaciones)
-END
-GO
 
 CREATE PROCEDURE sp_ModificarProveedor
     @id_proveedor INT,
@@ -2463,55 +2431,12 @@ BEGIN
     WHERE id_proveedor = @id_proveedor
 END
 GO
-CREATE PROCEDURE sp_ModificarProveedorExtended
-    @id_proveedor INT,
-    @codigo VARCHAR(50),
-    @razonSocial VARCHAR(100),
-    @cuit VARCHAR(20),
-    @Email VARCHAR(100),
-    @formaPago VARCHAR(100),
-    @tiempoEntrega VARCHAR(50),
-    @descuento DECIMAL(5,2),
-    @Telefono VARCHAR(50),
-    @Direccion VARCHAR(150),
-    @Provincia VARCHAR(60),
-    @Ciudad VARCHAR(60),
-    @CondicionIVA VARCHAR(60),
-    @PlazoPagoDias INT,
-    @Observaciones VARCHAR(255)
-AS
-BEGIN
-    UPDATE Proveedores SET
-        codigo=@codigo,
-        razonSocial=@razonSocial,
-        CUIT=@cuit,
-        Email=@Email,
-        formaPago=@formaPago,
-        TiempoEntrega=CAST(@tiempoEntrega AS INT),
-        Descuento=@descuento,
-        Telefono=@Telefono,
-        Direccion=@Direccion,
-        Provincia=@Provincia,
-        Ciudad=@Ciudad,
-        CondicionIVA=@CondicionIVA,
-        PlazoPagoDias=@PlazoPagoDias,
-        Observaciones=@Observaciones
-    WHERE id_proveedor=@id_proveedor
-END
-GO
 
 CREATE PROCEDURE sp_EliminarProveedor
     @id_proveedor INT
 AS
 BEGIN
     DELETE FROM Proveedores WHERE id_proveedor = @id_proveedor
-END
-GO
-CREATE PROCEDURE sp_EliminarProveedorExtended
-    @id_proveedor INT
-AS
-BEGIN
-    DELETE FROM Proveedores WHERE id_proveedor=@id_proveedor
 END
 GO
 
@@ -2532,13 +2457,6 @@ BEGIN
     WHERE razonSocial LIKE '%' + @nombre + '%'
 END
 GO
-CREATE PROCEDURE sp_SearchProveedoresByNombreExtended
-    @nombre VARCHAR(100)
-AS
-BEGIN
-    SELECT * FROM Proveedores WHERE nombre LIKE '%' + @nombre + '%'
-END
-GO
 
 CREATE PROCEDURE sp_ConsultarProveedoresPorCUIT
     @cuit VARCHAR(20)
@@ -2555,13 +2473,6 @@ BEGIN
         Descuento
     FROM Proveedores
     WHERE CUIT LIKE '%' + @cuit + '%'
-END
-GO
-CREATE PROCEDURE sp_SearchProveedoresByCUITExtended
-    @cuit VARCHAR(20)
-AS
-BEGIN
-    SELECT * FROM Proveedores WHERE CUIT LIKE '%' + @cuit + '%'
 END
 GO
 
@@ -3487,7 +3398,7 @@ BEGIN
         @usuario = 'operador',
         @contrasena_script = @pass,
         @id_persona = @id_persona_oper,
-        @fecha_bloqueo = '9999-12-31',
+        @fecha_bloqueo = '99991231',
         @nombre_usuario_bloqueo = NULL,
         @fecha_ultimo_cambio = @now,
         @id_rol = @rol_user,
@@ -3524,7 +3435,7 @@ BEGIN
         @usuario = 'admin',
         @contrasena_script = @pass,
         @id_persona = @id_persona_admin,
-        @fecha_bloqueo = '9999-12-31',
+        @fecha_bloqueo = '99991231',
         @nombre_usuario_bloqueo = NULL,
         @fecha_ultimo_cambio = @now_admin,
         @id_rol = @rol_admin,
@@ -3560,7 +3471,7 @@ BEGIN
         @usuario = 'admin2',
         @contrasena_script = @pass2,
         @id_persona = @id_persona_admin2,
-        @fecha_bloqueo = '9999-12-31',
+        @fecha_bloqueo = '99991231',
         @nombre_usuario_bloqueo = NULL,
         @fecha_ultimo_cambio = @now2,
         @id_rol = @rol_admin,
