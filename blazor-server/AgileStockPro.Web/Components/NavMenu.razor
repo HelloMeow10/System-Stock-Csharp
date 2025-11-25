@@ -9,31 +9,37 @@
   <nav class="sidebar-nav">
     @if (User is not null)
     {
-    <NavLink href="/dashboard" Match="NavLinkMatch.All" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-dashboard" Icon="@(Icons.Regular.Size20.Home)" /></span>
-      <span class="nav-text">Dashboard</span>
-        <FluentTooltip Anchor="nav-products">Productos</FluentTooltip>
+      <NavLink href="/dashboard" Match="NavLinkMatch.All" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-dashboard" Icon="@(Icons.Regular.Size20.Home)" /></span>
+        <span class="nav-text">Dashboard</span>
+      </NavLink>
     }
+
     <NavLink href="/proveedores" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-proveedores" Icon="@(Icons.Regular.Size20.People)" /></span>
       <span class="nav-text">Proveedores</span>
-        <FluentTooltip Anchor="nav-almacenes">Almacenes</FluentTooltip>
+    </NavLink>
+    @if (Collapsed)
+    {
+      <FluentTooltip Anchor="nav-proveedores">Proveedores</FluentTooltip>
     }
+
     <NavLink href="/stock" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-stock" Icon="@(Icons.Regular.Size20.Archive)" /></span>
       <span class="nav-text">Stock</span>
     </NavLink>
     @if (Collapsed)
     {
-        <FluentTooltip Anchor="nav-stock">Stock</FluentTooltip>
+      <FluentTooltip Anchor="nav-stock">Stock</FluentTooltip>
     }
+
     <NavLink href="/movimientos" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-movimientos" Icon="@(Icons.Regular.Size20.ArrowSwap)" /></span>
       <span class="nav-text">Movimientos</span>
     </NavLink>
     @if (Collapsed)
     {
-        <FluentTooltip Anchor="nav-movimientos">Movimientos</FluentTooltip>
+      <FluentTooltip Anchor="nav-movimientos">Movimientos</FluentTooltip>
     }
 
     <div class="nav-section">Ventas</div>
@@ -43,7 +49,7 @@
     </NavLink>
     @if (Collapsed)
     {
-        <FluentTooltip Anchor="nav-ventas">Ventas</FluentTooltip>
+      <FluentTooltip Anchor="nav-ventas">Ventas</FluentTooltip>
     }
     <NavLink href="/clientes" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-clientes" Icon="@(Icons.Regular.Size20.Person)" /></span>
@@ -51,7 +57,7 @@
     </NavLink>
     @if (Collapsed)
     {
-        <FluentTooltip Anchor="nav-clientes">Clientes</FluentTooltip>
+      <FluentTooltip Anchor="nav-clientes">Clientes</FluentTooltip>
     }
     <NavLink href="/facturacion" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-facturacion" Icon="@(Icons.Regular.Size20.Receipt)" /></span>
@@ -59,16 +65,16 @@
     </NavLink>
     @if (Collapsed)
     {
-        <FluentTooltip Anchor="nav-facturacion">Facturación</FluentTooltip>
+      <FluentTooltip Anchor="nav-facturacion">Facturación</FluentTooltip>
     }
 
     <NavLink href="/ordenes-compra" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-ordenes" Icon="@(Icons.Regular.Size20.Document)" /></span>
-      <span class="nav-text">Ordenes de compra</span>
+      <span class="nav-text">Órdenes de compra</span>
     </NavLink>
     @if (Collapsed)
     {
-        <FluentTooltip Anchor="nav-ordenes">Órdenes de compra</FluentTooltip>
+      <FluentTooltip Anchor="nav-ordenes">Órdenes de compra</FluentTooltip>
     }
     <NavLink href="/pedidos" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-pedidos" Icon="@(Icons.Regular.Size20.Cart)" /></span>
@@ -76,79 +82,83 @@
     </NavLink>
     @if (Collapsed)
     {
-        <FluentTooltip Anchor="nav-pedidos">Pedidos</FluentTooltip>
+      <FluentTooltip Anchor="nav-pedidos">Pedidos</FluentTooltip>
     }
 
     <NavLink href="/alertas" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-alertas" Icon="@(Icons.Regular.Size20.Warning)" /></span>
-    {
-        <FluentTooltip Anchor="nav-scrap">Scrap</FluentTooltip>
-    }
+      <span class="nav-text">Alertas</span>
+    </NavLink>
+
     <NavLink href="/configuracion" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-config" Icon="@(Icons.Regular.Size20.Settings)" /></span>
       <span class="nav-text">Configuración</span>
     </NavLink>
     @if (Collapsed)
     {
-        <FluentTooltip Anchor="nav-config">Configuración</FluentTooltip>
+      <FluentTooltip Anchor="nav-config">Configuración</FluentTooltip>
     }
 
     <div class="nav-section">Usuarios</div>
     @if (User is null)
     {
-        <NavLink href="/login" class="nav-link">
-          <span class="nav-icon"><FluentIcon Id="nav-login" Icon="@(Icons.Regular.Size20.LockClosed)" /></span>
-          <span class="nav-text">Login</span>
-        </NavLink>
-        @if (Collapsed)
-        {
-            <FluentTooltip Anchor="nav-login">Login</FluentTooltip>
-        }
+      <NavLink href="/login" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-login" Icon="@(Icons.Regular.Size20.LockClosed)" /></span>
+        <span class="nav-text">Login</span>
+      </NavLink>
+      @if (Collapsed)
+      {
+        <FluentTooltip Anchor="nav-login">Login</FluentTooltip>
+      }
     }
+
     @if (User?.IsAdmin == true)
     {
-    <NavLink href="/usuarios" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-users" Icon="@(Icons.Regular.Size20.PeopleTeam)" /></span>
-      <span class="nav-text">Usuarios</span>
-    </NavLink>
-    @if (Collapsed)
-    {
+      <NavLink href="/usuarios" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-users" Icon="@(Icons.Regular.Size20.PeopleTeam)" /></span>
+        <span class="nav-text">Usuarios</span>
+      </NavLink>
+      @if (Collapsed)
+      {
         <FluentTooltip Anchor="nav-users">Usuarios</FluentTooltip>
-    }
-    <NavLink href="/usuarios/alta" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-users-create" Icon="@(Icons.Regular.Size20.AddSquare)" /></span>
-      <span class="nav-text">Alta Usuario</span>
-    </NavLink>
-    @if (Collapsed)
-    {
+      }
+      <NavLink href="/usuarios/alta" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-users-create" Icon="@(Icons.Regular.Size20.AddSquare)" /></span>
+        <span class="nav-text">Alta Usuario</span>
+      </NavLink>
+      @if (Collapsed)
+      {
         <FluentTooltip Anchor="nav-users-create">Alta Usuario</FluentTooltip>
-    }
-    <NavLink href="/personas" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-personas" Icon="@(Icons.Regular.Size20.Person)" /></span>
-      <span class="nav-text">Personas</span>
-    </NavLink>
-    @if (Collapsed)
-    {
+      }
+      <NavLink href="/personas" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-personas" Icon="@(Icons.Regular.Size20.Person)" /></span>
+        <span class="nav-text">Personas</span>
+      </NavLink>
+      @if (Collapsed)
+      {
         <FluentTooltip Anchor="nav-personas">Personas</FluentTooltip>
-    }
-    <NavLink href="/seguridad" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-security" Icon="@(Icons.Regular.Size20.ShieldLock)" /></span>
-      <span class="nav-text">Seguridad</span>
-    </NavLink>
-    @if (Collapsed)
-    {
+      }
+      <NavLink href="/seguridad" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-security" Icon="@(Icons.Regular.Size20.ShieldLock)" /></span>
+        <span class="nav-text">Seguridad</span>
+      </NavLink>
+      @if (Collapsed)
+      {
         <FluentTooltip Anchor="nav-security">Seguridad</FluentTooltip>
-    }
-    <NavLink href="/seguridad-preguntas" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-security-questions" Icon="@(Icons.Regular.Size20.QuestionCircle)" /></span>
-      <span class="nav-text">Preguntas</span>
-    </NavLink>
-    @if (Collapsed)
-    {
+      }
+      <NavLink href="/seguridad-preguntas" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-security-questions" Icon="@(Icons.Regular.Size20.QuestionCircle)" /></span>
+        <span class="nav-text">Preguntas</span>
+      </NavLink>
+      @if (Collapsed)
+      {
         <FluentTooltip Anchor="nav-security-questions">Preguntas seguridad</FluentTooltip>
+      }
     }
-    }
-    @if (User is not null)
+  </nav>
+</aside>
+
+@code {
   [Parameter] public bool Collapsed { get; set; }
   [Parameter] public AgileStockPro.Web.Models.AppUser? User { get; set; }
 }

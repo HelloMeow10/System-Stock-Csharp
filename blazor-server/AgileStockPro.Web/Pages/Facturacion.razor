@@ -92,14 +92,12 @@
         <div class="modal-content">
             <h3>Nueva Factura de Venta</h3>
             <div class="form-group">
-                <FluentSelect @bind-Value="salesForm.ClienteIdStr"
+                <FluentSelect Items="@customers"
+                              OptionText="@((ClientDto c) => c.Nombre)"
+                              OptionValue="@((ClientDto c) => c.Id.ToString())"
+                              @bind-Value="salesForm.ClienteIdStr"
                               Label="Cliente"
-                              Placeholder="Seleccione Cliente...">
-                    @foreach (var c in customers)
-                    {
-                        <FluentOption Value="@c.Id.ToString()">@c.Nombre</FluentOption>
-                    }
-                </FluentSelect>
+                              Placeholder="Seleccione Cliente..." />
             </div>
             <div class="form-group">
                 <FluentSelect Items="@docTypes"
@@ -131,7 +129,7 @@
                     @((context.Cantidad * context.PrecioUnitario).ToString("C2"))
                 </TemplateColumn>
                 <TemplateColumn Title="Acciones">
-                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => salesForm.Items.Remove(context))" Appearance="Appearance.Light" />
+                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => salesForm.Items.Remove(context))" Appearance="Appearance.Neutral" />
                 </TemplateColumn>
             </FluentDataGrid>
             <div style="text-align: right; margin-top: 10px; font-weight: bold;">
@@ -188,7 +186,7 @@
                     @((context.Cantidad * context.PrecioUnitario).ToString("C2"))
                 </TemplateColumn>
                 <TemplateColumn Title="Acciones">
-                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => purchaseForm.Items.Remove(context))" Appearance="Appearance.Light" />
+                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => purchaseForm.Items.Remove(context))" Appearance="Appearance.Neutral" />
                 </TemplateColumn>
             </FluentDataGrid>
             <div style="text-align: right; margin-top: 10px; font-weight: bold;">
