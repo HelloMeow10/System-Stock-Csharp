@@ -43,5 +43,14 @@ window.app = {
     const data = enc.encode(message);
     const hash = await crypto.subtle.digest('SHA-256', data);
     return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+  copyToClipboard: async function (text) {
+    try {
+      await navigator.clipboard.writeText(text || '');
+      return true;
+    } catch (e) {
+      console.error('copyToClipboard error', e);
+      return false;
+    }
   }
 };

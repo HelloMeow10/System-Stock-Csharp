@@ -8,7 +8,7 @@
 @inject IJSRuntime JS
 @using AgileStockPro.Web.Services
 @inject IUserStore UserStore
-@using AgileStockPro.Web.Components.Shared
+@using AgileStockPro.Web.Components
 
 <AuthGuard RequireAdmin="true">
     <h2>Órdenes de Compra</h2>
@@ -51,20 +51,50 @@
 
     <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         <input placeholder="Nombre de vista" style="width:160px" @bind="newOrderViewName" />
-        <button @onclick="SaveOrderView">Guardar vista</button>
+        <button @onclick="SaveOrderView" disabled="@(string.IsNullOrWhiteSpace(newOrderViewName))">Guardar vista</button>
+        <input placeholder="Buscar vista" style="width:140px" @bind="orderViewsSearch" @bind:event="oninput" title="Filtrar vistas por nombre" />
         <select style="min-width:180px" @bind="selectedOrderViewName">
             <option value="">Seleccionar vista…</option>
             @if (savedOrderViews != null)
             {
-                foreach (var kv in savedOrderViews)
+                foreach (var kv in savedOrderViews
+                    .Where(kv => string.IsNullOrEmpty(orderViewsSearch) || (kv.Key?.IndexOf(orderViewsSearch, StringComparison.OrdinalIgnoreCase) >= 0))
+                    .OrderBy(kv => kv.Key))
                 {
-                    <option value="@kv.Key">@kv.Key</option>
+                    <option value="@kv.Key">@(kv.Key + (defaultOrderViewName == kv.Key ? " (defecto)" : ""))</option>
                 }
             }
         </select>
-        <button @onclick="ApplyOrderView">Aplicar</button>
-        <button @onclick="DeleteOrderView">Eliminar</button>
+        <span style="font-size:12px;color:#555;">Vistas guardadas: @(savedOrderViews?.Count ?? 0)</span>
+        <button @onclick="ApplyOrderView" disabled="@(string.IsNullOrEmpty(selectedOrderViewName))" title="Aplicar la vista seleccionada">Aplicar</button>
+        <button @onclick="ApplyLastOrderView" title="Aplicar la última vista usada">Aplicar última</button>
+        <button @onclick="SetOrderDefaultView" disabled="@(string.IsNullOrEmpty(selectedOrderViewName))" title="Marcar vista seleccionada como por defecto">Por defecto</button>
+        <button @onclick="ClearOrderDefaultView" title="Quitar vista por defecto">Quitar defecto</button>
+        <button @onclick="DeleteOrderView" disabled="@(string.IsNullOrEmpty(selectedOrderViewName))" title="Eliminar la vista seleccionada">Eliminar</button>
+        <input placeholder="Nuevo nombre" style="width:160px" @bind="renameOrderViewName" title="Nuevo nombre para la vista seleccionada" />
+        <button @onclick="RenameOrderView" disabled="@(string.IsNullOrEmpty(selectedOrderViewName) || string.IsNullOrWhiteSpace(renameOrderViewName))" title="Renombrar la vista seleccionada">Renombrar</button>
+        <button @onclick="ClearOrderViews" title="Eliminar todas las vistas guardadas">Limpiar vistas</button>
+        <span style="margin-left:8px;font-size:12px;color:#555;" title="La vista actualmente aplicada">@((string.IsNullOrEmpty(currentOrderViewName)?"":$"Vista actual: {currentOrderViewName}"))</span>
+        <span style="margin-left:8px;font-size:12px;color:#555;" title="Vista que se aplicará por defecto">@((string.IsNullOrEmpty(defaultOrderViewName)?"":$"Vista por defecto: {defaultOrderViewName}"))</span>
+        <button @onclick="ExportOrderViews" title="Exportar vistas a JSON">Exportar vistas</button>
+        <button @onclick="CopyOrderViews" title="Copiar JSON de vistas al portapapeles">Copiar JSON</button>
+        <button @onclick="ToggleOrderImport" title="Importar vistas desde JSON">Importar vistas</button>
     </div>
+
+    @if (showOrderImport)
+    {
+        <div style="margin-bottom:8px;display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">
+            <textarea rows="3" style="min-width:300px;" @bind="importOrderViewsJson" placeholder="Pegar JSON de vistas aquí..."></textarea>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <label style="font-size:12px;color:#555;display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" @bind="orderImportMerge" />
+                    <span>Unir con existentes (sobre-escribe duplicados)</span>
+                </label>
+                <button @onclick="ImportOrderViews" disabled="@(string.IsNullOrWhiteSpace(importOrderViewsJson))">Importar</button>
+                <button @onclick="ToggleOrderImport">Cerrar</button>
+            </div>
+        </div>
+    }
 
     @if (orders != null && orders.Any())
     {
@@ -229,6 +259,13 @@
     private string? newOrderViewName;
     private string? selectedOrderViewName;
     private Dictionary<string, OrderFilters>? savedOrderViews;
+    private string? currentOrderViewName;
+    private string? renameOrderViewName;
+    private string? orderViewsSearch;
+    private string? defaultOrderViewName;
+    private bool showOrderImport;
+    private string? importOrderViewsJson;
+    private bool orderImportMerge;
 
     protected override async Task OnInitializedAsync()
     {
@@ -242,6 +279,9 @@
         {
             var saved = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-filters");
             var viewsJson = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-views");
+            var lastView = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-last-view");
+            var defaultView = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-default-view");
+            var searchSaved = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-views-search");
             if (!string.IsNullOrWhiteSpace(saved))
             {
                 var f = JsonSerializer.Deserialize<OrderFilters>(saved!);
@@ -258,6 +298,32 @@
             if (!string.IsNullOrWhiteSpace(viewsJson))
             {
                 savedOrderViews = JsonSerializer.Deserialize<Dictionary<string, OrderFilters>>(viewsJson!);
+                orderViewsSearch = searchSaved;
+                if (!string.IsNullOrWhiteSpace(defaultView) && savedOrderViews != null && savedOrderViews.ContainsKey(defaultView!))
+                {
+                    var f = savedOrderViews[defaultView!];
+                    filterProveedor = f.Proveedor;
+                    filterEntregado = f.Estado;
+                    receiveUserId = f.ReceiveUserId ?? receiveUserId;
+                    showOrdersCount = f.PageSize ?? showOrdersCount;
+                    if (!string.IsNullOrEmpty(f.SortField)) sortOrdersField = f.SortField!;
+                    if (!string.IsNullOrEmpty(f.SortDir)) sortOrdersDir = f.SortDir!;
+                    selectedOrderViewName = defaultView;
+                    currentOrderViewName = defaultView;
+                    defaultOrderViewName = defaultView;
+                }
+                else if (!string.IsNullOrWhiteSpace(lastView) && savedOrderViews != null && savedOrderViews.ContainsKey(lastView!))
+                {
+                    var f = savedOrderViews[lastView!];
+                    filterProveedor = f.Proveedor;
+                    filterEntregado = f.Estado;
+                    receiveUserId = f.ReceiveUserId ?? receiveUserId;
+                    showOrdersCount = f.PageSize ?? showOrdersCount;
+                    if (!string.IsNullOrEmpty(f.SortField)) sortOrdersField = f.SortField!;
+                    if (!string.IsNullOrEmpty(f.SortDir)) sortOrdersDir = f.SortDir!;
+                    selectedOrderViewName = lastView;
+                    currentOrderViewName = lastView;
+                }
             }
         }
         catch { }
@@ -535,16 +601,126 @@
         if (!string.IsNullOrEmpty(f.SortDir)) sortOrdersDir = f.SortDir!;
         await LoadOrders();
         success = $"Vista '{name}' aplicada.";
+        try { await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-last-view", name); } catch { }
+        currentOrderViewName = name;
     }
 
     private async Task DeleteOrderView()
     {
         var name = selectedOrderViewName;
         if (string.IsNullOrEmpty(name) || savedOrderViews == null || !savedOrderViews.ContainsKey(name)) return;
+        var ok = await JS.InvokeAsync<bool>("confirm", $"Eliminar vista '{name}'?");
+        if (!ok) return;
         savedOrderViews.Remove(name);
         await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-views", JsonSerializer.Serialize(savedOrderViews));
         selectedOrderViewName = null;
         success = $"Vista eliminada.";
+        try { var last = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-last-view"); if (last == name) { await JS.InvokeVoidAsync("app.removeLocal", "compras-ordenes-last-view"); } } catch { }
+        try { var defv = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-default-view"); if (defv == name) { await JS.InvokeVoidAsync("app.removeLocal", "compras-ordenes-default-view"); defaultOrderViewName = null; } } catch { }
+        if (currentOrderViewName == name) currentOrderViewName = null;
+    }
+
+    private async Task ClearOrderViews()
+    {
+        savedOrderViews = new Dictionary<string, OrderFilters>();
+        selectedOrderViewName = null;
+        try { await JS.InvokeVoidAsync("app.removeLocal", "compras-ordenes-views"); } catch { }
+        try { await JS.InvokeVoidAsync("app.removeLocal", "compras-ordenes-last-view"); } catch { }
+        success = "Vistas limpiadas.";
+        currentOrderViewName = null;
+    }
+
+    private async Task ExportOrderViews()
+    {
+        var json = JsonSerializer.Serialize(savedOrderViews ?? new Dictionary<string, OrderFilters>());
+        await JS.InvokeVoidAsync("app.downloadFile", "ordenes_vistas.json", json, "application/json;charset=utf-8");
+    }
+
+    private async Task CopyOrderViews()
+    {
+        var json = JsonSerializer.Serialize(savedOrderViews ?? new Dictionary<string, OrderFilters>());
+        var ok = await JS.InvokeAsync<bool>("app.copyToClipboard", json);
+        success = ok ? "JSON copiado al portapapeles." : "No se pudo copiar el JSON.";
+    }
+
+    private async Task SetOrderDefaultView()
+    {
+        var name = selectedOrderViewName;
+        if (string.IsNullOrEmpty(name)) return;
+        try { await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-default-view", name); defaultOrderViewName = name; success = $"Vista por defecto: '{name}'."; } catch { }
+    }
+
+    private async Task ClearOrderDefaultView()
+    {
+        try { await JS.InvokeVoidAsync("app.removeLocal", "compras-ordenes-default-view"); defaultOrderViewName = null; success = "Vista por defecto quitada."; } catch { }
+    }
+
+    private void ToggleOrderImport()
+    {
+        showOrderImport = !showOrderImport;
+        if (!showOrderImport) importOrderViewsJson = null;
+    }
+
+    private async Task ImportOrderViews()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(importOrderViewsJson)) return;
+            var dict = JsonSerializer.Deserialize<Dictionary<string, OrderFilters>>(importOrderViewsJson!);
+            if (dict == null) { error = "JSON inválido"; return; }
+            if (!orderImportMerge || savedOrderViews == null)
+            {
+                savedOrderViews = dict;
+            }
+            else
+            {
+                foreach (var kv in dict)
+                {
+                    savedOrderViews[kv.Key] = kv.Value;
+                }
+            }
+            await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-views", JsonSerializer.Serialize(savedOrderViews));
+            success = "Vistas importadas.";
+            showOrderImport = false;
+            importOrderViewsJson = null;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task OnOrderSearchInput(ChangeEventArgs e)
+    {
+        orderViewsSearch = e.Value?.ToString();
+        try { await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-views-search", orderViewsSearch ?? ""); } catch { }
+    }
+
+    private async Task ApplyLastOrderView()
+    {
+        try
+        {
+            var last = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-last-view");
+            if (string.IsNullOrWhiteSpace(last) || savedOrderViews == null || !savedOrderViews.ContainsKey(last!)) return;
+            selectedOrderViewName = last;
+            await ApplyOrderView();
+        }
+        catch { }
+    }
+
+    private async Task RenameOrderView()
+    {
+        var oldName = selectedOrderViewName;
+        var newName = renameOrderViewName?.Trim();
+        if (string.IsNullOrEmpty(oldName) || string.IsNullOrEmpty(newName) || savedOrderViews == null) return;
+        if (savedOrderViews.ContainsKey(newName)) { error = "Ya existe una vista con ese nombre"; return; }
+        var val = savedOrderViews[oldName];
+        savedOrderViews[newName] = val;
+        savedOrderViews.Remove(oldName);
+        await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-views", JsonSerializer.Serialize(savedOrderViews));
+        selectedOrderViewName = newName;
+        if (currentOrderViewName == oldName) currentOrderViewName = newName;
+        success = "Vista renombrada.";
     }
 
     private void ShowMoreOrders()

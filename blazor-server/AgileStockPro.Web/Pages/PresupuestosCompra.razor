@@ -2,10 +2,11 @@
 @using BusinessLogic.Services
 @using Contracts
 @using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
 @inject IPurchasingService Purchasing
 @inject ISupplierService Suppliers
 @inject IJSRuntime JS
-@using AgileStockPro.Web.Components.Shared
+@using AgileStockPro.Web.Components
 
 <AuthGuard RequireAdmin="true">
     <h2>Presupuestos de Compra</h2>
@@ -21,8 +22,8 @@
                 }
             }
         </select>
-        <InputDate @bind-Value="filterDesde" style="width:140px" />
-        <InputDate @bind-Value="filterHasta" style="width:140px" />
+        <InputDate TValue="DateTime?" @bind-Value="filterDesde" style="width:140px" />
+        <InputDate TValue="DateTime?" @bind-Value="filterHasta" style="width:140px" />
         <label style="margin-left:6px;font-size:12px;color:#555;">Ordenar:
             <select style="margin-left:4px;" @bind="sortQuotesField">
                 <option value="fecha">Fecha</option>
@@ -54,20 +55,50 @@
 
     <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         <input placeholder="Nombre de vista" style="width:160px" @bind="newQuoteViewName" />
-        <button @onclick="SaveQuoteView">Guardar vista</button>
+        <button @onclick="SaveQuoteView" disabled="@(string.IsNullOrWhiteSpace(newQuoteViewName))" title="Guardar la vista con el nombre ingresado">Guardar vista</button>
+        <input placeholder="Buscar vista" style="width:140px" @bind="quoteViewsSearch" @bind:event="oninput" title="Filtrar vistas por nombre" />
         <select style="min-width:180px" @bind="selectedQuoteViewName">
             <option value="">Seleccionar vista…</option>
             @if (savedQuoteViews != null)
             {
-                foreach (var kv in savedQuoteViews)
+                foreach (var kv in savedQuoteViews
+                    .Where(kv => string.IsNullOrEmpty(quoteViewsSearch) || (kv.Key?.IndexOf(quoteViewsSearch, StringComparison.OrdinalIgnoreCase) >= 0))
+                    .OrderBy(kv => kv.Key))
                 {
-                    <option value="@kv.Key">@kv.Key</option>
+                    <option value="@kv.Key">@(kv.Key + (defaultQuoteViewName == kv.Key ? " (defecto)" : ""))</option>
                 }
             }
         </select>
-        <button @onclick="ApplyQuoteView">Aplicar</button>
-        <button @onclick="DeleteQuoteView">Eliminar</button>
+        <span style="font-size:12px;color:#555;">Vistas guardadas: @(savedQuoteViews?.Count ?? 0)</span>
+        <button @onclick="ApplyQuoteView" disabled="@(string.IsNullOrEmpty(selectedQuoteViewName))" title="Aplicar la vista seleccionada">Aplicar</button>
+        <button @onclick="ApplyLastQuoteView" title="Aplicar la última vista usada">Aplicar última</button>
+        <button @onclick="SetQuoteDefaultView" disabled="@(string.IsNullOrEmpty(selectedQuoteViewName))" title="Marcar vista seleccionada como por defecto">Por defecto</button>
+        <button @onclick="ClearQuoteDefaultView" title="Quitar vista por defecto">Quitar defecto</button>
+        <button @onclick="DeleteQuoteView" disabled="@(string.IsNullOrEmpty(selectedQuoteViewName))" title="Eliminar la vista seleccionada">Eliminar</button>
+        <input placeholder="Nuevo nombre" style="width:160px" @bind="renameQuoteViewName" title="Nuevo nombre para la vista seleccionada" />
+        <button @onclick="RenameQuoteView" disabled="@(string.IsNullOrEmpty(selectedQuoteViewName) || string.IsNullOrWhiteSpace(renameQuoteViewName))" title="Renombrar la vista seleccionada">Renombrar</button>
+        <button @onclick="ClearQuoteViews" title="Eliminar todas las vistas guardadas">Limpiar vistas</button>
+        <span style="margin-left:8px;font-size:12px;color:#555;" title="La vista actualmente aplicada">@((string.IsNullOrEmpty(currentQuoteViewName)?"":$"Vista actual: {currentQuoteViewName}"))</span>
+        <span style="margin-left:8px;font-size:12px;color:#555;" title="Vista que se aplicará por defecto">@((string.IsNullOrEmpty(defaultQuoteViewName)?"":$"Vista por defecto: {defaultQuoteViewName}"))</span>
+        <button @onclick="ExportQuoteViews" title="Exportar vistas a JSON">Exportar vistas</button>
+        <button @onclick="CopyQuoteViews" title="Copiar JSON de vistas al portapapeles">Copiar JSON</button>
+        <button @onclick="ToggleQuoteImport" title="Importar vistas desde JSON">Importar vistas</button>
     </div>
+
+    @if (showQuoteImport)
+    {
+        <div style="margin-bottom:8px;display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">
+            <textarea rows="3" style="min-width:300px;" @bind="importQuoteViewsJson" placeholder="Pegar JSON de vistas aquí..."></textarea>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <label style="font-size:12px;color:#555;display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" @bind="quoteImportMerge" />
+                    <span>Unir con existentes (sobre-escribe duplicados)</span>
+                </label>
+                <button @onclick="ImportQuoteViews" disabled="@(string.IsNullOrWhiteSpace(importQuoteViewsJson))">Importar</button>
+                <button @onclick="ToggleQuoteImport">Cerrar</button>
+            </div>
+        </div>
+    }
 
     @if (quotes != null && quotes.Any())
     {
@@ -240,6 +271,13 @@
     private string? newQuoteViewName;
     private string? selectedQuoteViewName;
     private Dictionary<string, Filters>? savedQuoteViews;
+    private string? currentQuoteViewName;
+    private string? renameQuoteViewName;
+    private string? quoteViewsSearch;
+    private string? defaultQuoteViewName;
+    private bool showQuoteImport;
+    private string? importQuoteViewsJson;
+    private bool quoteImportMerge;
 
     protected override async Task OnInitializedAsync()
     {
@@ -248,6 +286,9 @@
         {
             var saved = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-filters");
             var viewsJson = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-views");
+            var lastView = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-last-view");
+            var defaultView = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-default-view");
+            var searchSaved = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-views-search");
             if (!string.IsNullOrWhiteSpace(saved))
             {
                 var f = JsonSerializer.Deserialize<Filters>(saved!);
@@ -265,6 +306,34 @@
             if (!string.IsNullOrWhiteSpace(viewsJson))
             {
                 savedQuoteViews = JsonSerializer.Deserialize<Dictionary<string, Filters>>(viewsJson!);
+                quoteViewsSearch = searchSaved;
+                if (!string.IsNullOrWhiteSpace(defaultView) && savedQuoteViews != null && savedQuoteViews.ContainsKey(defaultView!))
+                {
+                    var f = savedQuoteViews[defaultView!];
+                    filterProveedor = f.Proveedor;
+                    filterDesde = f.Desde;
+                    filterHasta = f.Hasta;
+                    newQuoteSupplierId = f.NewProveedorId;
+                    showQuotesCount = f.PageSize ?? showQuotesCount;
+                    if (!string.IsNullOrEmpty(f.SortField)) sortQuotesField = f.SortField!;
+                    if (!string.IsNullOrEmpty(f.SortDir)) sortQuotesDir = f.SortDir!;
+                    selectedQuoteViewName = defaultView;
+                    currentQuoteViewName = defaultView;
+                    defaultQuoteViewName = defaultView;
+                }
+                else if (!string.IsNullOrWhiteSpace(lastView) && savedQuoteViews != null && savedQuoteViews.ContainsKey(lastView!))
+                {
+                    var f = savedQuoteViews[lastView!];
+                    filterProveedor = f.Proveedor;
+                    filterDesde = f.Desde;
+                    filterHasta = f.Hasta;
+                    newQuoteSupplierId = f.NewProveedorId;
+                    showQuotesCount = f.PageSize ?? showQuotesCount;
+                    if (!string.IsNullOrEmpty(f.SortField)) sortQuotesField = f.SortField!;
+                    if (!string.IsNullOrEmpty(f.SortDir)) sortQuotesDir = f.SortDir!;
+                    selectedQuoteViewName = lastView;
+                    currentQuoteViewName = lastView;
+                }
             }
         }
         catch { }
@@ -594,15 +663,125 @@
         if (!string.IsNullOrEmpty(f.SortDir)) sortQuotesDir = f.SortDir!;
         await LoadQuotes();
         success = $"Vista '{name}' aplicada.";
+        try { await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-last-view", name); } catch { }
+        currentQuoteViewName = name;
     }
 
     private async Task DeleteQuoteView()
     {
         var name = selectedQuoteViewName;
         if (string.IsNullOrEmpty(name) || savedQuoteViews == null || !savedQuoteViews.ContainsKey(name)) return;
+        var ok = await JS.InvokeAsync<bool>("confirm", $"Eliminar vista '{name}'?");
+        if (!ok) return;
         savedQuoteViews.Remove(name);
         await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-views", JsonSerializer.Serialize(savedQuoteViews));
         selectedQuoteViewName = null;
         success = $"Vista eliminada.";
+        try { var last = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-last-view"); if (last == name) { await JS.InvokeVoidAsync("app.removeLocal", "compras-presupuestos-last-view"); } } catch { }
+        try { var defv = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-default-view"); if (defv == name) { await JS.InvokeVoidAsync("app.removeLocal", "compras-presupuestos-default-view"); defaultQuoteViewName = null; } } catch { }
+        if (currentQuoteViewName == name) currentQuoteViewName = null;
+    }
+
+    private async Task ClearQuoteViews()
+    {
+        savedQuoteViews = new Dictionary<string, Filters>();
+        selectedQuoteViewName = null;
+        try { await JS.InvokeVoidAsync("app.removeLocal", "compras-presupuestos-views"); } catch { }
+        try { await JS.InvokeVoidAsync("app.removeLocal", "compras-presupuestos-last-view"); } catch { }
+        success = "Vistas limpiadas.";
+        currentQuoteViewName = null;
+    }
+
+    private async Task ExportQuoteViews()
+    {
+        var json = JsonSerializer.Serialize(savedQuoteViews ?? new Dictionary<string, Filters>());
+        await JS.InvokeVoidAsync("app.downloadFile", "presupuestos_vistas.json", json, "application/json;charset=utf-8");
+    }
+
+    private async Task CopyQuoteViews()
+    {
+        var json = JsonSerializer.Serialize(savedQuoteViews ?? new Dictionary<string, Filters>());
+        var ok = await JS.InvokeAsync<bool>("app.copyToClipboard", json);
+        success = ok ? "JSON copiado al portapapeles." : "No se pudo copiar el JSON.";
+    }
+
+    private async Task SetQuoteDefaultView()
+    {
+        var name = selectedQuoteViewName;
+        if (string.IsNullOrEmpty(name)) return;
+        try { await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-default-view", name); defaultQuoteViewName = name; success = $"Vista por defecto: '{name}'."; } catch { }
+    }
+
+    private async Task ClearQuoteDefaultView()
+    {
+        try { await JS.InvokeVoidAsync("app.removeLocal", "compras-presupuestos-default-view"); defaultQuoteViewName = null; success = "Vista por defecto quitada."; } catch { }
+    }
+
+    private void ToggleQuoteImport()
+    {
+        showQuoteImport = !showQuoteImport;
+        if (!showQuoteImport) importQuoteViewsJson = null;
+    }
+
+    private async Task ImportQuoteViews()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(importQuoteViewsJson)) return;
+            var dict = JsonSerializer.Deserialize<Dictionary<string, Filters>>(importQuoteViewsJson!);
+            if (dict == null) { error = "JSON inválido"; return; }
+            if (!quoteImportMerge || savedQuoteViews == null)
+            {
+                savedQuoteViews = dict;
+            }
+            else
+            {
+                foreach (var kv in dict)
+                {
+                    savedQuoteViews[kv.Key] = kv.Value; // override duplicates
+                }
+            }
+            await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-views", JsonSerializer.Serialize(savedQuoteViews));
+            success = "Vistas importadas.";
+            showQuoteImport = false;
+            importQuoteViewsJson = null;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task OnQuoteSearchInput(ChangeEventArgs e)
+    {
+        quoteViewsSearch = e.Value?.ToString();
+        try { await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-views-search", quoteViewsSearch ?? ""); } catch { }
+    }
+
+    private async Task ApplyLastQuoteView()
+    {
+        try
+        {
+            var last = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-last-view");
+            if (string.IsNullOrWhiteSpace(last) || savedQuoteViews == null || !savedQuoteViews.ContainsKey(last!)) return;
+            selectedQuoteViewName = last;
+            await ApplyQuoteView();
+        }
+        catch { }
+    }
+
+    private async Task RenameQuoteView()
+    {
+        var oldName = selectedQuoteViewName;
+        var newName = renameQuoteViewName?.Trim();
+        if (string.IsNullOrEmpty(oldName) || string.IsNullOrEmpty(newName) || savedQuoteViews == null) return;
+        if (savedQuoteViews.ContainsKey(newName)) { error = "Ya existe una vista con ese nombre"; return; }
+        var val = savedQuoteViews[oldName];
+        savedQuoteViews[newName] = val;
+        savedQuoteViews.Remove(oldName);
+        await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-views", JsonSerializer.Serialize(savedQuoteViews));
+        selectedQuoteViewName = newName;
+        if (currentQuoteViewName == oldName) currentQuoteViewName = newName;
+        success = "Vista renombrada.";
     }
 }
