@@ -84,7 +84,7 @@
         await Auth.LogoutAsync();
         currentUser = null;
         Toast.ShowInfo("Sesión cerrada");
-        StateHasChanged();
+        Navigation.NavigateTo("/login", true);
     }
 
     private void SetupAutoLogout()

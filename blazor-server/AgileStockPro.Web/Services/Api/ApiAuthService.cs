@@ -91,12 +91,11 @@ public class ApiAuthService : IAuthService
         return null;
     }
 
-    public Task LogoutAsync()
+    public async Task LogoutAsync()
     {
         _tokens.SetToken(null);
         // Best-effort backend logout to clear auth cookie
-        try { _ = _api.PostAsync("api/v1/auth/logout", new { }); } catch { }
-        return Task.CompletedTask;
+        try { await _api.PostAsync("api/v1/auth/logout", new { }); } catch { }
     }
 
     public async Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string currentPassword, string newPassword)

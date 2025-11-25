@@ -5,7 +5,6 @@ using DataAccess;
 using Microsoft.AspNetCore.Components.Authorization;
 using AgileStockPro.Web.Auth;
 using AgileStockPro.Web.Services.Api;
-using AgileStockPro.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

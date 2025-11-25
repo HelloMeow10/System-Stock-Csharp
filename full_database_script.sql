@@ -550,6 +550,34 @@ BEGIN
 END
 GO
 
+DROP PROCEDURE IF EXISTS sp_get_usuario_by_id;
+GO
+CREATE PROCEDURE sp_get_usuario_by_id
+    @id_usuario INT
+AS
+BEGIN
+    SELECT
+        u.id_usuario,
+        u.usuario,
+        u.contrasena_script,
+        u.id_persona,
+        u.fecha_bloqueo,
+        u.nombre_usuario_bloqueo,
+        u.fecha_ultimo_cambio,
+        u.id_rol,
+        u.id_politica,
+        u.CambioContrasenaObligatorio,
+        u.Codigo2FA,
+        u.Codigo2FAExpiracion,
+        u.FechaExpiracion,
+        r.id_rol AS rol_id_rol,
+        r.rol
+    FROM usuarios u
+    INNER JOIN roles r ON u.id_rol = r.id_rol
+    WHERE u.id_usuario = @id_usuario;
+END
+GO
+
 DROP PROCEDURE IF EXISTS sp_get_all_users;
 GO
 CREATE PROCEDURE sp_get_all_users
@@ -1058,8 +1086,8 @@ SET @fecha_ultimo_cambio = GETDATE();
 
 IF @id_persona IS NOT NULL AND @id_rol IS NOT NULL
 BEGIN
-    -- ContraseÃ±a "admin123" encriptada with SHA256 (concatenada con 'admin')
-    DECLARE @password VARBINARY(512) = HASHBYTES('SHA2_256', 'admin123admin');
+    -- ContraseÃ±a "admin123" encriptada with Argon2id (salt=username)
+    DECLARE @password VARBINARY(512) = 0xA6CD645C57030D00EB8F8CB4A2B21BBEDC54181871ACE4BB6E578D67337F4C05;
     EXEC sp_insert_usuario
         @usuario = 'admin',
         @contrasena_script = @password,
@@ -3392,7 +3420,7 @@ SELECT @id_persona_oper = id_persona FROM personas WHERE num_doc = '20000001';
 
 IF NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'operador') AND @id_persona_oper IS NOT NULL
 BEGIN
-    SET @pass = HASHBYTES('SHA2_256', 'Operador123operador');
+    SET @pass = 0x2F87B976666AF7E41D8C279FDAFB8BD8926B6D4A0684BB14F88A01A11E124C7B;
     DECLARE @now DATETIME = GETDATE();
     EXEC sp_insert_usuario
         @usuario = 'operador',
@@ -3428,8 +3456,8 @@ SELECT @id_persona_admin = id_persona FROM personas WHERE num_doc = '20000000';
 
 IF NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin') AND @id_persona_admin IS NOT NULL
 BEGIN
-    -- Password: admin123 -> SHA256('admin123admin')
-    SET @pass = HASHBYTES('SHA2_256', 'admin123admin');
+    -- Password: admin123 -> Argon2id
+    SET @pass = 0xA6CD645C57030D00EB8F8CB4A2B21BBEDC54181871ACE4BB6E578D67337F4C05;
     DECLARE @now_admin DATETIME = GETDATE();
     EXEC sp_insert_usuario
         @usuario = 'admin',
@@ -3465,7 +3493,7 @@ SELECT @id_persona_admin2 = id_persona FROM personas WHERE num_doc = '20000002';
 
 IF NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin2') AND @id_persona_admin2 IS NOT NULL
 BEGIN
-    SET @pass2 = HASHBYTES('SHA2_256', 'Admin123admin');
+    SET @pass2 = 0x3FFA80ABC142A9AC6EBAC9BEAB81048E5DFA827FEACDD346B6B41320B7986363;
     DECLARE @now2 DATETIME = GETDATE();
     EXEC sp_insert_usuario
         @usuario = 'admin2',
@@ -3480,4 +3508,7 @@ END
 
 PRINT 'Seed demo users completed.';
 
-PRINT 'Seed demo users completed.';
+-- Force update passwords to ensure they are correct even if users already existed
+UPDATE usuarios SET contrasena_script = 0xA6CD645C57030D00EB8F8CB4A2B21BBEDC54181871ACE4BB6E578D67337F4C05 WHERE usuario = 'admin';
+UPDATE usuarios SET contrasena_script = 0x2F87B976666AF7E41D8C279FDAFB8BD8926B6D4A0684BB14F88A01A11E124C7B WHERE usuario = 'operador';
+UPDATE usuarios SET contrasena_script = 0x3FFA80ABC142A9AC6EBAC9BEAB81048E5DFA827FEACDD346B6B41320B7986363 WHERE usuario = 'admin2';

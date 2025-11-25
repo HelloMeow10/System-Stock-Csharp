@@ -145,7 +145,9 @@ namespace BusinessLogic.Services
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Error al enviar el correo de bienvenida. Verifique la configuración SMTP. Detalles: {ex.Message}", ex);
+                // Log the error but do not throw, so user creation succeeds even if email fails
+                // In a real app, you might want to queue this email for retry
+                Console.WriteLine($"Error sending email: {ex.Message}");
             }
         }
 

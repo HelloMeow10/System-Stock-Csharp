@@ -80,28 +80,36 @@ else
     <div class="panel" style="margin-top:1rem;">
         <div class="panel-header">@(editing.Id == Guid.Empty ? "Nuevo usuario" : $"Editar: {editing.Username}")</div>
         <div style="display:grid; grid-template-columns: 160px 1fr; gap:.5rem; align-items:center;">
-            <label>Usuario <span class="req">*</span></label>
-            <input class=@($"input {(Invalid("Username") ? "invalid" : "")}") @bind-value="editing.Username" />
-            @if (Invalid("Username")) { <span class="error-text">@GetError("Username")</span> }
-            <label>Nombre</label>
-            <input class="input" @bind-value="editing.Name" />
-            <label>Apellido</label>
-            <input class="input" @bind-value="editing.LastName" />
-            <label>Email</label>
-            <input class=@($"input {(Invalid("Email") ? "invalid" : "")}") @bind-value="editing.Email" />
-            @if (Invalid("Email")) { <span class="error-text">@GetError("Email")</span> }
             <label>Persona <span class="req">*</span></label>
-            <select class=@($"input {(Invalid("PersonaId") ? "invalid" : "")}") @bind="selectedPersonaId">
-                <option value="">Seleccione…</option>
-                @if (personas != null)
-                {
-                    foreach (var p in personas)
+            <div style="display:flex; gap:.5rem;">
+                <select class=@($"input {(Invalid("PersonaId") ? "invalid" : "")}") @bind="selectedPersonaId" @bind:after="OnPersonaSelected">
+                    <option value="">Seleccione…</option>
+                    @if (personas != null)
                     {
-                        <option value="@p.IdPersona">@p.NombreCompleto</option>
+                        foreach (var p in personas)
+                        {
+                            <option value="@p.IdPersona">@p.NombreCompleto</option>
+                        }
                     }
-                }
-            </select>
-            @if (Invalid("PersonaId")) { <span class="error-text">@GetError("PersonaId")</span> }
+                </select>
+            </div>
+            @if (Invalid("PersonaId")) { <span class="error-text" style="grid-column:2">@GetError("PersonaId")</span> }
+
+            <label>Usuario <span class="req">*</span></label>
+            <div style="display:flex; gap:.5rem;">
+                <input class=@($"input {(Invalid("Username") ? "invalid" : "")}") @bind-value="editing.Username" />
+                <button class="btn" @onclick="GenerateUsernameFromPersona" type="button" title="Generar usuario basado en nombre y apellido">Generar</button>
+            </div>
+            @if (Invalid("Username")) { <span class="error-text" style="grid-column:2">@GetError("Username")</span> }
+
+            <label>Nombre</label>
+            <input class="input" @bind-value="editing.Name" readonly style="background-color:#f0f0f0;" />
+            <label>Apellido</label>
+            <input class="input" @bind-value="editing.LastName" readonly style="background-color:#f0f0f0;" />
+            <label>Email</label>
+            <input class=@($"input {(Invalid("Email") ? "invalid" : "")}") @bind-value="editing.Email" readonly style="background-color:#f0f0f0;" />
+            @if (Invalid("Email")) { <span class="error-text" style="grid-column:2">@GetError("Email")</span> }
+            
             <label>Rol <span class="req">*</span></label>
             <select class=@($"input {(Invalid("RolId") ? "invalid" : "")}") @bind="selectedRolId">
                 <option value="">Seleccione…</option>
@@ -113,7 +121,8 @@ else
                     }
                 }
             </select>
-            @if (Invalid("RolId")) { <span class="error-text">@GetError("RolId")</span> }
+            @if (Invalid("RolId")) { <span class="error-text" style="grid-column:2">@GetError("RolId")</span> }
+            
             <label>Habilitado</label>
             <input type="checkbox" @bind="editing.Habilitado" style="width:auto;" />
             <label>Forzar cambio contraseña</label>
@@ -121,22 +130,6 @@ else
             <label>Fecha expiración</label>
             <input class="input" type="date" @bind-value="editing.Expira" @bind-value:format="yyyy-MM-dd" />
         </div>
-
-        <div class="panel-header" style="margin-top:1rem;">Preguntas de seguridad</div>
-        @for (int i = 0; i < policy.QuestionsCount; i++)
-        {
-            var q = (i < editing.SecurityQuestions.Count) ? editing.SecurityQuestions[i] : new SecurityQuestion();
-            if (i >= editing.SecurityQuestions.Count) editing.SecurityQuestions.Add(q);
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.5rem; margin-bottom:.5rem;">
-                <select class="input" @bind="q.Question">
-                    @foreach (var item in SecurityQuestionsCatalog.Default)
-                    {
-                        <option value="@item">@item</option>
-                    }
-                </select>
-                <input class="input" type="password" placeholder="Respuesta" @oninput="@(async (ChangeEventArgs e) => await SetAnswerHash(q, e))" />
-            </div>
-        }
 
         <div style="display:flex; gap:.5rem; margin-top:.75rem;">
             <button class="btn btn-primary" disabled="@busy" @onclick="Guardar">@(busy ? "Guardando…" : "Guardar")</button>
@@ -150,7 +143,7 @@ else
 }
 
 @code {
-    private List<AppUser>? list; // legacy local store (used for hashing questions)
+    // private List<AppUser>? list; // legacy local store (used for hashing questions)
     private List<AgileStockPro.Web.Services.Api.UserDto> backendUsers = new();
     private int totalCount;
     private AppUser? editing;
@@ -466,5 +459,37 @@ else
         public string? Title { get; set; }
         public string? Detail { get; set; }
         public Dictionary<string, string[]>? Errors { get; set; }
+    }
+
+    private void OnPersonaSelected()
+    {
+        if (string.IsNullOrWhiteSpace(selectedPersonaId) || personas == null || editing == null) return;
+        
+        if (int.TryParse(selectedPersonaId, out int pid))
+        {
+            var p = personas.FirstOrDefault(x => x.IdPersona == pid);
+            if (p != null)
+            {
+                editing.Name = p.Nombre;
+                editing.LastName = p.Apellido;
+                editing.Email = p.Correo;
+            }
+        }
+    }
+
+    private void GenerateUsernameFromPersona()
+    {
+        if (editing == null || string.IsNullOrWhiteSpace(editing.Name) || string.IsNullOrWhiteSpace(editing.LastName))
+        {
+            Toast.ShowInfo("Seleccione una persona primero");
+            return;
+        }
+        
+        // Simple generation: First letter of Name + LastName
+        // Remove spaces and special chars if needed
+        var namePart = editing.Name.Trim().Split(' ')[0];
+        var lastNamePart = editing.LastName.Trim().Split(' ')[0];
+        
+        editing.Username = $"{namePart}{lastNamePart}".ToLower();
     }
 }

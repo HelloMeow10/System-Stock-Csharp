@@ -15,7 +15,7 @@ namespace BusinessLogic
             services.AddAutoMapper(typeof(DependencyInjection).Assembly);
 
             // Register configuration
-            services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
+            services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
 
             // Register Factories
             services.AddScoped<IPersonaFactory, PersonaFactory>();
