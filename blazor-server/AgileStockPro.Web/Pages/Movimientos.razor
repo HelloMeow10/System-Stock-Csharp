@@ -5,11 +5,15 @@
 @inject IAppDataService Data
 @inject AgileStockPro.Web.Services.Api.IStockApiService StockApi
 @inject IUserStore UserStore
+@inject AgileStockPro.Web.Services.IAuthService AuthService
 
 <AuthGuard>
 <PageHeader Title="Movimientos">
 	<Actions>
-		<button class="btn" @onclick="ToggleForm">@((showForm?"Ocultar":"Registrar ingreso"))</button>
+		@if (currentUser?.IsAdmin == true)
+		{
+			<button class="btn" @onclick="ToggleForm">@((showForm?"Ocultar":"Registrar ingreso"))</button>
+		}
 	</Actions>
 </PageHeader>
 
@@ -112,12 +116,14 @@ else
 	private DateOnly fromDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
 	private DateOnly toDate = DateOnly.FromDateTime(DateTime.Today);
 	private int userId = 1; // fallback
+	private AgileStockPro.Web.Models.AppUser? currentUser;
 	protected override async Task OnInitializedAsync()
 	{
 		try {
 			items = await StockApi.GetMovementsAsync(fromDate, toDate);
 			products = (await StockApi.GetProductsAsync()).ToList();
-			var user = await UserStore.GetCurrentUserAsync();
+			currentUser = await AuthService.GetCurrentUserAsync();
+			var user = currentUser;
 			if (user?.BackendIdUsuario is int id && id > 0) userId = id;
 		}
 		catch (Exception ex) { error = ex.Message; }

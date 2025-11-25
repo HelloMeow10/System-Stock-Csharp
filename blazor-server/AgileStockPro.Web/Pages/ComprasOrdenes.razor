@@ -1,0 +1,579 @@
+@page "/compras/ordenes"
+@using BusinessLogic.Services
+@using Contracts
+@using System.Text.Json
+@inject IPurchasingService Purchasing
+@inject IStockService Stock
+@inject ISupplierService Suppliers
+@inject IJSRuntime JS
+@using AgileStockPro.Web.Services
+@inject IUserStore UserStore
+@using AgileStockPro.Web.Components.Shared
+
+<AuthGuard RequireAdmin="true">
+    <h2>Órdenes de Compra</h2>
+
+    <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <select style="min-width:200px;" @bind="filterProveedor">
+            <option value="">Todos proveedores…</option>
+            @if (suppliers != null)
+            {
+                foreach (var s in suppliers)
+                {
+                    <option value="@s.Id">@s.Nombre (@s.Cuit)</option>
+                }
+            }
+        </select>
+        <select @bind="filterEntregado" style="width:140px;">
+            <option value="">--Estado--</option>
+            <option value="pend">Pendientes</option>
+            <option value="done">Entregadas</option>
+        </select>
+        <label style="margin-left:6px;font-size:12px;color:#555;">Ordenar:
+            <select style="margin-left:4px;" @bind="sortOrdersField">
+                <option value="fecha">Fecha</option>
+                <option value="total">Total</option>
+                <option value="items">Items</option>
+                <option value="proveedor">Proveedor</option>
+                <option value="estado">Estado</option>
+            </select>
+            <select style="margin-left:4px;" @bind="sortOrdersDir">
+                <option value="desc">Desc</option>
+                <option value="asc">Asc</option>
+            </select>
+        </label>
+        <button @onclick="LoadOrders">Filtrar</button>
+        <button style="margin-left:6px;" @onclick="ClearOrderFilters">Limpiar filtros</button>
+        <button style="margin-left:6px;" @onclick="ExportOrdersCsv">Exportar CSV</button>
+        <span style="margin-left:12px;">Usuario recepción:</span>
+        <input type="number" min="1" placeholder="Usuario Id" style="width:100px" @bind="receiveUserId" />
+    </div>
+
+    <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <input placeholder="Nombre de vista" style="width:160px" @bind="newOrderViewName" />
+        <button @onclick="SaveOrderView">Guardar vista</button>
+        <select style="min-width:180px" @bind="selectedOrderViewName">
+            <option value="">Seleccionar vista…</option>
+            @if (savedOrderViews != null)
+            {
+                foreach (var kv in savedOrderViews)
+                {
+                    <option value="@kv.Key">@kv.Key</option>
+                }
+            }
+        </select>
+        <button @onclick="ApplyOrderView">Aplicar</button>
+        <button @onclick="DeleteOrderView">Eliminar</button>
+    </div>
+
+    @if (orders != null && orders.Any())
+    {
+        <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:12px;color:#555;">Mostrando @Math.Min(showOrdersCount, orders.Count) de @orders.Count</span>
+            <label style="font-size:12px;color:#555;">Tamaño:
+                <select style="margin-left:4px;" @onchange="OnOrderPageSizeChange">
+                    <option value="20" selected="@(showOrdersCount==20)">20</option>
+                    <option value="50" selected="@(showOrdersCount==50)">50</option>
+                    <option value="100" selected="@(showOrdersCount==100)">100</option>
+                </select>
+            </label>
+            <button @onclick="ShowMoreOrders">Mostrar más</button>
+            <button @onclick="ShowAllOrders">Mostrar todo</button>
+            <button @onclick="ResetOrdersView">Reiniciar vista</button>
+        </div>
+    }
+
+    @if (orders == null)
+    {
+        <p>Cargando...</p>
+    }
+    else if (!orders.Any())
+    {
+        <em>Sin órdenes.</em>
+    }
+    else
+    {
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="text-align:left;border-bottom:2px solid #ccc;">
+                    <th style="padding:4px;">ID</th>
+                    <th style="padding:4px;">Proveedor</th>
+                    <th style="padding:4px;">Fecha</th>
+                    <th style="padding:4px;">Items</th>
+                    <th style="padding:4px;">Total</th>
+                    <th style="padding:4px;">Estado</th>
+                    <th style="padding:4px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in orders.Take(showOrdersCount))
+                {
+                    bool expanded = expandedOrderId == o.Id;
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:4px;">@o.Id</td>
+                        <td style="padding:4px;">@FormatSupplier(o.ProveedorId, o.Proveedor, o.ProveedorCUIT)</td>
+                        <td style="padding:4px;">@o.Fecha.ToString("yyyy-MM-dd")</td>
+                        <td style="padding:4px;">@o.Items</td>
+                        <td style="padding:4px;">@o.Total.ToString("0.00")</td>
+                        <td style="padding:4px;">@(o.Entregado?"Entregada":"Pendiente")</td>
+                        <td style="padding:4px;">
+                            <button @onclick="() => ToggleOrder(o.Id)">@(expanded?"Cerrar":"Ver")</button>
+                            @if (!o.Entregado)
+                            {
+                                <button @onclick="() => MarkReceived(o.Id)" style="margin-left:4px;">Marcar Recibida</button>
+                            }
+                        </td>
+                    </tr>
+                    @if (expanded && orderItems != null)
+                    {
+                        <tr>
+                            <td colspan="7" style="padding:6px;background:#fafafa;">
+                                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                                    <thead>
+                                        <tr style="text-align:left;border-bottom:1px solid #ddd;">
+                                            <th style="padding:2px 4px;">Producto</th>
+                                            <th style="padding:2px 4px;">Cant.</th>
+                                            <th style="padding:2px 4px;">Precio</th>
+                                            <th style="padding:2px 4px;">Subtotal</th>
+                                            <th style="padding:2px 4px;">Recibido</th>
+                                            <th style="padding:2px 4px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var it in orderItems)
+                                        {
+                                            bool editing = editOrderItemId == it.Id;
+                                            <tr>
+                                                <td style="padding:2px 4px;">@it.ProductoId</td>
+                                                <td style="padding:2px 4px;">
+                                                    @if (editing)
+                                                    {
+                                                        <input type="number" min="1" style="width:60px" @bind="editOrderCantidad" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @it.Cantidad
+                                                    }
+                                                </td>
+                                                <td style="padding:2px 4px;">
+                                                    @if (editing)
+                                                    {
+                                                        <input type="number" min="0" step="0.01" style="width:80px" @bind="editOrderPrecio" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @it.PrecioUnitario.ToString("0.00")
+                                                    }
+                                                </td>
+                                                <td style="padding:2px 4px;">@it.Subtotal.ToString("0.00")</td>
+                                                <td style="padding:2px 4px;">@(it.RecibidoCantidad?.ToString() ?? "-")</td>
+                                                <td style="padding:2px 4px;">
+                                                    @if (editing)
+                                                    {
+                                                        <button @onclick="() => SaveOrderItem(it.Id)">Guardar</button>
+                                                        <button style="margin-left:4px;" @onclick="CancelOrderEdit">Cancelar</button>
+                                                    }
+                                                    else
+                                                    {
+                                                        @if (!orders.First(o => o.Id == expandedOrderId).Entregado)
+                                                        {
+                                                            <button @onclick="() => BeginOrderEdit(it)">Editar</button>
+                                                            <button style="margin-left:4px;" @onclick="() => RemoveOrderItem(it.Id)">Eliminar</button>
+                                                        }
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                        <tr>
+                                            <td colspan="6" style="padding-top:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                                                <span><strong>Total items:</strong> @orderItems.Sum(x => x.Subtotal).ToString("0.00")</span>
+                                                <button @onclick="ExportOrderItemsCsv">Exportar Items CSV</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div style="margin-top:10px;color:#b00020;font-size:12px;">@error</div>
+    }
+    @if (!string.IsNullOrEmpty(success))
+    {
+        <div class="badge success" style="margin-top:10px;">@success</div>
+    }
+</AuthGuard>
+
+@code {
+    private List<PurchaseOrderDto>? orders;
+    private List<PurchaseOrderItemDto>? orderItems;
+    private List<SupplierDto>? suppliers;
+    private int? editOrderItemId;
+    private string? editOrderCantidad;
+    private string? editOrderPrecio;
+    private int? expandedOrderId;
+    private string? error;
+    private string? success;
+    private string? filterProveedor;
+    private string? filterEntregado;
+    private string? receiveUserId;
+    private string sortOrdersField = "fecha";
+    private string sortOrdersDir = "desc";
+    private int showOrdersCount = 20;
+    private string? newOrderViewName;
+    private string? selectedOrderViewName;
+    private Dictionary<string, OrderFilters>? savedOrderViews;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await UserStore.GetCurrentUserAsync();
+        if (user?.BackendIdUsuario is int id && id > 0)
+        {
+            receiveUserId = id.ToString();
+        }
+        suppliers = (await Suppliers.GetAllAsync()).ToList();
+        try
+        {
+            var saved = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-filters");
+            var viewsJson = await JS.InvokeAsync<string?>("app.getLocal", "compras-ordenes-views");
+            if (!string.IsNullOrWhiteSpace(saved))
+            {
+                var f = JsonSerializer.Deserialize<OrderFilters>(saved!);
+                if (f != null)
+                {
+                    filterProveedor = f.Proveedor;
+                    filterEntregado = f.Estado;
+                    receiveUserId = f.ReceiveUserId ?? receiveUserId;
+                    if (f.PageSize.HasValue && f.PageSize.Value > 0) showOrdersCount = f.PageSize.Value;
+                    if (!string.IsNullOrWhiteSpace(f.SortField)) sortOrdersField = f.SortField!;
+                    if (!string.IsNullOrWhiteSpace(f.SortDir)) sortOrdersDir = f.SortDir!;
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(viewsJson))
+            {
+                savedOrderViews = JsonSerializer.Deserialize<Dictionary<string, OrderFilters>>(viewsJson!);
+            }
+        }
+        catch { }
+        await LoadOrders();
+    }
+
+    private void OnEntregadoFilterChange(ChangeEventArgs e) => filterEntregado = e.Value?.ToString();
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            int? prov = int.TryParse(filterProveedor, out var pv) ? pv : null;
+            bool? ent = filterEntregado == "pend" ? false : filterEntregado == "done" ? true : null;
+            orders = (await Purchasing.ListOrdersAsync(prov, ent)).OrderByDescending(o => o.Fecha).ToList();
+            try
+            {
+                var f = new OrderFilters { Proveedor = filterProveedor, Estado = filterEntregado, ReceiveUserId = receiveUserId, PageSize = showOrdersCount, SortField = sortOrdersField, SortDir = sortOrdersDir };
+                await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-filters", JsonSerializer.Serialize(f));
+            }
+            catch { }
+            if (orders != null && showOrdersCount > orders.Count)
+            {
+                showOrdersCount = orders.Count;
+            }
+            if (expandedOrderId.HasValue)
+            {
+                await LoadOrderItems(expandedOrderId.Value);
+            }
+            // apply sorting
+            if (orders != null)
+            {
+                IOrderedEnumerable<PurchaseOrderDto>? ordered = null;
+                bool desc = sortOrdersDir == "desc";
+                switch (sortOrdersField)
+                {
+                    case "total":
+                        ordered = desc ? orders.OrderByDescending(o => o.Total) : orders.OrderBy(o => o.Total);
+                        break;
+                    case "items":
+                        ordered = desc ? orders.OrderByDescending(o => o.Items) : orders.OrderBy(o => o.Items);
+                        break;
+                    case "proveedor":
+                        ordered = desc ? orders.OrderByDescending(o => o.Proveedor ?? GetSupplierName(o.ProveedorId)) : orders.OrderBy(o => o.Proveedor ?? GetSupplierName(o.ProveedorId));
+                        break;
+                    case "estado":
+                        ordered = desc ? orders.OrderByDescending(o => o.Entregado) : orders.OrderBy(o => o.Entregado);
+                        break;
+                    case "fecha":
+                    default:
+                        ordered = desc ? orders.OrderByDescending(o => o.Fecha) : orders.OrderBy(o => o.Fecha);
+                        break;
+                }
+                orders = ordered.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task ClearOrderFilters()
+    {
+        filterProveedor = null;
+        filterEntregado = null;
+        try { await JS.InvokeVoidAsync("app.removeLocal", "compras-ordenes-filters"); } catch { }
+        await LoadOrders();
+    }
+
+    private async Task LoadOrderItems(int orderId)
+    {
+        orderItems = (await Purchasing.GetOrderItemsAsync(orderId)).ToList();
+    }
+
+    private async Task ToggleOrder(int id)
+    {
+        if (expandedOrderId == id)
+        {
+            expandedOrderId = null;
+            orderItems = null;
+        }
+        else
+        {
+            expandedOrderId = id;
+            await LoadOrderItems(id);
+        }
+    }
+
+    private async Task MarkReceived(int id)
+    {
+        try
+        {
+            await Purchasing.MarkOrderReceivedAsync(id);
+            var items = await Purchasing.GetOrderItemsAsync(id);
+            int userId = int.TryParse(receiveUserId, out var u) ? u : 0;
+            foreach (var it in items)
+            {
+                var cantidad = it.RecibidoCantidad ?? it.Cantidad;
+                if (cantidad > 0)
+                {
+                    await Stock.IngresoMercaderiaAsync(new IngresoMercaderiaRequest
+                    {
+                        ProductoId = it.ProductoId,
+                        UsuarioId = userId,
+                        Cantidad = cantidad
+                    });
+                }
+            }
+            success = $"Orden #{id} marcada recibida y stock actualizado.";
+            await LoadOrders();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private void BeginOrderEdit(PurchaseOrderItemDto it)
+    {
+        editOrderItemId = it.Id;
+        editOrderCantidad = it.Cantidad.ToString();
+        editOrderPrecio = it.PrecioUnitario.ToString("0.##");
+    }
+
+    private void CancelOrderEdit()
+    {
+        editOrderItemId = null;
+        editOrderCantidad = null;
+        editOrderPrecio = null;
+    }
+
+    private async Task SaveOrderItem(int itemId)
+    {
+        if (!int.TryParse(editOrderCantidad, out var cant) || cant <= 0)
+        {
+            error = "Cantidad inválida";
+            return;
+        }
+        if (!decimal.TryParse(editOrderPrecio, out var precio) || precio < 0)
+        {
+            error = "Precio inválido";
+            return;
+        }
+        try
+        {
+            await Purchasing.UpdateOrderItemAsync(itemId, cant, precio);
+            CancelOrderEdit();
+            success = "Item actualizado.";
+            await LoadOrders();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task RemoveOrderItem(int itemId)
+    {
+        try
+        {
+            await Purchasing.DeleteOrderItemAsync(itemId);
+            success = "Item eliminado.";
+            await LoadOrders();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private string GetSupplierName(int proveedorId)
+    {
+        var name = suppliers?.FirstOrDefault(s => s.Id == proveedorId)?.Nombre;
+        return string.IsNullOrWhiteSpace(name) ? proveedorId.ToString() : name!;
+    }
+
+    private string FormatSupplier(int proveedorId, string? name, string? cuit)
+    {
+        var display = name ?? GetSupplierName(proveedorId);
+        return string.IsNullOrWhiteSpace(cuit) ? display : $"{display} ({cuit})";
+    }
+
+    private class OrderFilters
+    {
+        public string? Proveedor { get; set; }
+        public string? Estado { get; set; }
+        public string? ReceiveUserId { get; set; }
+        public int? PageSize { get; set; }
+        public string? SortField { get; set; }
+        public string? SortDir { get; set; }
+    }
+
+    private async Task ExportOrdersCsv()
+    {
+        if (orders == null || orders.Count == 0) return;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Id,ProveedorId,Proveedor,CUIT,Fecha,Items,Total,Estado");
+        foreach (var o in orders)
+        {
+            var name = o.Proveedor ?? GetSupplierName(o.ProveedorId);
+            var cuit = o.ProveedorCUIT ?? string.Empty;
+            var fecha = o.Fecha.ToString("yyyy-MM-dd");
+            var estado = o.Entregado ? "Entregada" : "Pendiente";
+            sb.AppendLine(string.Join(',', new[] {
+                o.Id.ToString(),
+                o.ProveedorId.ToString(),
+                EscapeCsv(name),
+                EscapeCsv(cuit),
+                fecha,
+                o.Items.ToString(),
+                o.Total.ToString("0.00"),
+                estado
+            }));
+        }
+        await JS.InvokeVoidAsync("app.downloadFile", "ordenes_compra.csv", sb.ToString(), "text/csv;charset=utf-8");
+    }
+
+    private static string EscapeCsv(string? input)
+    {
+        if (string.IsNullOrEmpty(input)) return "";
+        var needsQuotes = input.Contains(',') || input.Contains('"') || input.Contains('\n');
+        var s = input.Replace("\"", "\"\"");
+        return needsQuotes ? $"\"{s}\"" : s;
+    }
+
+    private async Task ExportOrderItemsCsv()
+    {
+        if (orderItems == null || orderItems.Count == 0) return;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("ItemId,ProductoId,Cantidad,PrecioUnitario,Subtotal,RecibidoCantidad");
+        foreach (var it in orderItems)
+        {
+            sb.AppendLine(string.Join(',', new[] {
+                it.Id.ToString(),
+                it.ProductoId.ToString(),
+                it.Cantidad.ToString(),
+                it.PrecioUnitario.ToString("0.00"),
+                it.Subtotal.ToString("0.00"),
+                (it.RecibidoCantidad?.ToString() ?? "")
+            }));
+        }
+        var fname = expandedOrderId.HasValue ? $"orden_{expandedOrderId.Value}_items.csv" : "orden_items.csv";
+        await JS.InvokeVoidAsync("app.downloadFile", fname, sb.ToString(), "text/csv;charset=utf-8");
+    }
+
+    private async Task SaveOrderView()
+    {
+        var name = newOrderViewName?.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+        savedOrderViews ??= new Dictionary<string, OrderFilters>();
+        savedOrderViews[name] = new OrderFilters
+        {
+            Proveedor = filterProveedor,
+            Estado = filterEntregado,
+            ReceiveUserId = receiveUserId,
+            PageSize = showOrdersCount,
+            SortField = sortOrdersField,
+            SortDir = sortOrdersDir
+        };
+        await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-views", JsonSerializer.Serialize(savedOrderViews));
+        success = $"Vista '{name}' guardada.";
+    }
+
+    private async Task ApplyOrderView()
+    {
+        var name = selectedOrderViewName;
+        if (string.IsNullOrEmpty(name) || savedOrderViews == null || !savedOrderViews.ContainsKey(name)) return;
+        var f = savedOrderViews[name];
+        filterProveedor = f.Proveedor;
+        filterEntregado = f.Estado;
+        receiveUserId = f.ReceiveUserId ?? receiveUserId;
+        showOrdersCount = f.PageSize ?? showOrdersCount;
+        if (!string.IsNullOrEmpty(f.SortField)) sortOrdersField = f.SortField!;
+        if (!string.IsNullOrEmpty(f.SortDir)) sortOrdersDir = f.SortDir!;
+        await LoadOrders();
+        success = $"Vista '{name}' aplicada.";
+    }
+
+    private async Task DeleteOrderView()
+    {
+        var name = selectedOrderViewName;
+        if (string.IsNullOrEmpty(name) || savedOrderViews == null || !savedOrderViews.ContainsKey(name)) return;
+        savedOrderViews.Remove(name);
+        await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-views", JsonSerializer.Serialize(savedOrderViews));
+        selectedOrderViewName = null;
+        success = $"Vista eliminada.";
+    }
+
+    private void ShowMoreOrders()
+    {
+        var total = orders?.Count ?? 0;
+        showOrdersCount = Math.Min(showOrdersCount + 20, total);
+    }
+
+    private void ShowAllOrders()
+    {
+        showOrdersCount = orders?.Count ?? 0;
+    }
+
+    private void ResetOrdersView()
+    {
+        showOrdersCount = 20;
+    }
+
+    private async Task OnOrderPageSizeChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var sz) && sz > 0)
+        {
+            showOrdersCount = sz;
+            try
+            {
+                var f = new OrderFilters { Proveedor = filterProveedor, Estado = filterEntregado, ReceiveUserId = receiveUserId, PageSize = showOrdersCount };
+                await JS.InvokeVoidAsync("app.setLocal", "compras-ordenes-filters", JsonSerializer.Serialize(f));
+            }
+            catch { }
+        }
+    }
+}

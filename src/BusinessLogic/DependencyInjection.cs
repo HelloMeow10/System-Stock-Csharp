@@ -41,6 +41,8 @@ namespace BusinessLogic
             services.AddScoped<IClientService, ClientService>();
             services.AddScoped<IPurchaseService, PurchaseService>();
             services.AddScoped<ISalesService, SalesService>();
+            services.AddScoped<IProductSupplierService, ProductSupplierService>();
+            services.AddScoped<IPurchasingService, PurchasingService>();
 
             return services;
         }

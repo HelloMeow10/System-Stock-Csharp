@@ -63,6 +63,31 @@ namespace DataAccess.Repositories
             }
         }
 
+        private async Task<T> ExecuteScalarAsync<T>(string sql, Action<SqlParameterCollection> addParameters, CommandType commandType = CommandType.Text)
+        {
+            try
+            {
+                using (var connection = (SqlConnection)_connectionFactory.CreateConnection())
+                {
+                    await connection.OpenAsync();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = sql;
+                        command.CommandType = commandType;
+                        addParameters(command.Parameters);
+                        var result = await command.ExecuteScalarAsync();
+                        if (result == null || result == DBNull.Value) return default!;
+                        return (T)Convert.ChangeType(result, typeof(T));
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Ocurrió un error de SQL al ejecutar ExecuteScalar para el comando: {sql}", sql);
+                throw new DataAccessLayerException($"Ocurrió un error de SQL al ejecutar {sql}", ex);
+            }
+        }
+
         public async Task<PoliticaSeguridad?> GetPoliticaSeguridadAsync() => await ExecuteReaderAsync("sp_get_politica_seguridad", async reader =>
         {
             if (!await reader.ReadAsync()) return null;
@@ -135,6 +160,24 @@ namespace DataAccess.Repositories
         public async Task DeleteRespuestasSeguridadByUsuarioIdAsync(int usuarioId) => await ExecuteNonQueryAsync(
             "sp_delete_respuestas_seguridad_by_usuario",
             p => p.AddWithValue("@id_usuario", usuarioId),
+            CommandType.StoredProcedure
+        );
+
+        public async Task<int> AddPreguntaSeguridadAsync(string pregunta) => await ExecuteScalarAsync<int>(
+            "sp_insert_pregunta_seguridad",
+            p => p.AddWithValue("@pregunta", pregunta),
+            CommandType.StoredProcedure
+        );
+
+        public async Task UpdatePreguntaSeguridadAsync(int idPregunta, string pregunta) => await ExecuteNonQueryAsync(
+            "sp_update_pregunta_seguridad",
+            p => { p.AddWithValue("@id_pregunta", idPregunta); p.AddWithValue("@pregunta", pregunta); },
+            CommandType.StoredProcedure
+        );
+
+        public async Task DeletePreguntaSeguridadAsync(int idPregunta) => await ExecuteNonQueryAsync(
+            "sp_delete_pregunta_seguridad",
+            p => p.AddWithValue("@id_pregunta", idPregunta),
             CommandType.StoredProcedure
         );
     }

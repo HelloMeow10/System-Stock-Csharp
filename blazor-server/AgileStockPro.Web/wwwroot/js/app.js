@@ -20,6 +20,9 @@ window.app = {
   getLocal: function (key) {
     try { return localStorage.getItem(key); } catch { return null; }
   },
+  removeLocal: function (key) {
+    try { localStorage.removeItem(key); } catch {}
+  },
   setLocalJson: function (key, obj) {
     try { localStorage.setItem(key, JSON.stringify(obj)); } catch {}
   },

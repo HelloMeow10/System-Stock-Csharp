@@ -6,6 +6,22 @@ public class Supplier
     public string Name { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string? Phone { get; set; }
+    public string? Cuit { get; set; }
+    public string? Address { get; set; }
+    public string? Province { get; set; }
+    public string? City { get; set; }
+    public string? IvaCondition { get; set; }
+    public int PaymentTermDays { get; set; }
+    public string? Observations { get; set; }
+    public List<SupplierContact> Contacts { get; set; } = new();
+}
+
+public class SupplierContact
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Role { get; set; }
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
 }
 
 public class Customer

@@ -68,7 +68,14 @@ public class SqlProductCatalogRepository : IProductCatalogRepository
                 Precio: reader.GetDecimal(5),
                 StockActual: reader.GetInt32(6),
                 StockMinimo: reader.GetInt32(7),
-                StockMaximo: reader.GetInt32(8)
+                StockMaximo: reader.GetInt32(8),
+                UnidadMedida: reader.FieldCount > 9 && !reader.IsDBNull(9) ? reader.GetString(9) : string.Empty,
+                Peso: reader.FieldCount > 10 && !reader.IsDBNull(10) ? reader.GetDecimal(10) : 0m,
+                Volumen: reader.FieldCount > 11 && !reader.IsDBNull(11) ? reader.GetDecimal(11) : 0m,
+                PuntoReposicion: reader.FieldCount > 12 && !reader.IsDBNull(12) ? reader.GetInt32(12) : 0,
+                DiasVencimiento: reader.FieldCount > 13 && !reader.IsDBNull(13) ? reader.GetInt32(13) : 0,
+                LoteObligatorio: reader.FieldCount > 14 && !reader.IsDBNull(14) && reader.GetBoolean(14),
+                ControlVencimiento: reader.FieldCount > 15 && !reader.IsDBNull(15) && reader.GetBoolean(15)
             );
         }
         return null;
@@ -102,7 +109,14 @@ public class SqlProductCatalogRepository : IProductCatalogRepository
                     Precio: reader.GetDecimal(5),
                     StockActual: reader.GetInt32(6),
                     StockMinimo: reader.GetInt32(7),
-                    StockMaximo: reader.GetInt32(8)
+                    StockMaximo: reader.GetInt32(8),
+                    UnidadMedida: reader.FieldCount > 9 && !reader.IsDBNull(9) ? reader.GetString(9) : string.Empty,
+                    Peso: reader.FieldCount > 10 && !reader.IsDBNull(10) ? reader.GetDecimal(10) : 0m,
+                    Volumen: reader.FieldCount > 11 && !reader.IsDBNull(11) ? reader.GetDecimal(11) : 0m,
+                    PuntoReposicion: reader.FieldCount > 12 && !reader.IsDBNull(12) ? reader.GetInt32(12) : 0,
+                    DiasVencimiento: reader.FieldCount > 13 && !reader.IsDBNull(13) ? reader.GetInt32(13) : 0,
+                    LoteObligatorio: reader.FieldCount > 14 && !reader.IsDBNull(14) && reader.GetBoolean(14),
+                    ControlVencimiento: reader.FieldCount > 15 && !reader.IsDBNull(15) && reader.GetBoolean(15)
                 ));
             }
 
@@ -140,6 +154,13 @@ public class SqlProductCatalogRepository : IProductCatalogRepository
             cmd.Parameters.Add(new SqlParameter("@ubicacion", SqlDbType.VarChar, 100) { Value = (object?)request.Ubicacion ?? DBNull.Value });
             cmd.Parameters.Add(new SqlParameter("@habilitado", SqlDbType.Bit) { Value = (object?)request.Habilitado ?? DBNull.Value });
             cmd.Parameters.Add(new SqlParameter("@id_categoria", SqlDbType.Int) { Value = (object?)request.IdCategoria ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@unidadMedida", SqlDbType.VarChar, 20) { Value = (object?)request.UnidadMedida ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@peso", SqlDbType.Decimal) { Value = (object?)request.Peso ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@volumen", SqlDbType.Decimal) { Value = (object?)request.Volumen ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@puntoReposicion", SqlDbType.Int) { Value = (object?)request.PuntoReposicion ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@diasVencimiento", SqlDbType.Int) { Value = (object?)request.DiasVencimiento ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@loteObligatorio", SqlDbType.Bit) { Value = (object?)request.LoteObligatorio ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@controlVencimiento", SqlDbType.Bit) { Value = (object?)request.ControlVencimiento ?? DBNull.Value });
 
             // sp_AgregarProducto no devuelve el Id, así que obtenemos el último ID autogenerado
             await cmd.ExecuteNonQueryAsync(ct);

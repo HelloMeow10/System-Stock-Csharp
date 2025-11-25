@@ -1,0 +1,291 @@
+@page "/producto-proveedor"
+@using BusinessLogic.Services
+@using Contracts
+@inject IProductSupplierService ProductSupplierService
+@inject ISupplierService SupplierService
+@inject AgileStockPro.Web.Services.Api.ApiProductService ProductApi
+@using AgileStockPro.Web.Models
+@inject AgileStockPro.Web.Services.IAuthService Auth
+@using AgileStockPro.Web.Components.Shared
+
+<AuthGuard RequireAdmin="true">
+    <h2>Relaciones Producto - Proveedor</h2>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;">
+        <div style="flex:1;">
+            <h3>Productos</h3>
+            @if (products == null)
+            {
+                <p>Cargando productos...</p>
+            }
+            else
+            {
+                <ul style="list-style:none;padding:0;max-height:320px;overflow:auto;border:1px solid #ccc;border-radius:4px;">
+                    @foreach (var p in products)
+                    {
+                        <li style="padding:6px 8px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;">
+                            <span>@p.Name (#@p.Id)</span>
+                            <button @onclick="() => SelectProduct(p.DbId)" disabled="@(selectedProductId==p.DbId)" style="font-size:12px;">@(selectedProductId==p.DbId?"Seleccionado":"Ver")</button>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+        <div style="flex:2;">
+            <h3>Proveedores vinculados</h3>
+            @if (selectedProductId == null)
+            {
+                <em>Seleccione un producto.</em>
+            }
+            else if (linkedSuppliers == null)
+            {
+                <p>Cargando relaciones...</p>
+            }
+            else
+            {
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr style="text-align:left;border-bottom:2px solid #ccc;">
+                            <th style="padding:4px 6px;">Razón Social</th>
+                            <th style="padding:4px 6px;">Precio Compra</th>
+                            <th style="padding:4px 6px;">Tiempo Entrega (d)</th>
+                            <th style="padding:4px 6px;">Descuento %</th>
+                            <th style="padding:4px 6px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in linkedSuppliers)
+                        {
+                            bool isEditing = editingSupplierId == r.ProveedorId;
+                            <tr style="border-bottom:1px solid #eee;">
+                                <td style="padding:4px 6px;">@r.ProveedorRazonSocial</td>
+                                <td style="padding:4px 6px;">
+                                    @if (isEditing)
+                                    {
+                                        <input style="width:90px;font-size:12px;" @bind="editPrecioCompra" />
+                                    }
+                                    else
+                                    {
+                                        @(r.PrecioCompra?.ToString("0.00") ?? "-")
+                                    }
+                                </td>
+                                <td style="padding:4px 6px;">
+                                    @if (isEditing)
+                                    {
+                                        <input style="width:70px;font-size:12px;" @bind="editTiempoEntrega" />
+                                    }
+                                    else
+                                    {
+                                        @(r.TiempoEntrega?.ToString() ?? "-")
+                                    }
+                                </td>
+                                <td style="padding:4px 6px;">
+                                    @if (isEditing)
+                                    {
+                                        <input style="width:70px;font-size:12px;" @bind="editDescuento" />
+                                    }
+                                    else
+                                    {
+                                        @(r.Descuento?.ToString("0.##") ?? "0")
+                                    }
+                                </td>
+                                <td style="padding:4px 6px;">
+                                    @if (isEditing)
+                                    {
+                                        <button @onclick="() => SaveEdit(r.ProveedorId)" style="font-size:12px;color:#070;">Guardar</button>
+                                        <button @onclick="CancelEdit" style="font-size:12px;margin-left:4px;">Cancelar</button>
+                                    }
+                                    else
+                                    {
+                                        <button @onclick="() => BeginEdit(r)" style="font-size:12px;">Editar</button>
+                                        <button @onclick="() => Remove(r.ProveedorId)" style="font-size:12px;color:#a00;margin-left:4px;">Quitar</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (!linkedSuppliers.Any())
+                        {
+                            <tr><td colspan="5" style="padding:6px;"><em>Sin proveedores asociados.</em></td></tr>
+                        }
+                    </tbody>
+                </table>
+                <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <select @onchange="OnSupplierSelect" style="min-width:160px;">
+                        <option value="">--Proveedor--</option>
+                        @foreach (var s in allSuppliers.Where(s => linkedSuppliers.All(ls => ls.ProveedorId != s.Id)))
+                        {
+                            <option value="@s.Id">@s.RazonSocial</option>
+                        }
+                    </select>
+                    <input placeholder="Precio compra" style="width:110px;" @bind="precioCompraInput" />
+                    <input placeholder="Tiempo entrega (días)" style="width:140px;" @bind="tiempoEntregaInput" />
+                    <input placeholder="Descuento %" style="width:100px;" @bind="descuentoInput" />
+                    <button @onclick="Add" disabled="@string.IsNullOrEmpty(pendingSupplierId)">Agregar</button>
+                    @if (!string.IsNullOrEmpty(validationMessage))
+                    {
+                        <span style="color:#b00020;font-size:11px;">@validationMessage</span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div style="margin-top:12px;color:#b00020;font-size:12px;">@error</div>
+    }
+</AuthGuard>
+
+@code {
+    private List<Product>? products; // use Product model with Id/Name
+    private List<ProductSupplierRelationDto>? linkedSuppliers;
+    private List<SupplierDto> allSuppliers = new();
+    private int? selectedProductId;
+    private string? pendingSupplierId;
+    private string? error;
+    private string? precioCompraInput;
+    private string? tiempoEntregaInput;
+    private string? descuentoInput;
+    private string? validationMessage;
+    private int? editingSupplierId;
+    private string? editPrecioCompra;
+    private string? editTiempoEntrega;
+    private string? editDescuento;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            products = (await ProductApi.GetProductsAsync()).ToList();
+            allSuppliers = (await SupplierService.GetAllAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task LoadRelations()
+    {
+        if (selectedProductId == null) return;
+        try
+        {
+            linkedSuppliers = (await ProductSupplierService.GetSuppliersByProductAsync(selectedProductId.Value)).ToList();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task SelectProduct(int id)
+    {
+        selectedProductId = id;
+        linkedSuppliers = null;
+        await LoadRelations();
+    }
+
+    private void OnSupplierSelect(ChangeEventArgs e) => pendingSupplierId = e.Value?.ToString();
+
+    private bool ValidateInputs(out decimal? precio, out int? tiempo, out decimal? desc)
+    {
+        precio = null; tiempo = null; desc = null; validationMessage = null;
+        if (!string.IsNullOrWhiteSpace(precioCompraInput) && decimal.TryParse(precioCompraInput, out var pVal))
+        {
+            if (pVal < 0) { validationMessage = "Precio inválido"; return false; }
+            precio = pVal;
+        }
+        if (!string.IsNullOrWhiteSpace(tiempoEntregaInput) && int.TryParse(tiempoEntregaInput, out var tVal))
+        {
+            if (tVal < 0) { validationMessage = "Tiempo inválido"; return false; }
+            tiempo = tVal;
+        }
+        if (!string.IsNullOrWhiteSpace(descuentoInput) && decimal.TryParse(descuentoInput, out var dVal))
+        {
+            if (dVal < 0 || dVal > 100) { validationMessage = "Descuento 0-100"; return false; }
+            desc = dVal;
+        }
+        return true;
+    }
+
+    private async Task Add()
+    {
+        if (selectedProductId == null) return;
+        if (!int.TryParse(pendingSupplierId, out var supplierId)) return;
+        if (!ValidateInputs(out var precio, out var tiempo, out var desc)) return;
+        try
+        {
+            await ProductSupplierService.RelateAsync(selectedProductId.Value, supplierId, precio, tiempo, desc);
+            pendingSupplierId = null;
+            precioCompraInput = tiempoEntregaInput = descuentoInput = null;
+            await LoadRelations();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task Remove(int supplierId)
+    {
+        if (selectedProductId == null) return;
+        try
+        {
+            await ProductSupplierService.DeleteRelationAsync(selectedProductId.Value, supplierId);
+            await LoadRelations();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private void BeginEdit(ProductSupplierRelationDto r)
+    {
+        editingSupplierId = r.ProveedorId;
+        editPrecioCompra = r.PrecioCompra?.ToString();
+        editTiempoEntrega = r.TiempoEntrega?.ToString();
+        editDescuento = r.Descuento?.ToString();
+        validationMessage = null;
+    }
+
+    private void CancelEdit()
+    {
+        editingSupplierId = null;
+        editPrecioCompra = editTiempoEntrega = editDescuento = null;
+        validationMessage = null;
+    }
+
+    private async Task SaveEdit(int supplierId)
+    {
+        if (selectedProductId == null) return;
+        decimal? precio = null; int? tiempo = null; decimal? desc = null;
+        validationMessage = null;
+        if (!string.IsNullOrWhiteSpace(editPrecioCompra) && decimal.TryParse(editPrecioCompra, out var pVal))
+        {
+            if (pVal < 0) { validationMessage = "Precio inválido"; return; }
+            precio = pVal;
+        }
+        if (!string.IsNullOrWhiteSpace(editTiempoEntrega) && int.TryParse(editTiempoEntrega, out var tVal))
+        {
+            if (tVal < 0) { validationMessage = "Tiempo inválido"; return; }
+            tiempo = tVal;
+        }
+        if (!string.IsNullOrWhiteSpace(editDescuento) && decimal.TryParse(editDescuento, out var dVal))
+        {
+            if (dVal < 0 || dVal > 100) { validationMessage = "Descuento 0-100"; return; }
+            desc = dVal;
+        }
+        try
+        {
+            await ProductSupplierService.UpdateRelationAsync(selectedProductId.Value, supplierId, precio, tiempo, desc);
+            editingSupplierId = null;
+            editPrecioCompra = editTiempoEntrega = editDescuento = null;
+            await LoadRelations();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}

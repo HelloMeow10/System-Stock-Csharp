@@ -1,13 +1,6 @@
 namespace Contracts
 {
-    public class PurchaseOrderDto
-    {
-        public int Id { get; set; }
-        public string Proveedor { get; set; } = string.Empty;
-        public DateTime Fecha { get; set; }
-        public decimal Total { get; set; }
-        public bool Entregado { get; set; }
-    }
+    // Legacy PurchaseOrderDto removed (merged into PurchasingDtos.cs)
 
     public class CreatePurchaseOrderRequest
     {

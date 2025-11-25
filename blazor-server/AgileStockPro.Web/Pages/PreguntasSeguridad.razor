@@ -1,0 +1,157 @@
+@page "/seguridad-preguntas"
+@inject AgileStockPro.Web.Services.Api.ISecurityQuestionsAdminService QuestionsService
+@inject IToastService Toast
+@using AgileStockPro.Web.Components
+@* Reverted to basic HTML for stability *@
+@using AgileStockPro.Web.Services.Api
+
+<AuthGuard RequireAdmin="true">
+    <PageHeader Title="Preguntas de seguridad" />
+
+    @if (loading)
+    {
+        <p>Cargando…</p>
+    }
+    else
+    {
+        <div class="panel" style="max-width:900px;">
+            <h3>Preguntas de seguridad</h3>
+            <div style="display:flex; gap:.5rem; margin-bottom:.75rem;">
+                <input class="input" placeholder="Nueva pregunta" @bind="newQuestion" style="flex:1" />
+                <button class="btn btn-primary" disabled="@(string.IsNullOrWhiteSpace(newQuestion))" @onclick="Create">Agregar</button>
+            </div>
+            <table class="table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th style="width:60px;">ID</th>
+                            <th>Pregunta</th>
+                            <th style="width:180px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var q in questions)
+                        {
+                            <tr>
+                                <td>@q.IdPregunta</td>
+                                <td>
+                                    @if (editing?.IdPregunta == q.IdPregunta)
+                                    {
+                                        <input class="input" @bind="editBuffer" style="width:100%" />
+                                    }
+                                    else
+                                    {
+                                        @q.Pregunta
+                                    }
+                                </td>
+                                <td>
+                                    @if (editing?.IdPregunta == q.IdPregunta)
+                                    {
+                                        <div style="display:flex; gap:.25rem;">
+                                            <button class="btn btn-primary" @onclick="SaveEdit">Guardar</button>
+                                            <button class="btn" @onclick="CancelEdit">Cancelar</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div style="display:flex; gap:.25rem;">
+                                            <button class="btn" @onclick="() => BeginEdit(q)">Editar</button>
+                                            <button class="btn" @onclick="() => Delete(q)">Eliminar</button>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+        </div>
+    }
+</AuthGuard>
+
+@code {
+    private List<AgileStockPro.Web.Services.Api.PreguntaSeguridadDto> questions = new();
+    private bool loading = true;
+    private string? newQuestion;
+    private AgileStockPro.Web.Services.Api.PreguntaSeguridadDto? editing;
+    private string? editBuffer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        try
+        {
+            questions = (await QuestionsService.GetAllAsync()).OrderBy(q => q.IdPregunta).ToList();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task Create()
+    {
+        if (string.IsNullOrWhiteSpace(newQuestion)) return;
+        try
+        {
+            var created = await QuestionsService.CreateAsync(newQuestion.Trim());
+            if (created != null) questions.Add(created);
+            newQuestion = string.Empty;
+            Toast.ShowSuccess("Pregunta creada");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private void BeginEdit(AgileStockPro.Web.Services.Api.PreguntaSeguridadDto q)
+    {
+        editing = q;
+        editBuffer = q.Pregunta;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (editing == null || string.IsNullOrWhiteSpace(editBuffer)) return;
+        try
+        {
+            await QuestionsService.UpdateAsync(editing.IdPregunta, editBuffer.Trim());
+            editing.Pregunta = editBuffer.Trim();
+            editing = null;
+            editBuffer = null;
+            Toast.ShowSuccess("Pregunta actualizada");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editing = null;
+        editBuffer = null;
+    }
+
+    private async Task Delete(AgileStockPro.Web.Services.Api.PreguntaSeguridadDto q)
+    {
+        try
+        {
+            await QuestionsService.DeleteAsync(q.IdPregunta);
+            questions.Remove(q);
+            Toast.ShowInfo("Pregunta eliminada");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+}

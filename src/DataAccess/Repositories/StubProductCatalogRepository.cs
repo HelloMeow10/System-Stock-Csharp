@@ -37,11 +37,11 @@ public class StubProductCatalogRepository : IProductCatalogRepository
         var brandNames = _brands.Select(b => b.Nombre).ToArray();
 
         // Keep a few hand-crafted examples first
-        _products.Add(new ProductDto(1, "P001", "Tornillo M8 x 40mm", "Ferretería", "Fischer", 250.00m, 150, 100, 500));
-        _products.Add(new ProductDto(2, "P002", "Pintura Latex Blanca 20L", "Pinturería", "Alba", 38500.00m, 25, 50, 200));
-        _products.Add(new ProductDto(3, "P003", "Cable UTP Cat6 305m", "Electricidad", "Belden", 152000.00m, 5, 10, 50));
-        _products.Add(new ProductDto(4, "P004", "Cemento Portland 50kg", "Construcción", "Holcim", 7100.00m, 450, 200, 1000));
-        _products.Add(new ProductDto(5, "P005", "Luminaria LED 18W", "Iluminación", "Philips", 4800.00m, 85, 100, 300));
+        _products.Add(new ProductDto(1, "P001", "Tornillo M8 x 40mm", "Ferretería", "Fischer", 250.00m, 150, 100, 500, "Unidad", 0.02m, 0.0001m, 80, 0, false, false));
+        _products.Add(new ProductDto(2, "P002", "Pintura Latex Blanca 20L", "Pinturería", "Alba", 38500.00m, 25, 50, 200, "Balde", 25m, 0.03m, 40, 0, false, false));
+        _products.Add(new ProductDto(3, "P003", "Cable UTP Cat6 305m", "Electricidad", "Belden", 152000.00m, 5, 10, 50, "Caja", 12m, 0.02m, 5, 0, false, false));
+        _products.Add(new ProductDto(4, "P004", "Cemento Portland 50kg", "Construcción", "Holcim", 7100.00m, 450, 200, 1000, "Bolsa", 50m, 0.04m, 300, 0, false, false));
+        _products.Add(new ProductDto(5, "P005", "Luminaria LED 18W", "Iluminación", "Philips", 4800.00m, 85, 100, 300, "Unidad", 0.5m, 0.002m, 70, 0, false, false));
 
         for (int i = 6; i <= 200; i++)
         {
@@ -53,7 +53,7 @@ public class StubProductCatalogRepository : IProductCatalogRepository
             var stockMin = rnd.Next(5, 200);
             var stockMax = stockMin + rnd.Next(50, 800);
             var stockAct = rnd.Next(0, stockMax + 1);
-            _products.Add(new ProductDto(i, codigo, nombre, cat, brand, precio, stockAct, stockMin, stockMax));
+            _products.Add(new ProductDto(i, codigo, nombre, cat, brand, precio, stockAct, stockMin, stockMax, "Unidad", 0m, 0m, stockMin + 10, 0, false, false));
         }
     }
 
@@ -100,7 +100,14 @@ public class StubProductCatalogRepository : IProductCatalogRepository
             Precio: request.PrecioVenta ?? 0m,
             StockActual: 0,
             StockMinimo: 0,
-            StockMaximo: 0
+            StockMaximo: 0,
+            UnidadMedida: request.UnidadMedida ?? string.Empty,
+            Peso: request.Peso ?? 0m,
+            Volumen: request.Volumen ?? 0m,
+            PuntoReposicion: request.PuntoReposicion ?? 0,
+            DiasVencimiento: request.DiasVencimiento ?? 0,
+            LoteObligatorio: request.LoteObligatorio ?? false,
+            ControlVencimiento: request.ControlVencimiento ?? false
         );
         _products.Add(prod);
         return Task.FromResult(prod);

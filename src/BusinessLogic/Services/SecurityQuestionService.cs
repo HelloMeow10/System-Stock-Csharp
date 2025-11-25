@@ -72,6 +72,26 @@ namespace BusinessLogic.Services
             return preguntas.Select(p => new PreguntaSeguridadDto { IdPregunta = p.IdPregunta, Pregunta = p.Pregunta }).ToList();
         }, "getting user security questions");
 
+        public async Task<PreguntaSeguridadDto> CreateSecurityQuestionAsync(string pregunta) => await ExecuteServiceOperationAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(pregunta)) throw new ValidationException("La pregunta no puede estar vacía");
+            var id = await _securityRepository.AddPreguntaSeguridadAsync(pregunta.Trim());
+            return new PreguntaSeguridadDto { IdPregunta = id, Pregunta = pregunta.Trim() };
+        }, "creating security question");
+
+        public async Task UpdateSecurityQuestionAsync(int idPregunta, string pregunta) => await ExecuteServiceOperationAsync(async () =>
+        {
+            if (idPregunta <= 0) throw new ValidationException("ID inválido");
+            if (string.IsNullOrWhiteSpace(pregunta)) throw new ValidationException("La pregunta no puede estar vacía");
+            await _securityRepository.UpdatePreguntaSeguridadAsync(idPregunta, pregunta.Trim());
+        }, "updating security question");
+
+        public async Task DeleteSecurityQuestionAsync(int idPregunta) => await ExecuteServiceOperationAsync(async () =>
+        {
+            if (idPregunta <= 0) throw new ValidationException("ID inválido");
+            await _securityRepository.DeletePreguntaSeguridadAsync(idPregunta);
+        }, "deleting security question");
+
         private async Task ExecuteServiceOperationAsync(Func<Task> operation, string operationName)
         {
             try

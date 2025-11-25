@@ -70,55 +70,54 @@ namespace DataAccess.Repositories
 
         public async Task<IEnumerable<SupplierDto>> GetAllAsync()
         {
-            // No SP for GetAll, using inline SQL or creating one. 
-            // Using inline SQL for now as per requirement "use SPs" usually implies for modifications, but for queries it's mixed.
-            // Actually, let's use sp_ConsultarProveedoresPorNombre with empty string if possible, or just SELECT.
-            // sp_ConsultarProveedoresPorNombre uses LIKE '%...%', so empty string matches all.
-            return await SearchByNameAsync("");
-        }
-
-        public async Task<SupplierDto?> GetByIdAsync(int id)
-        {
-            // No SP for GetById? Using inline SQL.
-            return await ExecuteReaderAsync("SELECT * FROM Proveedores WHERE id_proveedor = @id", async reader =>
-            {
-                if (await reader.ReadAsync())
-                {
-                    return Map(reader);
-                }
-                return null;
-            }, p => p.AddWithValue("@id", id), CommandType.Text);
-        }
-
-        public async Task<IEnumerable<SupplierDto>> SearchByNameAsync(string name)
-        {
-            return await ExecuteReaderAsync("sp_ConsultarProveedoresPorNombre", async reader =>
+            return await ExecuteReaderAsync("sp_GetAllProveedoresExtended", async reader =>
             {
                 var list = new List<SupplierDto>();
                 while (await reader.ReadAsync())
                 {
-                    list.Add(Map(reader));
+                    list.Add(MapExtended(reader));
                 }
+                return list;
+            }, null, CommandType.StoredProcedure);
+        }
+
+        public async Task<SupplierDto?> GetByIdAsync(int id)
+        {
+            var supplier = await ExecuteReaderAsync("sp_GetProveedorByIdExtended", async reader =>
+            {
+                if (await reader.ReadAsync()) return MapExtended(reader);
+                return null;
+            }, p => p.AddWithValue("@id", id), CommandType.StoredProcedure);
+            if (supplier != null)
+            {
+                supplier.Contactos = await GetContactosAsync(supplier.Codigo);
+            }
+            return supplier;
+        }
+
+        public async Task<IEnumerable<SupplierDto>> SearchByNameAsync(string name)
+        {
+            return await ExecuteReaderAsync("sp_SearchProveedoresByNombreExtended", async reader =>
+            {
+                var list = new List<SupplierDto>();
+                while (await reader.ReadAsync()) list.Add(MapExtended(reader));
                 return list;
             }, p => p.AddWithValue("@nombre", name), CommandType.StoredProcedure);
         }
 
         public async Task<IEnumerable<SupplierDto>> SearchByCuitAsync(string cuit)
         {
-            return await ExecuteReaderAsync("sp_ConsultarProveedoresPorCUIT", async reader =>
+            return await ExecuteReaderAsync("sp_SearchProveedoresByCUITExtended", async reader =>
             {
                 var list = new List<SupplierDto>();
-                while (await reader.ReadAsync())
-                {
-                    list.Add(Map(reader));
-                }
+                while (await reader.ReadAsync()) list.Add(MapExtended(reader));
                 return list;
             }, p => p.AddWithValue("@cuit", cuit), CommandType.StoredProcedure);
         }
 
         public async Task AddAsync(CreateSupplierRequest supplier)
         {
-            await ExecuteNonQueryAsync("sp_AgregarProveedor", p =>
+            await ExecuteNonQueryAsync("sp_AgregarProveedorExtended", p =>
             {
                 p.AddWithValue("@codigo", supplier.Codigo);
                 p.AddWithValue("@nombre", supplier.Nombre);
@@ -127,12 +126,32 @@ namespace DataAccess.Repositories
                 p.AddWithValue("@TiempoEntrega", supplier.TiempoEntrega);
                 p.AddWithValue("@Descuento", supplier.Descuento);
                 p.AddWithValue("@id_formaPago", supplier.IdFormaPago);
+                p.AddWithValue("@Email", supplier.Email);
+                p.AddWithValue("@Telefono", supplier.Telefono);
+                p.AddWithValue("@Direccion", supplier.Direccion);
+                p.AddWithValue("@Provincia", supplier.Provincia);
+                p.AddWithValue("@Ciudad", supplier.Ciudad);
+                p.AddWithValue("@CondicionIVA", supplier.CondicionIva);
+                p.AddWithValue("@PlazoPagoDias", supplier.PlazoPagoDias);
+                p.AddWithValue("@Observaciones", supplier.Observaciones);
             });
+            // Contacts insertion (optional, ignore if empty)
+            foreach (var c in supplier.Contactos)
+            {
+                await ExecuteNonQueryAsync("sp_AgregarProveedorContacto", p =>
+                {
+                    p.AddWithValue("@codigo", supplier.Codigo);
+                    p.AddWithValue("@Nombre", c.Nombre);
+                    p.AddWithValue("@Cargo", c.Cargo);
+                    p.AddWithValue("@Email", c.Email);
+                    p.AddWithValue("@Telefono", c.Telefono);
+                });
+            }
         }
 
         public async Task UpdateAsync(UpdateSupplierRequest supplier)
         {
-            await ExecuteNonQueryAsync("sp_ModificarProveedor", p =>
+            await ExecuteNonQueryAsync("sp_ModificarProveedorExtended", p =>
             {
                 p.AddWithValue("@id_proveedor", supplier.Id);
                 p.AddWithValue("@codigo", supplier.Codigo);
@@ -142,12 +161,36 @@ namespace DataAccess.Repositories
                 p.AddWithValue("@TiempoEntrega", supplier.TiempoEntrega);
                 p.AddWithValue("@Descuento", supplier.Descuento);
                 p.AddWithValue("@id_formaPago", supplier.IdFormaPago);
+                p.AddWithValue("@Email", supplier.Email);
+                p.AddWithValue("@Telefono", supplier.Telefono);
+                p.AddWithValue("@Direccion", supplier.Direccion);
+                p.AddWithValue("@Provincia", supplier.Provincia);
+                p.AddWithValue("@Ciudad", supplier.Ciudad);
+                p.AddWithValue("@CondicionIVA", supplier.CondicionIva);
+                p.AddWithValue("@PlazoPagoDias", supplier.PlazoPagoDias);
+                p.AddWithValue("@Observaciones", supplier.Observaciones);
             });
+            // Replace contacts simplistic: delete all then re-insert
+            await ExecuteNonQueryAsync("sp_DeleteProveedorContactos", p =>
+            {
+                p.AddWithValue("@codigo", supplier.Codigo);
+            });
+            foreach (var c in supplier.Contactos)
+            {
+                await ExecuteNonQueryAsync("sp_AgregarProveedorContacto", p =>
+                {
+                    p.AddWithValue("@codigo", supplier.Codigo);
+                    p.AddWithValue("@Nombre", c.Nombre);
+                    p.AddWithValue("@Cargo", c.Cargo);
+                    p.AddWithValue("@Email", c.Email);
+                    p.AddWithValue("@Telefono", c.Telefono);
+                });
+            }
         }
 
         public async Task DeleteAsync(int id)
         {
-            await ExecuteNonQueryAsync("sp_EliminarProveedor", p =>
+            await ExecuteNonQueryAsync("sp_EliminarProveedorExtended", p =>
             {
                 p.AddWithValue("@id_proveedor", id);
             });
@@ -177,19 +220,49 @@ namespace DataAccess.Repositories
             });
         }
 
-        private static SupplierDto Map(SqlDataReader reader)
+        private static SupplierDto MapExtended(SqlDataReader reader)
         {
-            return new SupplierDto
+            var dto = new SupplierDto
             {
-                Id = (int)reader["id_proveedor"],
+                Id = reader.GetInt32(reader.GetOrdinal("id_proveedor")),
                 Codigo = reader["codigo"] as string ?? "",
                 Nombre = reader["nombre"] as string ?? "",
                 RazonSocial = reader["razonSocial"] as string ?? "",
                 Cuit = reader["CUIT"] as string ?? "",
-                TiempoEntrega = reader["TiempoEntrega"] != DBNull.Value ? (int)reader["TiempoEntrega"] : 0,
-                Descuento = reader["Descuento"] != DBNull.Value ? (decimal)reader["Descuento"] : 0,
-                IdFormaPago = reader["id_formaPago"] != DBNull.Value ? (int)reader["id_formaPago"] : 0
+                TiempoEntrega = reader["TiempoEntrega"] != DBNull.Value ? Convert.ToInt32(reader["TiempoEntrega"]) : 0,
+                Descuento = reader["Descuento"] != DBNull.Value ? Convert.ToDecimal(reader["Descuento"]) : 0m,
+                IdFormaPago = reader["id_formaPago"] != DBNull.Value ? Convert.ToInt32(reader["id_formaPago"]) : 0,
+                Email = reader["Email"] as string ?? "",
+                Telefono = reader["Telefono"] as string ?? "",
+                Direccion = reader["Direccion"] as string ?? "",
+                Provincia = reader["Provincia"] as string ?? "",
+                Ciudad = reader["Ciudad"] as string ?? "",
+                CondicionIva = reader["CondicionIVA"] as string ?? "",
+                PlazoPagoDias = reader["PlazoPagoDias"] != DBNull.Value ? Convert.ToInt32(reader["PlazoPagoDias"]) : 0,
+                Observaciones = reader["Observaciones"] as string ?? ""
             };
+            return dto;
+        }
+
+        private async Task<List<SupplierContactDto>> GetContactosAsync(string codigo)
+        {
+            return await ExecuteReaderAsync("sp_GetProveedorContactos", async reader =>
+            {
+                var list = new List<SupplierContactDto>();
+                while (await reader.ReadAsync())
+                {
+                    var contact = new SupplierContactDto
+                    {
+                        Id = reader["id_contactoProveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_contactoProveedor"]) : null,
+                        Nombre = reader["Nombre"] as string ?? string.Empty,
+                        Cargo = reader["Cargo"] as string ?? string.Empty,
+                        Email = reader["Email"] as string ?? string.Empty,
+                        Telefono = reader["Telefono"] as string ?? string.Empty
+                    };
+                    list.Add(contact);
+                }
+                return list;
+            }, p => p.AddWithValue("@codigo", codigo), CommandType.StoredProcedure);
         }
     }
 }

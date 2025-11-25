@@ -114,6 +114,12 @@ else
                 }
             </select>
             @if (Invalid("RolId")) { <span class="error-text">@GetError("RolId")</span> }
+            <label>Habilitado</label>
+            <input type="checkbox" @bind="editing.Habilitado" style="width:auto;" />
+            <label>Forzar cambio contraseña</label>
+            <input type="checkbox" @bind="editing.MustChangePassword" style="width:auto;" />
+            <label>Fecha expiración</label>
+            <input class="input" type="date" @bind-value="editing.Expira" @bind-value:format="yyyy-MM-dd" />
         </div>
 
         <div class="panel-header" style="margin-top:1rem;">Preguntas de seguridad</div>
@@ -165,6 +171,7 @@ else
     private Dictionary<string, string> errors = new();
     private int? editingBackendId;
     private string? error;
+    // Removed string intermediary for expiración; bind directly to editing.Expira (DateTime?)
 
     protected override async Task OnInitializedAsync()
     {
@@ -228,11 +235,15 @@ else
             Name = u.Nombre ?? string.Empty,
             LastName = u.Apellido ?? string.Empty,
             Email = u.Correo ?? string.Empty,
-            IsAdmin = string.Equals(u.Rol, "Admin", StringComparison.OrdinalIgnoreCase)
+            IsAdmin = string.Equals(u.Rol, "Admin", StringComparison.OrdinalIgnoreCase),
+            MustChangePassword = u.CambioContrasenaObligatorio,
+            Habilitado = u.Habilitado,
+            Expira = u.FechaExpiracion
         };
         selectedRolId = u.IdRol.ToString();
         selectedPersonaId = u.IdPersona.ToString();
         editingBackendId = u.IdUsuario;
+        // Fecha de expiración ya se refleja en editing.Expira (DateTime?)
         submitted = false; errors.Clear(); tempPassInfo = null;
     }
 
@@ -272,6 +283,21 @@ else
             editing.BackendIdRol = int.TryParse(selectedRolId, out var rid) ? rid : null;
             tempPassInfo = "Usuario creado. La contraseña inicial fue enviada por correo (según backend).";
             Toast.ShowSuccess("Usuario creado");
+            // Apply extra fields if set (force change / expiración / habilitado)
+            if (editing.MustChangePassword || !editing.Habilitado || editing.Expira.HasValue)
+            {
+                var updateExtra = new AgileStockPro.Web.Services.Api.UpdateUserRequest
+                {
+                    Nombre = editing.Name,
+                    Apellido = editing.LastName,
+                    Correo = editing.Email,
+                    IdRol = editing.BackendIdRol ?? 0,
+                    CambioContrasenaObligatorio = editing.MustChangePassword,
+                    FechaExpiracion = editing.Expira,
+                    Habilitado = editing.Habilitado
+                };
+                try { await Api.PutAsync<AgileStockPro.Web.Services.Api.UserDto>($"api/v1/users/{editing.BackendIdUsuario}", updateExtra); } catch { /* ignore */ }
+            }
         }
         else
         {
@@ -282,7 +308,9 @@ else
                 Apellido = editing.LastName,
                 Correo = editing.Email,
                 IdRol = int.TryParse(selectedRolId, out var rid2) ? rid2 : 0,
-                Habilitado = true
+                CambioContrasenaObligatorio = editing.MustChangePassword,
+                FechaExpiracion = editing.Expira,
+                Habilitado = editing.Habilitado
             };
             try
             {

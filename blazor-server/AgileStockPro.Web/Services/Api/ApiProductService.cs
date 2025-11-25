@@ -15,6 +15,9 @@ public class ApiProductService : IProductService
         return items.Select(Map);
     }
 
+    public Task CreateAsync(Contracts.CreateProductRequest req)
+        => _api.PostAsync("api/v1/products", req);
+
     private static Product Map(ProductDto dto)
     {
         var status = "ok";
@@ -23,6 +26,7 @@ public class ApiProductService : IProductService
 
         return new Product
         {
+            DbId = dto.Id,
             Id = dto.Codigo,
             Name = dto.Nombre,
             Category = dto.Categoria,
@@ -30,7 +34,14 @@ public class ApiProductService : IProductService
             Stock = dto.StockActual,
             MinStock = dto.StockMinimo,
             MaxStock = dto.StockMaximo,
-            Status = status
+            Status = status,
+            UnidadMedida = dto.UnidadMedida,
+            Peso = dto.Peso,
+            Volumen = dto.Volumen,
+            PuntoReposicion = dto.PuntoReposicion,
+            DiasVencimiento = dto.DiasVencimiento,
+            LoteObligatorio = dto.LoteObligatorio,
+            ControlVencimiento = dto.ControlVencimiento
         };
     }
 
@@ -46,5 +57,12 @@ public class ApiProductService : IProductService
         public int StockActual { get; set; }
         public int StockMinimo { get; set; }
         public int StockMaximo { get; set; }
+        public string UnidadMedida { get; set; } = string.Empty;
+        public decimal Peso { get; set; }
+        public decimal Volumen { get; set; }
+        public int PuntoReposicion { get; set; }
+        public int DiasVencimiento { get; set; }
+        public bool LoteObligatorio { get; set; }
+        public bool ControlVencimiento { get; set; }
     }
 }

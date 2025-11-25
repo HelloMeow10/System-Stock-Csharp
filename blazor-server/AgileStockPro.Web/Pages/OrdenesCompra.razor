@@ -5,13 +5,17 @@
 @attribute [Authorize]
 @inject IPurchaseService PurchaseService
 @inject IDialogService DialogService
+@inject AgileStockPro.Web.Services.IAuthService AuthService
 
 <PageTitle>Órdenes de Compra</PageTitle>
 
 <div style="padding: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>Órdenes de Compra</h1>
-        <FluentButton Appearance="Appearance.Accent" OnClick="@CreateOrder">Nueva Orden</FluentButton>
+        @if (currentUser?.IsAdmin == true)
+        {
+            <FluentButton Appearance="Appearance.Accent" OnClick="@CreateOrder">Nueva Orden</FluentButton>
+        }
     </div>
 
     <div style="margin-bottom: 20px;">
@@ -47,8 +51,10 @@
     private IEnumerable<PurchaseOrderDto>? orders;
     private bool showDelivered = false;
 
+    private AgileStockPro.Web.Models.AppUser? currentUser;
     protected override async Task OnInitializedAsync()
     {
+        currentUser = await AuthService.GetCurrentUserAsync();
         await LoadData();
     }
 

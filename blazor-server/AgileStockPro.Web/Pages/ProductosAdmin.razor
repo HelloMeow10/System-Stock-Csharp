@@ -1,0 +1,167 @@
+@page "/productos-admin"
+@using AgileStockPro.Web.Services.Api
+@using Contracts
+@using AgileStockPro.Web.Models
+@inject ApiProductService ProductApi
+@inject AgileStockPro.Web.Services.IAuthService AuthService
+@inject IToastService Toast
+@inject BusinessLogic.Services.IProductSupplierService ProductSupplierService
+@inject BusinessLogic.Services.ISupplierService SupplierService
+
+<AuthGuard RequireAdmin="true">
+    <FluentCard Width="100%" Style="padding:16px; margin-bottom:16px;">
+        <h3>Nuevo Producto</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
+            <FluentTextField @bind-Value="form.Codigo" Label="Código" Required="true" />
+            <FluentTextField @bind-Value="form.CodBarras" Label="Cod. Barras" />
+            <FluentTextField @bind-Value="form.Nombre" Label="Nombre" Required="true" />
+            <FluentTextField @bind-Value="form.Descripcion" Label="Descripción" />
+            <FluentTextField @bind-Value="form.UnidadMedida" Label="Unidad Medida" />
+            <FluentNumberField @bind-Value="form.Peso" Label="Peso" />
+            <FluentNumberField @bind-Value="form.Volumen" Label="Volumen" />
+            <FluentNumberField @bind-Value="form.PuntoReposicion" Label="Punto Reposición" />
+            <FluentNumberField @bind-Value="form.DiasVencimiento" Label="Días Venc." />
+            <FluentCheckbox @bind-Value="form.LoteObligatorio" Label="Lote Oblig." />
+            <FluentCheckbox @bind-Value="form.ControlVencimiento" Label="Control Venc." />
+            <FluentNumberField @bind-Value="form.PrecioVenta" Label="Precio Venta" />
+            <FluentNumberField @bind-Value="form.PrecioCompra" Label="Precio Compra" />
+            <FluentCheckbox @bind-Value="form.Habilitado" Label="Habilitado" />
+        </div>
+        <div style="margin-top:12px;display:flex;gap:12px;">
+            <FluentButton Appearance="Appearance.Accent" OnClick="Create" Loading="@creating">Crear</FluentButton>
+            <FluentButton Appearance="Appearance.Outline" OnClick="Reset">Limpiar</FluentButton>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(error)) { <FluentMessageBar Intent="MessageIntent.Error">@error</FluentMessageBar> }
+        @if (!string.IsNullOrWhiteSpace(success)) { <FluentMessageBar Intent="MessageIntent.Success">@success</FluentMessageBar> }
+    </FluentCard>
+
+    <h3>Productos</h3>
+    @if (items is null)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+        <FluentDataGrid Items="@items.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.4fr 1fr 0.6fr 0.6fr 0.6fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.4fr 0.4fr 0.5fr 0.7fr">
+            <PropertyColumn Property="@(p => p.Id)" Title="#" />
+            <PropertyColumn Property="@(p => p.Name)" Title="Nombre" />
+            <PropertyColumn Property="@(p => p.Category)" Title="Categoría" />
+            <PropertyColumn Property="@(p => p.Brand)" Title="Marca" />
+            <PropertyColumn Property="@(p => p.Stock)" Title="Stock" />
+            <PropertyColumn Property="@(p => p.MinStock)" Title="Min" />
+            <PropertyColumn Property="@(p => p.MaxStock)" Title="Max" />
+            <PropertyColumn Property="@(p => p.UnidadMedida)" Title="Unidad" />
+            <PropertyColumn Property="@(p => p.Peso)" Title="Peso" />
+            <PropertyColumn Property="@(p => p.Volumen)" Title="Volumen" />
+            <PropertyColumn Property="@(p => p.PuntoReposicion)" Title="Reposición" />
+            <PropertyColumn Property="@(p => p.DiasVencimiento)" Title="Días Venc." />
+            <TemplateColumn Title="Lote">
+                @if (context.LoteObligatorio)
+                {
+                    <FluentBadge Appearance="Appearance.Accent">Sí</FluentBadge>
+                }
+                else
+                {
+                    <FluentBadge Appearance="Appearance.Neutral">No</FluentBadge>
+                }
+            </TemplateColumn>
+            <TemplateColumn Title="Venc. Ctrl">
+                @if (context.ControlVencimiento)
+                {
+                    <FluentBadge Appearance="Appearance.Accent">Sí</FluentBadge>
+                }
+                else
+                {
+                    <FluentBadge Appearance="Appearance.Neutral">No</FluentBadge>
+                }
+            </TemplateColumn>
+            <TemplateColumn Title="Estado">
+                <FluentBadge Appearance="@(context.Status == "critical" ? Appearance.Accent : context.Status == "low" ? Appearance.Neutral : Appearance.Neutral)">@context.Status</FluentBadge>
+            </TemplateColumn>
+            <TemplateColumn Title="Prov.">
+                <FluentButton Size="ButtonSize.Small" Appearance="Appearance.Lightweight" Disabled="true">Pendiente UI</FluentButton>
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+</AuthGuard>
+
+@code {
+    private List<Product>? items;
+    private string? error;
+    private string? success;
+    private bool creating;
+    private CreateVm form = new();
+    // Relation UI removed temporarily
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        // Preload suppliers list for selection
+        // Supplier preload removed with placeholder column
+    }
+
+    private async Task Load()
+    {
+        error = null; success = null;
+        try { items = (await ProductApi.GetProductsAsync()).ToList(); }
+        catch (Exception ex) { error = ex.Message; }
+    }
+
+    // Placeholder methods for future relation UI implementation
+
+    private async Task Create()
+    {
+        if (creating) return;
+        error = success = null;
+        if (string.IsNullOrWhiteSpace(form.Codigo) || string.IsNullOrWhiteSpace(form.Nombre)) { error = "Código y Nombre requeridos"; return; }
+        creating = true;
+        try
+        {
+            await ProductApi.CreateAsync(new CreateProductRequest(
+                form.Codigo,
+                form.CodBarras,
+                form.Nombre,
+                form.Descripcion,
+                null,
+                form.PrecioCompra,
+                form.PrecioVenta,
+                null,
+                null,
+                form.Habilitado,
+                null,
+                form.UnidadMedida,
+                form.Peso,
+                form.Volumen,
+                form.PuntoReposicion,
+                form.DiasVencimiento,
+                form.LoteObligatorio,
+                form.ControlVencimiento
+            ));
+            success = "Producto creado";
+            Reset();
+            await Load();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        creating = false;
+    }
+
+    private void Reset() { form = new(); }
+
+    class CreateVm
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string? CodBarras { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public string? Descripcion { get; set; }
+        public decimal? PrecioCompra { get; set; }
+        public decimal? PrecioVenta { get; set; }
+        public bool Habilitado { get; set; } = true;
+        public string? UnidadMedida { get; set; }
+        public decimal? Peso { get; set; }
+        public decimal? Volumen { get; set; }
+        public int? PuntoReposicion { get; set; }
+        public int? DiasVencimiento { get; set; }
+        public bool LoteObligatorio { get; set; }
+        public bool ControlVencimiento { get; set; }
+    }
+}

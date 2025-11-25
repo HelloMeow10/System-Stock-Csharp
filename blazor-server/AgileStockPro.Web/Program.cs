@@ -35,10 +35,11 @@ builder.Services.AddSingleton(new ApiOptions { BaseUrl = "http://localhost:5000/
 builder.Services.AddScoped<BackendApiClient>();
 
 // App services (Auth, User store, Toast, etc.)
-// Switch to API-backed auth service (real backend + JWT) instead of in-memory AuthService
+// Switch to API-backed auth service (real backend + JWT) and API user store
 builder.Services.AddScoped<IAuthService, ApiAuthService>();
-builder.Services.AddSingleton<AgileStockPro.Web.Services.IUserStore, AgileStockPro.Web.Services.UserStoreInMemory>();
+builder.Services.AddScoped<AgileStockPro.Web.Services.IUserStore, AgileStockPro.Web.Services.Api.ApiUserStore>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ISecurityQuestionsAdminService, ApiSecurityQuestionsService>();
 
 var app = builder.Build();
 

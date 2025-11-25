@@ -3,6 +3,7 @@
 @using AgileStockPro.Web.Models
 @using AgileStockPro.Web.Components
 @inject IAppDataService Data
+@inject AgileStockPro.Web.Services.IAuthService AuthService
 
 <AuthGuard>
 <PageHeader Title="Facturación" />
@@ -47,9 +48,13 @@ else
 @code {
 	private IReadOnlyList<Factura>? items;
 	private string? error;
+	private AgileStockPro.Web.Models.AppUser? currentUser;
 	protected override async Task OnInitializedAsync()
 	{
-		try { items = await Data.GetInvoicesAsync(); }
+		try {
+			currentUser = await AuthService.GetCurrentUserAsync();
+			items = await Data.GetInvoicesAsync();
+		}
 		catch (Exception ex) { error = ex.Message; }
 	}
 }

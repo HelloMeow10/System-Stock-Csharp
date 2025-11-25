@@ -48,8 +48,11 @@ public class AppUser
     public bool Habilitado { get; set; } = true;
     public DateTime? Expira { get; set; }
 
-    // Stored as SHA256(username + password)
+    // Frontend no longer stores password hashes; backend persists Argon2id.
+    // Retained for legacy UI code compatibility (will remain empty when using API backend).
     public string PasswordHash { get; set; } = string.Empty;
+    // Plain temporary password used only during creation (not persisted)
+    public string? TempPassword { get; set; }
     public bool MustChangePassword { get; set; } = true;
 
     public List<SecurityQuestion> SecurityQuestions { get; set; } = new();

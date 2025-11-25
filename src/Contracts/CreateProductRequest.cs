@@ -11,5 +11,12 @@ public record CreateProductRequest(
     string? Estado,
     string? Ubicacion,
     bool? Habilitado,
-    int? IdCategoria
+    int? IdCategoria,
+    string? UnidadMedida,
+    decimal? Peso,
+    decimal? Volumen,
+    int? PuntoReposicion,
+    int? DiasVencimiento,
+    bool? LoteObligatorio,
+    bool? ControlVencimiento
 );

@@ -41,5 +41,32 @@ namespace Services.Controllers.V1
             await _securityQuestionService.SaveSecurityAnswersAsync(username, answers);
             return NoContent();
         }
+
+        [HttpPost(Name = "CreateSecurityQuestionV1")]
+        [Authorize]
+        [ProducesResponseType(typeof(PreguntaSeguridadDto), StatusCodes.Status201Created)]
+        public async Task<IActionResult> Create([FromBody] PreguntaSeguridadRequest request)
+        {
+            var created = await _securityQuestionService.CreateSecurityQuestionAsync(request.Pregunta);
+            return CreatedAtRoute("GetAllSecurityQuestionsV1", created);
+        }
+
+        [HttpPut("{idPregunta}", Name = "UpdateSecurityQuestionV1")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> Update(int idPregunta, [FromBody] PreguntaSeguridadRequest request)
+        {
+            await _securityQuestionService.UpdateSecurityQuestionAsync(idPregunta, request.Pregunta);
+            return NoContent();
+        }
+
+        [HttpDelete("{idPregunta}", Name = "DeleteSecurityQuestionV1")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> Delete(int idPregunta)
+        {
+            await _securityQuestionService.DeleteSecurityQuestionAsync(idPregunta);
+            return NoContent();
+        }
     }
 }

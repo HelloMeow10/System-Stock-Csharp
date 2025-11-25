@@ -1,0 +1,608 @@
+@page "/compras/presupuestos"
+@using BusinessLogic.Services
+@using Contracts
+@using System.Text.Json
+@inject IPurchasingService Purchasing
+@inject ISupplierService Suppliers
+@inject IJSRuntime JS
+@using AgileStockPro.Web.Components.Shared
+
+<AuthGuard RequireAdmin="true">
+    <h2>Presupuestos de Compra</h2>
+
+    <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <select style="min-width:200px;" @bind="filterProveedor">
+            <option value="">Todos proveedores…</option>
+            @if (suppliers != null)
+            {
+                foreach (var s in suppliers)
+                {
+                    <option value="@s.Id">@s.Nombre (@s.Cuit)</option>
+                }
+            }
+        </select>
+        <InputDate @bind-Value="filterDesde" style="width:140px" />
+        <InputDate @bind-Value="filterHasta" style="width:140px" />
+        <label style="margin-left:6px;font-size:12px;color:#555;">Ordenar:
+            <select style="margin-left:4px;" @bind="sortQuotesField">
+                <option value="fecha">Fecha</option>
+                <option value="total">Total</option>
+                <option value="items">Items</option>
+                <option value="proveedor">Proveedor</option>
+            </select>
+            <select style="margin-left:4px;" @bind="sortQuotesDir">
+                <option value="desc">Desc</option>
+                <option value="asc">Asc</option>
+            </select>
+        </label>
+        <button @onclick="LoadQuotes">Filtrar</button>
+        <button style="margin-left:6px;" @onclick="ClearQuoteFilters">Limpiar filtros</button>
+        <button style="margin-left:6px;" @onclick="ExportQuotesCsv">Exportar CSV</button>
+        <span style="margin-left:12px;">Nuevo presupuesto:</span>
+        <select style="min-width:200px;" @bind="newQuoteSupplierId">
+            <option value="">Seleccione proveedor…</option>
+            @if (suppliers != null)
+            {
+                foreach (var s in suppliers)
+                {
+                    <option value="@s.Id">@s.Nombre (@s.Cuit)</option>
+                }
+            }
+        </select>
+        <button @onclick="NewQuote">Nuevo</button>
+    </div>
+
+    <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <input placeholder="Nombre de vista" style="width:160px" @bind="newQuoteViewName" />
+        <button @onclick="SaveQuoteView">Guardar vista</button>
+        <select style="min-width:180px" @bind="selectedQuoteViewName">
+            <option value="">Seleccionar vista…</option>
+            @if (savedQuoteViews != null)
+            {
+                foreach (var kv in savedQuoteViews)
+                {
+                    <option value="@kv.Key">@kv.Key</option>
+                }
+            }
+        </select>
+        <button @onclick="ApplyQuoteView">Aplicar</button>
+        <button @onclick="DeleteQuoteView">Eliminar</button>
+    </div>
+
+    @if (quotes != null && quotes.Any())
+    {
+        <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:12px;color:#555;">Mostrando @Math.Min(showQuotesCount, quotes.Count) de @quotes.Count</span>
+            <label style="font-size:12px;color:#555;">Tamaño:
+                <select style="margin-left:4px;" @onchange="OnQuotePageSizeChange">
+                    <option value="20" selected="@(showQuotesCount==20)">20</option>
+                    <option value="50" selected="@(showQuotesCount==50)">50</option>
+                    <option value="100" selected="@(showQuotesCount==100)">100</option>
+                </select>
+            </label>
+            <button @onclick="ShowMoreQuotes">Mostrar más</button>
+            <button @onclick="ShowAllQuotes">Mostrar todo</button>
+            <button @onclick="ResetQuotesView">Reiniciar vista</button>
+        </div>
+    }
+
+    @if (quotes == null)
+    {
+        <p>Cargando...</p>
+    }
+    else if (!quotes.Any())
+    {
+        <em>Sin presupuestos.</em>
+    }
+    else
+    {
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="text-align:left;border-bottom:2px solid #ccc;">
+                    <th style="padding:4px;">ID</th>
+                    <th style="padding:4px;">Proveedor</th>
+                    <th style="padding:4px;">Fecha</th>
+                    <th style="padding:4px;">Items</th>
+                    <th style="padding:4px;">Total</th>
+                    <th style="padding:4px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var q in quotes.Take(showQuotesCount))
+                {
+                    bool expanded = expandedQuoteId == q.Id;
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:4px;">@q.Id</td>
+                        <td style="padding:4px;">@FormatSupplier(q.ProveedorId, q.Proveedor, q.ProveedorCUIT)</td>
+                        <td style="padding:4px;">@q.Fecha.ToString("yyyy-MM-dd")</td>
+                        <td style="padding:4px;">@q.Items</td>
+                        <td style="padding:4px;">@q.Total.ToString("0.00")</td>
+                        <td style="padding:4px;">
+                            <button @onclick="() => ToggleQuote(q.Id)">@(expanded?"Cerrar":"Ver")</button>
+                            <button @onclick="() => ConvertQuote(q.Id)" style="margin-left:4px;">A Orden</button>
+                        </td>
+                    </tr>
+                    @if (expanded && quoteItems != null)
+                    {
+                        <tr>
+                            <td colspan="6" style="padding:6px;background:#fafafa;">
+                                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                                    <thead>
+                                        <tr style="text-align:left;border-bottom:1px solid #ddd;">
+                                            <th style="padding:2px 4px;">Producto</th>
+                                            <th style="padding:2px 4px;">Cant.</th>
+                                            <th style="padding:2px 4px;">Precio</th>
+                                            <th style="padding:2px 4px;">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var it in quoteItems)
+                                        {
+                                            bool editing = editItemId == it.Id;
+                                            <tr>
+                                                <td style="padding:2px 4px;">@it.ProductoId</td>
+                                                <td style="padding:2px 4px;">
+                                                    @if (editing)
+                                                    {
+                                                        <input style="width:60px" @bind="editCantidad" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @it.Cantidad
+                                                    }
+                                                </td>
+                                                <td style="padding:2px 4px;">
+                                                    @if (editing)
+                                                    {
+                                                        <input style="width:80px" @bind="editPrecio" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @it.PrecioUnitario.ToString("0.00")
+                                                    }
+                                                </td>
+                                                <td style="padding:2px 4px;">@it.Subtotal.ToString("0.00")</td>
+                                                <td style="padding:2px 4px;">
+                                                    @if (editing)
+                                                    {
+                                                        <button @onclick="() => SaveItem(it.Id)">Guardar</button>
+                                                        <button style="margin-left:4px;" @onclick="CancelEdit">Cancelar</button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button @onclick="() => BeginEdit(it)">Editar</button>
+                                                        <button style="margin-left:4px;" @onclick="() => RemoveItem(it.Id)">Eliminar</button>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                        <tr>
+                                            <td colspan="4" style="padding-top:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                                                <span><strong>Total items:</strong> @quoteItems.Sum(x => x.Subtotal).ToString("0.00")</span>
+                                                <button @onclick="ExportQuoteItemsCsv">Exportar Items CSV</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="4" style="padding-top:6px;">
+                                                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                                    <input type="number" min="1" placeholder="Producto Id" style="width:90px" @bind="newItemProducto" />
+                                                    <input type="number" min="1" placeholder="Cant" style="width:60px" @bind="newItemCantidad" />
+                                                    <input type="number" min="0" step="0.01" placeholder="Precio" style="width:80px" @bind="newItemPrecio" />
+                                                    <button @onclick="AddItem">Agregar Item</button>
+                                                    @if (!string.IsNullOrEmpty(itemError))
+                                                    {
+                                                        <span style="color:#b00020;font-size:11px;">@itemError</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div style="margin-top:10px;color:#b00020;font-size:12px;">@error</div>
+    }
+    @if (!string.IsNullOrEmpty(success))
+    {
+        <div class="badge success" style="margin-top:10px;">@success</div>
+    }
+</AuthGuard>
+
+@code {
+    private List<PurchaseQuoteDto>? quotes;
+    private List<PurchaseQuoteItemDto>? quoteItems;
+    private List<SupplierDto>? suppliers;
+    private int? expandedQuoteId;
+    private string? error;
+    private string? success;
+    private string? itemError;
+    private string? filterProveedor;
+    private DateTime? filterDesde;
+    private DateTime? filterHasta;
+    private string sortQuotesField = "fecha";
+    private string sortQuotesDir = "desc";
+    private int? newQuoteSupplierId;
+    private string? newItemProducto;
+    private string? newItemCantidad;
+    private string? newItemPrecio;
+    private int? editItemId;
+    private string? editCantidad;
+    private string? editPrecio;
+    private int showQuotesCount = 20;
+    private string? newQuoteViewName;
+    private string? selectedQuoteViewName;
+    private Dictionary<string, Filters>? savedQuoteViews;
+
+    protected override async Task OnInitializedAsync()
+    {
+        suppliers = (await Suppliers.GetAllAsync()).ToList();
+        try
+        {
+            var saved = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-filters");
+            var viewsJson = await JS.InvokeAsync<string?>("app.getLocal", "compras-presupuestos-views");
+            if (!string.IsNullOrWhiteSpace(saved))
+            {
+                var f = JsonSerializer.Deserialize<Filters>(saved!);
+                if (f != null)
+                {
+                    filterProveedor = f.Proveedor;
+                    filterDesde = f.Desde;
+                    filterHasta = f.Hasta;
+                    newQuoteSupplierId = f.NewProveedorId;
+                    if (f.PageSize.HasValue && f.PageSize.Value > 0) showQuotesCount = f.PageSize.Value;
+                    if (!string.IsNullOrWhiteSpace(f.SortField)) sortQuotesField = f.SortField!;
+                    if (!string.IsNullOrWhiteSpace(f.SortDir)) sortQuotesDir = f.SortDir!;
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(viewsJson))
+            {
+                savedQuoteViews = JsonSerializer.Deserialize<Dictionary<string, Filters>>(viewsJson!);
+            }
+        }
+        catch { }
+        await LoadQuotes();
+    }
+
+    private async Task LoadQuotes()
+    {
+        try
+        {
+            int? prov = int.TryParse(filterProveedor, out var pv) ? pv : null;
+            quotes = (await Purchasing.ListQuotesAsync(prov, filterDesde, filterHasta)).OrderByDescending(q => q.Fecha).ToList();
+            // persist filters
+            try
+            {
+                var f = new Filters { Proveedor = filterProveedor, Desde = filterDesde, Hasta = filterHasta, NewProveedorId = newQuoteSupplierId, PageSize = showQuotesCount, SortField = sortQuotesField, SortDir = sortQuotesDir };
+                await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-filters", JsonSerializer.Serialize(f));
+            }
+            catch { }
+            if (quotes != null && showQuotesCount > quotes.Count)
+            {
+                showQuotesCount = quotes.Count;
+            }
+            if (expandedQuoteId.HasValue)
+            {
+                await LoadQuoteItems(expandedQuoteId.Value);
+            }
+            // apply sorting
+            if (quotes != null)
+            {
+                IOrderedEnumerable<PurchaseQuoteDto>? ordered = null;
+                bool desc = sortQuotesDir == "desc";
+                switch (sortQuotesField)
+                {
+                    case "total":
+                        ordered = desc ? quotes.OrderByDescending(q => q.Total) : quotes.OrderBy(q => q.Total);
+                        break;
+                    case "items":
+                        ordered = desc ? quotes.OrderByDescending(q => q.Items) : quotes.OrderBy(q => q.Items);
+                        break;
+                    case "proveedor":
+                        ordered = desc ? quotes.OrderByDescending(q => q.Proveedor ?? GetSupplierName(q.ProveedorId)) : quotes.OrderBy(q => q.Proveedor ?? GetSupplierName(q.ProveedorId));
+                        break;
+                    case "fecha":
+                    default:
+                        ordered = desc ? quotes.OrderByDescending(q => q.Fecha) : quotes.OrderBy(q => q.Fecha);
+                        break;
+                }
+                quotes = ordered.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task ClearQuoteFilters()
+    {
+        filterProveedor = null;
+        filterDesde = null;
+        filterHasta = null;
+        newQuoteSupplierId = null;
+        try { await JS.InvokeVoidAsync("app.removeLocal", "compras-presupuestos-filters"); } catch { }
+        await LoadQuotes();
+    }
+
+    private async Task LoadQuoteItems(int quoteId)
+    {
+        quoteItems = (await Purchasing.GetQuoteItemsAsync(quoteId)).ToList();
+    }
+
+    private async void ToggleQuote(int id)
+    {
+        if (expandedQuoteId == id)
+        {
+            expandedQuoteId = null;
+            quoteItems = null;
+        }
+        else
+        {
+            expandedQuoteId = id;
+            await LoadQuoteItems(id);
+        }
+    }
+
+    private async Task NewQuote()
+    {
+        try
+        {
+            if (!newQuoteSupplierId.HasValue)
+            {
+                error = "Seleccione un proveedor para crear el presupuesto.";
+                return;
+            }
+            var id = await Purchasing.CreateQuoteAsync(proveedorId: newQuoteSupplierId.Value, fecha: DateTime.UtcNow.Date);
+            expandedQuoteId = id;
+            success = $"Presupuesto #{id} creado.";
+            await LoadQuotes();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task AddItem()
+    {
+        itemError = null;
+        if (!expandedQuoteId.HasValue) return;
+        if (!int.TryParse(newItemProducto, out var prod)) { itemError = "Producto inválido"; return; }
+        if (!int.TryParse(newItemCantidad, out var cant) || cant <= 0) { itemError = "Cantidad inválida"; return; }
+        if (!decimal.TryParse(newItemPrecio, out var precio) || precio < 0) { itemError = "Precio inválido"; return; }
+        try
+        {
+            await Purchasing.AddQuoteItemAsync(expandedQuoteId.Value, prod, cant, precio);
+            newItemProducto = newItemCantidad = newItemPrecio = null;
+            success = "Item agregado.";
+            await LoadQuotes();
+        }
+        catch (Exception ex)
+        {
+            itemError = ex.Message;
+        }
+    }
+
+    private async Task RemoveItem(int itemId)
+    {
+        try
+        {
+            await Purchasing.DeleteQuoteItemAsync(itemId);
+            success = "Item eliminado.";
+            await LoadQuotes();
+        }
+        catch (Exception ex)
+        {
+            itemError = ex.Message;
+        }
+    }
+
+    private void BeginEdit(PurchaseQuoteItemDto it)
+    {
+        editItemId = it.Id;
+        editCantidad = it.Cantidad.ToString();
+        editPrecio = it.PrecioUnitario.ToString("0.##");
+    }
+
+    private void CancelEdit()
+    {
+        editItemId = null;
+        editCantidad = null;
+        editPrecio = null;
+    }
+
+    private async Task SaveItem(int itemId)
+    {
+        itemError = null;
+        if (!int.TryParse(editCantidad, out var cant) || cant <= 0)
+        {
+            itemError = "Cantidad inválida";
+            return;
+        }
+        if (!decimal.TryParse(editPrecio, out var precio) || precio < 0)
+        {
+            itemError = "Precio inválido";
+            return;
+        }
+        try
+        {
+            await Purchasing.UpdateQuoteItemAsync(itemId, cant, precio);
+            CancelEdit();
+            success = "Item actualizado.";
+            await LoadQuotes();
+        }
+        catch (Exception ex)
+        {
+            itemError = ex.Message;
+        }
+    }
+
+    private async Task ConvertQuote(int id)
+    {
+        try
+        {
+            await Purchasing.ConvertQuoteToOrderAsync(id, DateTime.UtcNow.Date);
+            await LoadQuotes();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private class Filters
+    {
+        public string? Proveedor { get; set; }
+        public DateTime? Desde { get; set; }
+        public DateTime? Hasta { get; set; }
+        public int? NewProveedorId { get; set; }
+        public int? PageSize { get; set; }
+        public string? SortField { get; set; }
+        public string? SortDir { get; set; }
+    }
+
+    private string GetSupplierName(int proveedorId)
+    {
+        var name = suppliers?.FirstOrDefault(s => s.Id == proveedorId)?.Nombre;
+        return string.IsNullOrWhiteSpace(name) ? proveedorId.ToString() : name!;
+    }
+
+    private string FormatSupplier(int proveedorId, string? name, string? cuit)
+    {
+        var display = name ?? GetSupplierName(proveedorId);
+        return string.IsNullOrWhiteSpace(cuit) ? display : $"{display} ({cuit})";
+    }
+
+    private async Task ExportQuotesCsv()
+    {
+        if (quotes == null || quotes.Count == 0) return;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Id,ProveedorId,Proveedor,CUIT,Fecha,Items,Total");
+        foreach (var q in quotes)
+        {
+            var name = q.Proveedor ?? GetSupplierName(q.ProveedorId);
+            var cuit = q.ProveedorCUIT ?? string.Empty;
+            var fecha = q.Fecha.ToString("yyyy-MM-dd");
+            sb.AppendLine(string.Join(',', new[] {
+                q.Id.ToString(),
+                q.ProveedorId.ToString(),
+                EscapeCsv(name),
+                EscapeCsv(cuit),
+                fecha,
+                q.Items.ToString(),
+                q.Total.ToString("0.00")
+            }));
+        }
+        await JS.InvokeVoidAsync("app.downloadFile", "presupuestos.csv", sb.ToString(), "text/csv;charset=utf-8");
+    }
+
+    private static string EscapeCsv(string? input)
+    {
+        if (string.IsNullOrEmpty(input)) return "";
+        var needsQuotes = input.Contains(',') || input.Contains('"') || input.Contains('\n');
+        var s = input.Replace("\"", "\"\"");
+        return needsQuotes ? $"\"{s}\"" : s;
+    }
+
+    private void ShowMoreQuotes()
+    {
+        var total = quotes?.Count ?? 0;
+        showQuotesCount = Math.Min(showQuotesCount + 20, total);
+    }
+
+    private void ShowAllQuotes()
+    {
+        showQuotesCount = quotes?.Count ?? 0;
+    }
+
+    private void ResetQuotesView()
+    {
+        showQuotesCount = 20;
+    }
+
+    private async Task OnQuotePageSizeChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var sz) && sz > 0)
+        {
+            showQuotesCount = sz;
+            try
+            {
+                var f = new Filters { Proveedor = filterProveedor, Desde = filterDesde, Hasta = filterHasta, NewProveedorId = newQuoteSupplierId, PageSize = showQuotesCount };
+                await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-filters", JsonSerializer.Serialize(f));
+            }
+            catch { }
+        }
+    }
+
+    private async Task ExportQuoteItemsCsv()
+    {
+        if (quoteItems == null || quoteItems.Count == 0) return;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("ItemId,ProductoId,Cantidad,PrecioUnitario,Subtotal");
+        foreach (var it in quoteItems)
+        {
+            sb.AppendLine(string.Join(',', new[] {
+                it.Id.ToString(),
+                it.ProductoId.ToString(),
+                it.Cantidad.ToString(),
+                it.PrecioUnitario.ToString("0.00"),
+                it.Subtotal.ToString("0.00")
+            }));
+        }
+        var fname = expandedQuoteId.HasValue ? $"presupuesto_{expandedQuoteId.Value}_items.csv" : "presupuesto_items.csv";
+        await JS.InvokeVoidAsync("app.downloadFile", fname, sb.ToString(), "text/csv;charset=utf-8");
+    }
+
+    private async Task SaveQuoteView()
+    {
+        var name = newQuoteViewName?.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+        savedQuoteViews ??= new Dictionary<string, Filters>();
+        savedQuoteViews[name] = new Filters
+        {
+            Proveedor = filterProveedor,
+            Desde = filterDesde,
+            Hasta = filterHasta,
+            NewProveedorId = newQuoteSupplierId,
+            PageSize = showQuotesCount,
+            SortField = sortQuotesField,
+            SortDir = sortQuotesDir
+        };
+        await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-views", JsonSerializer.Serialize(savedQuoteViews));
+        success = $"Vista '{name}' guardada.";
+    }
+
+    private async Task ApplyQuoteView()
+    {
+        var name = selectedQuoteViewName;
+        if (string.IsNullOrEmpty(name) || savedQuoteViews == null || !savedQuoteViews.ContainsKey(name)) return;
+        var f = savedQuoteViews[name];
+        filterProveedor = f.Proveedor;
+        filterDesde = f.Desde;
+        filterHasta = f.Hasta;
+        newQuoteSupplierId = f.NewProveedorId;
+        showQuotesCount = f.PageSize ?? showQuotesCount;
+        if (!string.IsNullOrEmpty(f.SortField)) sortQuotesField = f.SortField!;
+        if (!string.IsNullOrEmpty(f.SortDir)) sortQuotesDir = f.SortDir!;
+        await LoadQuotes();
+        success = $"Vista '{name}' aplicada.";
+    }
+
+    private async Task DeleteQuoteView()
+    {
+        var name = selectedQuoteViewName;
+        if (string.IsNullOrEmpty(name) || savedQuoteViews == null || !savedQuoteViews.ContainsKey(name)) return;
+        savedQuoteViews.Remove(name);
+        await JS.InvokeVoidAsync("app.setLocal", "compras-presupuestos-views", JsonSerializer.Serialize(savedQuoteViews));
+        selectedQuoteViewName = null;
+        success = $"Vista eliminada.";
+    }
+}

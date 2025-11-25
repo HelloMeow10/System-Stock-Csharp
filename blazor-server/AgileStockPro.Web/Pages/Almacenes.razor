@@ -3,6 +3,7 @@
 @using AgileStockPro.Web.Models
 @using AgileStockPro.Web.Components
 @inject IAppDataService Data
+@inject AgileStockPro.Web.Services.IAuthService AuthService
 
 <AuthGuard>
 <PageHeader Title="Almacenes" />
@@ -43,15 +44,17 @@ else
 @code {
     private IReadOnlyList<Almacen>? items;
     private string? error;
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            items = await Data.GetWarehousesAsync();
-        }
-        catch (Exception ex)
-        {
-            error = ex.Message;
-        }
-    }
+	private AgileStockPro.Web.Models.AppUser? currentUser;
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			currentUser = await AuthService.GetCurrentUserAsync();
+			items = await Data.GetWarehousesAsync();
+		}
+		catch (Exception ex)
+		{
+			error = ex.Message;
+		}
+	}
 }

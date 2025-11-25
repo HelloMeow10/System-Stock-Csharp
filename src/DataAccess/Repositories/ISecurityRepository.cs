@@ -12,5 +12,8 @@ namespace DataAccess.Repositories
         Task<List<RespuestaSeguridad>?> GetRespuestasSeguridadByUsuarioIdAsync(int idUsuario);
         Task AddRespuestaSeguridadAsync(RespuestaSeguridad respuesta);
         Task DeleteRespuestasSeguridadByUsuarioIdAsync(int usuarioId);
+        Task<int> AddPreguntaSeguridadAsync(string pregunta);
+        Task UpdatePreguntaSeguridadAsync(int idPregunta, string pregunta);
+        Task DeletePreguntaSeguridadAsync(int idPregunta);
     }
 }

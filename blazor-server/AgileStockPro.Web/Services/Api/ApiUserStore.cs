@@ -35,15 +35,18 @@ public class ApiUserStore : IUserStore
             if (user.BackendIdPersona is not int idPersona) throw new InvalidOperationException("Persona requerida");
             if (user.BackendIdRol is not int idRol && !user.IsAdmin) throw new InvalidOperationException("Rol requerido");
             var rolNombre = user.IsAdmin ? "Admin" : null; // si no admin, debería definirse según selección UI
+            var tempPass = string.IsNullOrWhiteSpace(user.TempPassword) ? GenerateTemporaryPassword() : user.TempPassword!;
             var created = await _api.PostAsync<UserDto>("api/v1/users", new UserCreateRequest
             {
                 PersonaId = idPersona.ToString(),
                 Username = user.Username,
-                Password = "", // backend auto-envía o UI puede setear temporal
+                Password = tempPass,
                 Rol = rolNombre ?? "Usuario"
             });
             user.BackendIdUsuario = created.IdUsuario;
             user.BackendIdPersona = created.IdPersona;
+            user.MustChangePassword = true;
+            user.TempPassword = tempPass;
             return;
         }
         else
@@ -133,4 +136,22 @@ public class ApiUserStore : IUserStore
 
     public Task SetCurrentUserAsync(AppUser? user) => Task.CompletedTask;
     public Task<AppUser?> GetCurrentUserAsync() => Task.FromResult<AppUser?>(null);
+
+    private static string GenerateTemporaryPassword()
+    {
+        // Simple strong password generator: Upper, lower, digit, special + length 12
+        const string upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const string lower = "abcdefghijkmnopqrstuvwxyz";
+        const string digits = "23456789";
+        const string special = "@$!%*?&";
+        var rnd = new Random();
+        string Take(string s) => s[rnd.Next(s.Length)].ToString();
+        var chars = new List<char>
+        {
+            Take(upper)[0], Take(lower)[0], Take(digits)[0], Take(special)[0]
+        };
+        string pool = upper + lower + digits + special;
+        while (chars.Count < 12) chars.Add(pool[rnd.Next(pool.Length)]);
+        return new string(chars.OrderBy(_ => rnd.Next()).ToArray());
+    }
 }

@@ -1,0 +1,111 @@
+@page "/recuperar"
+@inject AgileStockPro.Web.Services.IAuthService AuthService
+@inject NavigationManager Nav
+@inject IToastService Toast
+@using AgileStockPro.Web.Auth
+@layout AgileStockPro.Web.Components.LoginLayout
+
+<FluentCard Width="480px" Style="padding:20px;">
+    <h3 style="text-align:center;">Recuperar contraseña</h3>
+    @if (stage == 0)
+    {
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <FluentTextField @bind-Value="username" Label="Usuario" Required="true" />
+            <FluentButton Appearance="Appearance.Accent" OnClick="LoadQuestions" Loading="@loading">Continuar</FluentButton>
+            @if (!string.IsNullOrWhiteSpace(error))
+            {
+                <FluentMessageBar Intent="MessageIntent.Error">@error</FluentMessageBar>
+            }
+        </div>
+    }
+    else if (questions is null)
+    {
+        <p>Cargando preguntas…</p>
+    }
+    else if (stage == 1)
+    {
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            <p>Respondé las preguntas de seguridad para generar una contraseña temporal que será enviada a tu correo registrado.</p>
+            @for (int i = 0; i < questions.Count; i++)
+            {
+                <div>
+                    <label>@questions[i]</label>
+                    <FluentTextField @bind-Value="answers[i]" TextFieldType="TextFieldType.Password" Placeholder="Respuesta" />
+                </div>
+            }
+            <FluentButton Appearance="Appearance.Accent" OnClick="Recover" Loading="@loading">Recuperar</FluentButton>
+            <FluentButton Appearance="Appearance.Outline" OnClick="() => stage = 0">Volver</FluentButton>
+            @if (!string.IsNullOrWhiteSpace(error))
+            {
+                <FluentMessageBar Intent="MessageIntent.Error">@error</FluentMessageBar>
+            }
+        </div>
+    }
+    else if (stage == 2)
+    {
+        <FluentMessageBar Intent="MessageIntent.Success">
+            Si las respuestas fueron correctas se envió una contraseña temporal a tu correo. Iniciá sesión y se te pedirá cambiarla.
+        </FluentMessageBar>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@GoLogin">Ir al Login</FluentButton>
+    }
+</FluentCard>
+
+@code {
+    private string? username;
+    private List<string>? questions;
+    private List<string> answers = new();
+    private int stage = 0; // 0: pedir usuario, 1: preguntas, 2: done
+    private bool loading;
+    private string? error;
+
+    private void GoLogin() => Nav.NavigateTo("/loginnn");
+
+    private async Task LoadQuestions()
+    {
+        error = null; questions = null; answers.Clear();
+        if (string.IsNullOrWhiteSpace(username)) { error = "Ingresa el usuario"; return; }
+        loading = true;
+        try
+        {
+            questions = (await AuthService.GetSecurityQuestionsAsync(username)).ToList();
+            if (questions.Count == 0) { error = "No hay preguntas configuradas"; stage = 0; }
+            else
+            {
+                answers = Enumerable.Range(0, questions.Count).Select(_ => string.Empty).ToList();
+                stage = 1;
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        loading = false;
+    }
+
+    private async Task Recover()
+    {
+        if (questions == null) return;
+        if (answers.Any(a => string.IsNullOrWhiteSpace(a))) { error = "Completá todas las respuestas"; return; }
+        loading = true; error = null;
+        try
+        {
+            var dict = new Dictionary<string,string>();
+            for (int i = 0; i < questions.Count; i++) dict[questions[i]] = answers[i];
+            var result = await AuthService.ResetPasswordAsync(username!, dict);
+            if (!result.Success)
+            {
+                error = result.Error ?? "Error en la recuperación";
+            }
+            else
+            {
+                Toast.ShowSuccess("Proceso iniciado. Revisá tu correo.");
+                stage = 2;
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        loading = false;
+    }
+}

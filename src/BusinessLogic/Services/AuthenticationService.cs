@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
-using System.Text;
 using BusinessLogic.Exceptions;
 using Contracts;
 using BusinessLogic.Security;
@@ -49,25 +47,10 @@ namespace BusinessLogic.Services
                 if (usuario == null)
                     return AuthenticationResult.Failed("Usuario o contraseña incorrectos.");
 
-                // Primary check: Argon2id hash
+                // Single algorithm: Argon2id (legacy SHA256 removed)
                 var argonHash = _passwordHasher.Hash(username, password);
                 if (!argonHash.SequenceEqual(usuario.ContrasenaScript))
-                {
-                    // Legacy fallback: SHA256(password + username) as seeded in initial SQL script
-                    var legacyComposite = password + username; // matches 'admin123admin'
-                    using var sha = SHA256.Create();
-                    var legacyHash = sha.ComputeHash(Encoding.UTF8.GetBytes(legacyComposite));
-                    if (legacyHash.SequenceEqual(usuario.ContrasenaScript))
-                    {
-                        // Upgrade stored hash to Argon2id transparently
-                        usuario.ChangePassword(argonHash);
-                        await _userRepository.UpdateUsuarioAsync(usuario);
-                    }
-                    else
-                    {
-                        return AuthenticationResult.Failed("Usuario o contraseña incorrectos.");
-                    }
-                }
+                    return AuthenticationResult.Failed("Usuario o contraseña incorrectos.");
 
                 var accountStatus = CheckAccountStatus(usuario);
                 if (accountStatus != null)

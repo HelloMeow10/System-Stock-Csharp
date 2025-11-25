@@ -113,6 +113,14 @@
     {
         <FluentTooltip Anchor="nav-alertas">Alertas</FluentTooltip>
     }
+    <NavLink href="/reportes-inventario" class="nav-link">
+      <span class="nav-icon"><FluentIcon Id="nav-reportes-inventario" Icon="@(Icons.Regular.Size20.Table)" /></span>
+      <span class="nav-text">Rep. Inventario</span>
+    </NavLink>
+    @if (Collapsed)
+    {
+        <FluentTooltip Anchor="nav-reportes-inventario">Reportes Inventario</FluentTooltip>
+    }
     <NavLink href="/scrap" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-scrap" Icon="@(Icons.Regular.Size20.Delete)" /></span>
       <span class="nav-text">Scrap</span>
@@ -152,6 +160,14 @@
     {
         <FluentTooltip Anchor="nav-users">Usuarios</FluentTooltip>
     }
+    <NavLink href="/usuarios/alta" class="nav-link">
+      <span class="nav-icon"><FluentIcon Id="nav-users-create" Icon="@(Icons.Regular.Size20.AddSquare)" /></span>
+      <span class="nav-text">Alta Usuario</span>
+    </NavLink>
+    @if (Collapsed)
+    {
+        <FluentTooltip Anchor="nav-users-create">Alta Usuario</FluentTooltip>
+    }
     <NavLink href="/personas" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-personas" Icon="@(Icons.Regular.Size20.Person)" /></span>
       <span class="nav-text">Personas</span>
@@ -167,6 +183,14 @@
     @if (Collapsed)
     {
         <FluentTooltip Anchor="nav-security">Seguridad</FluentTooltip>
+    }
+    <NavLink href="/seguridad-preguntas" class="nav-link">
+      <span class="nav-icon"><FluentIcon Id="nav-security-questions" Icon="@(Icons.Regular.Size20.QuestionCircle)" /></span>
+      <span class="nav-text">Preguntas</span>
+    </NavLink>
+    @if (Collapsed)
+    {
+        <FluentTooltip Anchor="nav-security-questions">Preguntas seguridad</FluentTooltip>
     }
     }
     @if (User is not null)

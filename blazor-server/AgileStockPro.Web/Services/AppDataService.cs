@@ -9,8 +9,8 @@ public class AppDataService : IAppDataService
         await Task.Delay(50, ct);
         return new List<Supplier>
         {
-            new() { Id = 1, Name = "Tech Supplies SA", Email = "contacto@techsupplies.com", Phone = "+54 11 5555-0001" },
-            new() { Id = 2, Name = "Distribuidora Norte", Email = "ventas@norte.com", Phone = "+54 381 444-2211" },
+            new() { Id = 1, Name = "Tech Supplies SA", Email = "contacto@techsupplies.com", Phone = "+54 11 5555-0001", Province="CABA", City="Buenos Aires", Address="Av. Siempre Viva 123", Cuit="30-12345678-9", PaymentTermDays=30, IvaCondition="Responsable Inscripto", Contacts = new(){ new(){ Name="Laura Pérez", Role="Ventas", Email="lperez@techsupplies.com", Phone="+54 11 5555-0002" } } },
+            new() { Id = 2, Name = "Distribuidora Norte", Email = "ventas@norte.com", Phone = "+54 381 444-2211", Province="Tucumán", City="San Miguel", Address="Belgrano 450", Cuit="30-87654321-0", PaymentTermDays=45, IvaCondition="Monotributo", Contacts = new(){ new(){ Name="Carlos Gómez", Role="Compras", Email="cgomez@norte.com", Phone="+54 381 444-2212" } } },
         };
     }
 

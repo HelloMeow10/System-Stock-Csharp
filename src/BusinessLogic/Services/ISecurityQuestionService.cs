@@ -9,5 +9,8 @@ namespace BusinessLogic.Services
         Task SaveSecurityAnswersAsync(string username, Dictionary<int, string> answers);
         Task<List<PreguntaSeguridadDto>> GetUserSecurityQuestionsAsync(string username);
         Task<List<PreguntaSeguridadDto>> GetSecurityQuestionsAsync();
+        Task<PreguntaSeguridadDto> CreateSecurityQuestionAsync(string pregunta);
+        Task UpdateSecurityQuestionAsync(int idPregunta, string pregunta);
+        Task DeleteSecurityQuestionAsync(int idPregunta);
     }
 }

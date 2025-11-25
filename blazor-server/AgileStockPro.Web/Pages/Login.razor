@@ -1,26 +1,30 @@
 @page "/loginnn"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
 @using AgileStockPro.Web.Auth
+@using Microsoft.FluentUI.AspNetCore.Components
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @layout AgileStockPro.Web.Components.LoginLayout
 
-<FluentCard Width="400px" Style="padding: 20px;">
-    <h3 style="text-align: center;">AgileStockPro Login</h3>
-    <div style="display: flex; flex-direction: column; gap: 15px;">
-        <FluentTextField @bind-Value="Username" Label="Username" Required="true" Placeholder="Enter your username" />
-        <FluentTextField @bind-Value="Password" Label="Password" TextFieldType="TextFieldType.Password" Required="true" Placeholder="Enter your password" />
-        
-        <FluentButton Appearance="Appearance.Accent" OnClick="HandleLogin" Loading="@IsLoading">Login</FluentButton>
-        
+<div style="width:400px;padding:20px;border:1px solid var(--neutral-stroke-rest);border-radius:8px;">
+    <h3 style="text-align:center;margin-top:0;">AgileStockPro Login</h3>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+        <label>Username
+            <input style="width:100%;padding:6px;" @bind="Username" />
+        </label>
+        <label>Password
+            <input type="password" style="width:100%;padding:6px;" @bind="Password" />
+        </label>
+        <button disabled="@IsLoading" @onclick="HandleLogin" style="padding:8px;">Login</button>
+        <a href="/recuperar" style="font-size:12px;">¿Olvidaste tu contraseña?</a>
         @if (!string.IsNullOrEmpty(ErrorMessage))
         {
-            <FluentMessageBar Intent="MessageIntent.Error">
-                @ErrorMessage
-            </FluentMessageBar>
+            <div style="color:#b00020;font-size:12px;">@ErrorMessage</div>
         }
     </div>
-</FluentCard>
+</div>
 
 @code {
     private string Username { get; set; } = "";

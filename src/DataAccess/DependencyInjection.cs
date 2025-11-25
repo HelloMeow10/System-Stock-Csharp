@@ -17,6 +17,8 @@ namespace DataAccess
             services.AddScoped<IClientRepository, SqlClientRepository>();
             services.AddScoped<IPurchaseRepository, SqlPurchaseRepository>();
             services.AddScoped<ISalesRepository, SqlSalesRepository>();
+            services.AddScoped<IProductSupplierRepository, SqlProductSupplierRepository>();
+            services.AddScoped<IPurchasingRepository, SqlPurchasingRepository>();
             // Feature flags
             // Allow independent toggles: Catalog vs Stock
             // Backward compatible: if Catalog flag missing, fall back to Stock flag

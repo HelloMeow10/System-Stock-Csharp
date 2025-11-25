@@ -5,13 +5,17 @@
 @attribute [Authorize]
 @inject IClientService ClientService
 @inject IDialogService DialogService
+@inject AgileStockPro.Web.Services.IAuthService AuthService
 
 <PageTitle>Clientes</PageTitle>
 
 <div style="padding: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>Clientes</h1>
-        <FluentButton Appearance="Appearance.Accent" OnClick="@AddClient">Nuevo Cliente</FluentButton>
+        @if (currentUser?.IsAdmin == true)
+        {
+            <FluentButton Appearance="Appearance.Accent" OnClick="@AddClient">Nuevo Cliente</FluentButton>
+        }
     </div>
 
     <FluentTextField @bind-Value="searchTerm" Placeholder="Buscar por nombre o CUIT..." Style="width: 300px; margin-bottom: 20px;" @oninput="@(e => Search(e.Value?.ToString()))" />
@@ -31,8 +35,15 @@
             <PropertyColumn Property="@(p => p.LimiteCredito)" Sortable="true" Title="Límite Crédito" />
             <PropertyColumn Property="@(p => p.Descuento)" Sortable="true" Title="Descuento %" />
             <TemplateColumn Title="Acciones">
-                <FluentButton IconEnd="@(new Icons.Regular.Size16.Edit())" OnClick="@(() => Edit(context))" Appearance="Appearance.Lightweight" />
-                <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => Delete(context))" Appearance="Appearance.Lightweight" />
+                @if (currentUser?.IsAdmin == true)
+                {
+                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Edit())" OnClick="@(() => Edit(context))" Appearance="Appearance.Lightweight" />
+                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => Delete(context))" Appearance="Appearance.Lightweight" />
+                }
+                else
+                {
+                    <span class="muted" style="font-size:12px;">Solo lectura</span>
+                }
             </TemplateColumn>
         </FluentDataGrid>
     }
@@ -42,8 +53,10 @@
     private IEnumerable<ClientDto>? clients;
     private string searchTerm = "";
 
+    private AgileStockPro.Web.Models.AppUser? currentUser;
     protected override async Task OnInitializedAsync()
     {
+        currentUser = await AuthService.GetCurrentUserAsync();
         await LoadData();
     }
 

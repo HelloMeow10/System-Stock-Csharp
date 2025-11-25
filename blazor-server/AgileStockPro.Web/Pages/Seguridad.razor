@@ -1,66 +1,109 @@
 @page "/seguridad"
 @inject AgileStockPro.Web.Services.IUserStore Store
 @inject AgileStockPro.Web.Services.IAuthService Auth
+@inject IToastService Toast
 @using AgileStockPro.Web.Components
+@* Reverted to basic HTML controls due to Fluent UI compilation issues *@
 
 <AuthGuard RequireAdmin="true">
-<PageHeader Title="Políticas de seguridad" />
+    <PageHeader Title="Políticas de seguridad" />
 
-@if (!string.IsNullOrWhiteSpace(error))
-{
-    <div class="error">@error</div>
-}
-else if (policy is null)
-{
-    <p>Cargando…</p>
-}
-else
-{
-    <div class="panel">
-        <div class="panel-header">Password</div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.5rem;">
-            <label>Mínimo de caracteres</label>
-            <input type="number" class="input" @bind-value="policy.MinLength" />
-            <label>Cantidad de preguntas</label>
-            <select class="input" @bind="policy.QuestionsCount">
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="5">5</option>
-            </select>
-            <label>Mayúsculas y minúsculas</label>
-            <input type="checkbox" @bind="policy.RequireUpperLower" />
-            <label>Números</label>
-            <input type="checkbox" @bind="policy.RequireNumber" />
-            <label>Carácter especial</label>
-            <input type="checkbox" @bind="policy.RequireSpecial" />
-            <label>2FA por correo (simulado)</label>
-            <input type="checkbox" @bind="policy.Require2FA" />
-            <label>No repetir contraseñas anteriores</label>
-            <input type="checkbox" @bind="policy.PreventReuse" />
-            <label>Evitar datos personales</label>
-            <input type="checkbox" @bind="policy.CheckPersonalData" />
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="error">@error</div>
+    }
+    else if (policy is null)
+    {
+        <p>Cargando…</p>
+    }
+    else
+    {
+        <div class="panel">
+            <h3>Reglas de contraseña</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem; max-width:600px;">
+                <label>Mínimo caracteres</label>
+                <input type="number" class="input" @bind="policy.MinLength" />
+                <label>Preguntas requeridas</label>
+                <select class="input" @bind="policy.QuestionsCount">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                </select>
+                <label>Mayúsculas y minúsculas</label>
+                <input type="checkbox" @bind="policy.RequireUpperLower" />
+                <label>Números</label>
+                <input type="checkbox" @bind="policy.RequireNumber" />
+                <label>Carácter especial</label>
+                <input type="checkbox" @bind="policy.RequireSpecial" />
+                <label>2FA (correo simulado)</label>
+                <input type="checkbox" @bind="policy.Require2FA" />
+                <label>No reutilizar anteriores</label>
+                <input type="checkbox" @bind="policy.PreventReuse" />
+                <label>Sin datos personales</label>
+                <input type="checkbox" @bind="policy.CheckPersonalData" />
+            </div>
+            <div style="margin-top:1rem; display:flex; gap:.5rem;">
+                <button class="btn btn-primary" @onclick="Save">Guardar</button>
+                <button class="btn" @onclick="Reset">Restablecer</button>
+            </div>
         </div>
-        <div style="margin-top:.75rem">
-            <button class="btn btn-primary" @onclick="Save">Guardar</button>
-        </div>
-    </div>
-}
-
+    }
 </AuthGuard>
 
 @code {
     private Models.SecurityPolicy? policy;
+    private Models.SecurityPolicy? original;
     private string? error;
+
     protected override async Task OnInitializedAsync()
     {
-        try { policy = await Store.GetPolicyAsync(); }
+        try
+        {
+            policy = await Store.GetPolicyAsync();
+            original = Clone(policy);
+        }
         catch (Exception ex) { error = ex.Message; }
     }
+
     private async Task Save()
     {
-        if (policy != null)
+        if (policy == null) return;
+        try
         {
             await Store.SavePolicyAsync(policy);
+            original = Clone(policy);
+            Toast.ShowSuccess("Política guardada");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
         }
     }
+
+    private void Reset()
+    {
+        if (original is null || policy is null) return;
+        policy.MinLength = original.MinLength;
+        policy.QuestionsCount = original.QuestionsCount;
+        policy.RequireUpperLower = original.RequireUpperLower;
+        policy.RequireNumber = original.RequireNumber;
+        policy.RequireSpecial = original.RequireSpecial;
+        policy.Require2FA = original.Require2FA;
+        policy.PreventReuse = original.PreventReuse;
+        policy.CheckPersonalData = original.CheckPersonalData;
+    }
+
+    private static Models.SecurityPolicy Clone(Models.SecurityPolicy src) => new()
+    {
+        MinLength = src.MinLength,
+        QuestionsCount = src.QuestionsCount,
+        RequireUpperLower = src.RequireUpperLower,
+        RequireNumber = src.RequireNumber,
+        RequireSpecial = src.RequireSpecial,
+        Require2FA = src.Require2FA,
+        PreventReuse = src.PreventReuse,
+        CheckPersonalData = src.CheckPersonalData,
+        LockoutMinutes = src.LockoutMinutes,
+        MaxFailedAttempts = src.MaxFailedAttempts
+    };
 }

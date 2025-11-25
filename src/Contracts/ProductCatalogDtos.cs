@@ -11,6 +11,13 @@ namespace Contracts
         decimal Precio,
         int StockActual,
         int StockMinimo,
-        int StockMaximo
+        int StockMaximo,
+        string UnidadMedida,
+        decimal Peso,
+        decimal Volumen,
+        int PuntoReposicion,
+        int DiasVencimiento,
+        bool LoteObligatorio,
+        bool ControlVencimiento
     );
 }

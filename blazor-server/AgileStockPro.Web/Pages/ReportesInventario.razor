@@ -1,0 +1,142 @@
+@page "/reportes-inventario"
+@using AgileStockPro.Web.Services.Api
+@using AgileStockPro.Web.Models
+@inject ApiProductService ProductApi
+@inject AgileStockPro.Web.Services.IAuthService AuthService
+
+<AuthGuard RequireAdmin="true">
+    <FluentCard Width="100%" Style="padding:16px;margin-bottom:16px;">
+        <h3>Reportes de Inventario</h3>
+        <p class="muted">Vista consolidada de productos con stock bajo, en punto de reposición y bajo control de vencimiento.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+            <FluentButton Appearance="Appearance.Accent" OnClick="Reload" Loading="@loading">Refrescar</FluentButton>
+            <FluentButton Appearance="Appearance.Outline" OnClick="ExportCsv" Disabled="@(reportItems is null || reportItems.Count == 0)">Exportar CSV</FluentButton>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(error)) { <FluentMessageBar Intent="MessageIntent.Error">@error</FluentMessageBar> }
+    </FluentCard>
+
+    @if (loading)
+    {
+        <FluentProgressRing />
+    }
+    else if (reportItems is null || reportItems.Count == 0)
+    {
+        <p class="muted">No hay registros que cumplan criterios de reporte.</p>
+    }
+    else
+    {
+        <FluentDataGrid Items="@reportItems.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.6fr 1fr 0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.8fr">
+            <PropertyColumn Property="@(r => r.Codigo)" Title="Código" />
+            <PropertyColumn Property="@(r => r.Nombre)" Title="Nombre" />
+            <PropertyColumn Property="@(r => r.Stock)" Title="Stock" />
+            <PropertyColumn Property="@(r => r.Min)" Title="Min" />
+            <PropertyColumn Property="@(r => r.Repo)" Title="Reposición" />
+            <PropertyColumn Property="@(r => r.PuntoCritico)" Title="Crítico" />
+            <PropertyColumn Property="@(r => r.Tipo)" Title="Tipo" />
+            <PropertyColumn Property="@(r => r.DiasVencimiento)" Title="Días Venc." />
+            <PropertyColumn Property="@(r => r.UnidadMedida)" Title="Unidad" />
+            <TemplateColumn Title="Severidad">
+                <FluentBadge Appearance="@(context.Severidad == "danger" ? Appearance.Accent : context.Severidad == "warning" ? Appearance.Neutral : Appearance.Neutral)">@context.Severidad</FluentBadge>
+            </TemplateColumn>
+        </FluentDataGrid>
+        <div style="margin-top:12px;display:flex;gap:24px;flex-wrap:wrap;">
+            <FluentBadge Appearance="Appearance.Neutral">Total: @reportItems.Count</FluentBadge>
+            <FluentBadge Appearance="Appearance.Accent">Críticos: @reportItems.Count(i => i.Severidad == "danger")</FluentBadge>
+            <FluentBadge Appearance="Appearance.Neutral">Bajo/Reposición: @reportItems.Count(i => i.Severidad == "warning")</FluentBadge>
+            <FluentBadge Appearance="Appearance.Neutral">Vencimiento: @reportItems.Count(i => i.Tipo.Contains("Venc"))</FluentBadge>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(csvDataUrl))
+    {
+        <a href="@csvDataUrl" download="reporte_inventario.csv" style="display:none;" ref="csvLinkRef">Descargar</a>
+    }
+</AuthGuard>
+
+@code {
+    private List<Row>? reportItems;
+    private bool loading;
+    private string? error;
+    private string? csvDataUrl;
+    private ElementReference csvLinkRef;
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        loading = true; error = null; csvDataUrl = null;
+        try
+        {
+            var productos = (await ProductApi.GetProductsAsync()).ToList();
+            reportItems = BuildReport(productos);
+        }
+        catch (Exception ex) { error = ex.Message; }
+        loading = false;
+    }
+
+    private List<Row> BuildReport(List<Product> products)
+    {
+        var list = new List<Row>();
+        foreach (var p in products)
+        {
+            string? tipo = null; string severidad = "info"; bool puntoCritico = false;
+            if (p.Stock <= Math.Max(1, p.MinStock / 2)) { tipo = "Stock Crítico"; severidad = "danger"; puntoCritico = true; }
+            else if (p.Stock < p.MinStock) { tipo = "Stock Bajo"; severidad = "warning"; }
+            else if (p.PuntoReposicion > 0 && p.Stock <= p.PuntoReposicion) { tipo = "Reposición"; severidad = "warning"; }
+            if (p.ControlVencimiento && p.DiasVencimiento > 0)
+            {
+                var vencTipo = p.DiasVencimiento <= 30 ? "Vencimiento Próximo" : "Control Vencimiento";
+                if (tipo is null) tipo = vencTipo; else tipo += $" + {vencTipo}";
+                if (p.DiasVencimiento <= 30 && severidad != "danger") severidad = "warning";
+            }
+            if (tipo is not null)
+            {
+                list.Add(new Row
+                {
+                    Codigo = p.Id,
+                    Nombre = p.Name,
+                    Stock = p.Stock,
+                    Min = p.MinStock,
+                    Repo = p.PuntoReposicion,
+                    PuntoCritico = puntoCritico,
+                    Tipo = tipo,
+                    Severidad = severidad,
+                    DiasVencimiento = p.DiasVencimiento,
+                    UnidadMedida = p.UnidadMedida
+                });
+            }
+        }
+        return list.OrderByDescending(r => r.Severidad == "danger").ThenByDescending(r => r.Severidad == "warning").ToList();
+    }
+
+    private void ExportCsv()
+    {
+        if (reportItems is null || reportItems.Count == 0) return;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Codigo,Nombre,Stock,Min,Reposicion,PuntoCritico,Tipo,Severidad,DiasVencimiento,UnidadMedida");
+        foreach (var r in reportItems)
+        {
+            sb.AppendLine($"{r.Codigo},{Escape(r.Nombre)},{r.Stock},{r.Min},{r.Repo},{r.PuntoCritico},{Escape(r.Tipo)},{r.Severidad},{r.DiasVencimiento},{r.UnidadMedida}");
+        }
+        var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        csvDataUrl = $"data:text/csv;base64,{base64}";
+        _ = InvokeAsync(async () => await Task.Delay(50).ContinueWith(_ => csvLinkRef.FocusAsync()));
+    }
+
+    private static string Escape(string? value) => (value ?? string.Empty).Replace(",", " ").Replace("\n", " ");
+
+    class Row
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public int Stock { get; set; }
+        public int Min { get; set; }
+        public int Repo { get; set; }
+        public bool PuntoCritico { get; set; }
+        public string Tipo { get; set; } = string.Empty;
+        public string Severidad { get; set; } = string.Empty;
+        public int DiasVencimiento { get; set; }
+        public string UnidadMedida { get; set; } = string.Empty;
+    }
+}

@@ -75,6 +75,7 @@
     {
         currentUser = await Auth.GetCurrentUserAsync();
         SetupAutoLogout();
+        EnforcePasswordChange();
     }
 
     private void ToggleSidebar() => collapsed = !collapsed;
@@ -103,6 +104,22 @@
             _logoutTimer.AutoReset = false;
             _logoutTimer.Elapsed += async (_, __) => { await Logout(); };
             _logoutTimer.Start();
+        }
+        catch { }
+    }
+
+    private void EnforcePasswordChange()
+    {
+        try
+        {
+            if (currentUser?.MustChangePassword == true)
+            {
+                var relative = Navigation.ToBaseRelativePath(Navigation.Uri) ?? string.Empty;
+                if (!relative.StartsWith("change-password", StringComparison.OrdinalIgnoreCase))
+                {
+                    Navigation.NavigateTo("/change-password", true);
+                }
+            }
         }
         catch { }
     }

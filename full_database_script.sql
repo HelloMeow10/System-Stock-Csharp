@@ -1,4 +1,65 @@
-﻿USE master;
+﻿-- Eliminar item de presupuesto de compra
+IF OBJECT_ID('sp_EliminarItemPresupuestoCompra', 'P') IS NOT NULL
+    DROP PROCEDURE sp_EliminarItemPresupuestoCompra;
+GO
+CREATE PROCEDURE sp_EliminarItemPresupuestoCompra
+    @id_detalle INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM DetallePresupuestoCompra WHERE id_detalle = @id_detalle;
+END
+GO
+
+-- Actualizar item de presupuesto de compra (cantidad / precio)
+IF OBJECT_ID('sp_ActualizarItemPresupuestoCompra', 'P') IS NOT NULL
+    DROP PROCEDURE sp_ActualizarItemPresupuestoCompra;
+GO
+CREATE PROCEDURE sp_ActualizarItemPresupuestoCompra
+    @id_detalle INT,
+    @cantidad INT,
+    @precioUnitario DECIMAL(18,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE DetallePresupuestoCompra
+    SET cantidad = @cantidad,
+        precioUnitario = @precioUnitario
+    WHERE id_detalle = @id_detalle;
+END
+GO
+
+-- Eliminar item de orden de compra
+IF OBJECT_ID('sp_EliminarItemOrdenCompra', 'P') IS NOT NULL
+    DROP PROCEDURE sp_EliminarItemOrdenCompra;
+GO
+CREATE PROCEDURE sp_EliminarItemOrdenCompra
+    @id_detalle INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM DetalleOrdenCompra WHERE id_detalle = @id_detalle;
+END
+GO
+
+-- Actualizar item de orden de compra (cantidad / precio)
+IF OBJECT_ID('sp_ActualizarItemOrdenCompra', 'P') IS NOT NULL
+    DROP PROCEDURE sp_ActualizarItemOrdenCompra;
+GO
+CREATE PROCEDURE sp_ActualizarItemOrdenCompra
+    @id_detalle INT,
+    @cantidad INT,
+    @precioUnitario DECIMAL(18,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE DetalleOrdenCompra
+    SET cantidad = @cantidad,
+        precioUnitario = @precioUnitario
+    WHERE id_detalle = @id_detalle;
+END
+GO
+USE master;
 GO
 
 -- Step 1: Terminate all connections to the login2 database
@@ -621,6 +682,7 @@ AS
 BEGIN
     INSERT INTO preguntas_seguridad (pregunta)
     VALUES (@pregunta)
+    SELECT SCOPE_IDENTITY() AS id_pregunta;
 END
 GO
 
@@ -634,6 +696,18 @@ BEGIN
     UPDATE preguntas_seguridad
     SET pregunta = @pregunta
     WHERE id_pregunta = @id_pregunta
+END
+GO
+
+DROP PROCEDURE IF EXISTS sp_delete_pregunta_seguridad;
+GO
+CREATE PROCEDURE sp_delete_pregunta_seguridad
+    @id_pregunta INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM respuestas_seguridad WHERE id_pregunta = @id_pregunta;
+    DELETE FROM preguntas_seguridad WHERE id_pregunta = @id_pregunta;
 END
 GO
 
@@ -1278,6 +1352,13 @@ CREATE TABLE Productos (
     habilitado BIT,
     id_categoria INT,
     unidadesAvisoVencimiento INT DEFAULT 0,
+    unidadMedida VARCHAR(20) NULL,
+    peso DECIMAL(18,2) NULL,
+    volumen DECIMAL(18,2) NULL,
+    puntoReposicion INT NULL,
+    diasVencimiento INT NULL,
+    loteObligatorio BIT NULL,
+    controlVencimiento BIT NULL,
     CONSTRAINT FK_Productos_Marcas FOREIGN KEY (id_marca) REFERENCES MarcasProducto(id_marca),
     CONSTRAINT FK_Productos_Categorias FOREIGN KEY (id_categoria) REFERENCES CategoriasProducto(id_categoria)
 );
@@ -1295,13 +1376,164 @@ CREATE TABLE Proveedores (
     nombre VARCHAR(50),
     razonSocial VARCHAR(100),
     CUIT VARCHAR(20),
-    email VARCHAR(100),
+    Email VARCHAR(100),
+    Telefono VARCHAR(50),
+    Direccion VARCHAR(150),
+    Provincia VARCHAR(60),
+    Ciudad VARCHAR(60),
+    CondicionIVA VARCHAR(60),
+    PlazoPagoDias INT,
+    Observaciones VARCHAR(255),
     formaPago VARCHAR(100),
     TiempoEntrega INT,
     Descuento DECIMAL(5,2),
     id_formaPago INT,
     CONSTRAINT FK_Proveedores_FormaPago FOREIGN KEY (id_formaPago) REFERENCES FormaPago(id_formaPago)
 );
+END
+GO
+DROP PROCEDURE IF EXISTS sp_GetAllProveedoresExtended;
+DROP PROCEDURE IF EXISTS sp_GetProveedorByIdExtended;
+DROP PROCEDURE IF EXISTS sp_SearchProveedoresByNombreExtended;
+DROP PROCEDURE IF EXISTS sp_SearchProveedoresByCUITExtended;
+DROP PROCEDURE IF EXISTS sp_AgregarProveedorExtended;
+DROP PROCEDURE IF EXISTS sp_ModificarProveedorExtended;
+DROP PROCEDURE IF EXISTS sp_EliminarProveedorExtended;
+DROP PROCEDURE IF EXISTS sp_AgregarProveedorContacto;
+DROP PROCEDURE IF EXISTS sp_GetProveedorContactos;
+DROP PROCEDURE IF EXISTS sp_DeleteProveedorContactos;
+
+-- Extended Supplier Procedures
+GO
+CREATE PROCEDURE sp_GetAllProveedoresExtended
+AS
+BEGIN
+    SELECT id_proveedor, codigo, nombre, razonSocial, CUIT, Email, Telefono, Direccion, Provincia, Ciudad,
+           CondicionIVA, PlazoPagoDias, Observaciones, TiempoEntrega, Descuento, id_formaPago
+    FROM Proveedores;
+END
+GO
+
+CREATE PROCEDURE sp_GetProveedorByIdExtended
+    @id INT
+AS
+BEGIN
+    SELECT id_proveedor, codigo, nombre, razonSocial, CUIT, Email, Telefono, Direccion, Provincia, Ciudad,
+           CondicionIVA, PlazoPagoDias, Observaciones, TiempoEntrega, Descuento, id_formaPago
+    FROM Proveedores
+    WHERE id_proveedor = @id;
+END
+GO
+
+CREATE PROCEDURE sp_SearchProveedoresByNombreExtended
+    @nombre VARCHAR(50)
+AS
+BEGIN
+    SELECT id_proveedor, codigo, nombre, razonSocial, CUIT, Email, Telefono, Direccion, Provincia, Ciudad,
+           CondicionIVA, PlazoPagoDias, Observaciones, TiempoEntrega, Descuento, id_formaPago
+    FROM Proveedores
+    WHERE nombre LIKE '%' + @nombre + '%';
+END
+GO
+
+CREATE PROCEDURE sp_SearchProveedoresByCUITExtended
+    @cuit VARCHAR(20)
+AS
+BEGIN
+    SELECT id_proveedor, codigo, nombre, razonSocial, CUIT, Email, Telefono, Direccion, Provincia, Ciudad,
+           CondicionIVA, PlazoPagoDias, Observaciones, TiempoEntrega, Descuento, id_formaPago
+    FROM Proveedores
+    WHERE CUIT LIKE '%' + @cuit + '%';
+END
+GO
+
+CREATE PROCEDURE sp_AgregarProveedorExtended
+    @codigo VARCHAR(20),
+    @nombre VARCHAR(50),
+    @razonSocial VARCHAR(100),
+    @CUIT VARCHAR(20),
+    @Email VARCHAR(100),
+    @Telefono VARCHAR(50),
+    @Direccion VARCHAR(150),
+    @Provincia VARCHAR(60),
+    @Ciudad VARCHAR(60),
+    @CondicionIVA VARCHAR(60),
+    @PlazoPagoDias INT,
+    @Observaciones VARCHAR(255),
+    @TiempoEntrega INT,
+    @Descuento DECIMAL(5,2),
+    @id_formaPago INT
+AS
+BEGIN
+    INSERT INTO Proveedores(codigo, nombre, razonSocial, CUIT, Email, Telefono, Direccion, Provincia, Ciudad,
+                            CondicionIVA, PlazoPagoDias, Observaciones, TiempoEntrega, Descuento, id_formaPago)
+    VALUES(@codigo, @nombre, @razonSocial, @CUIT, @Email, @Telefono, @Direccion, @Provincia, @Ciudad,
+           @CondicionIVA, @PlazoPagoDias, @Observaciones, @TiempoEntrega, @Descuento, @id_formaPago);
+END
+GO
+
+CREATE PROCEDURE sp_ModificarProveedorExtended
+    @id_proveedor INT,
+    @codigo VARCHAR(20),
+    @nombre VARCHAR(50),
+    @razonSocial VARCHAR(100),
+    @CUIT VARCHAR(20),
+    @Email VARCHAR(100),
+    @Telefono VARCHAR(50),
+    @Direccion VARCHAR(150),
+    @Provincia VARCHAR(60),
+    @Ciudad VARCHAR(60),
+    @CondicionIVA VARCHAR(60),
+    @PlazoPagoDias INT,
+    @Observaciones VARCHAR(255),
+    @TiempoEntrega INT,
+    @Descuento DECIMAL(5,2),
+    @id_formaPago INT
+AS
+BEGIN
+    UPDATE Proveedores SET
+        codigo = @codigo,
+        nombre = @nombre,
+        razonSocial = @razonSocial,
+        CUIT = @CUIT,
+        Email = @Email,
+        Telefono = @Telefono,
+        Direccion = @Direccion,
+        Provincia = @Provincia,
+        Ciudad = @Ciudad,
+        CondicionIVA = @CondicionIVA,
+        PlazoPagoDias = @PlazoPagoDias,
+        Observaciones = @Observaciones,
+        TiempoEntrega = @TiempoEntrega,
+        Descuento = @Descuento,
+        id_formaPago = @id_formaPago
+    WHERE id_proveedor = @id_proveedor;
+END
+GO
+
+CREATE PROCEDURE sp_EliminarProveedorExtended
+    @id_proveedor INT
+AS
+BEGIN
+    DELETE FROM Proveedores WHERE id_proveedor = @id_proveedor;
+END
+GO
+
+CREATE PROCEDURE sp_GetProveedorContactos
+    @codigo VARCHAR(50)
+AS
+BEGIN
+    SELECT id_contactoProveedor, codigo, Nombre, Cargo, Email, Telefono
+    FROM ProveedorContactos
+    WHERE codigo = @codigo;
+END
+GO
+
+CREATE PROCEDURE sp_DeleteProveedorContactos
+    @codigo VARCHAR(50)
+AS
+BEGIN
+    DELETE FROM ProveedorContactos WHERE codigo = @codigo;
 END
 GO
 
@@ -1422,6 +1654,37 @@ CREATE TABLE OrdenCompra (
     entregado BIT DEFAULT 0,
     FOREIGN KEY (id_presupuesto) REFERENCES PresupuestoCompra(id_presupuesto),
     FOREIGN KEY (id_proveedor) REFERENCES Proveedores(id_proveedor)
+);
+END
+GO
+
+IF OBJECT_ID('dbo.DetallePresupuestoCompra','U') IS NULL
+BEGIN
+CREATE TABLE DetallePresupuestoCompra (
+    id_detallePresupuesto INT PRIMARY KEY IDENTITY(1,1),
+    id_presupuesto INT NOT NULL,
+    id_producto INT NOT NULL,
+    cantidad INT NOT NULL,
+    precioUnitario DECIMAL(18,2) NOT NULL,
+    subtotal AS (cantidad * precioUnitario) PERSISTED,
+    FOREIGN KEY (id_presupuesto) REFERENCES PresupuestoCompra(id_presupuesto),
+    FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
+);
+END
+GO
+
+IF OBJECT_ID('dbo.DetalleOrdenCompra','U') IS NULL
+BEGIN
+CREATE TABLE DetalleOrdenCompra (
+    id_detalleOrden INT PRIMARY KEY IDENTITY(1,1),
+    id_ordenCompra INT NOT NULL,
+    id_producto INT NOT NULL,
+    cantidad INT NOT NULL,
+    precioUnitario DECIMAL(18,2) NOT NULL,
+    subtotal AS (cantidad * precioUnitario) PERSISTED,
+    recibidoCantidad INT NULL,
+    FOREIGN KEY (id_ordenCompra) REFERENCES OrdenCompra(id_ordenCompra),
+    FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
 );
 END
 GO
@@ -1868,7 +2131,150 @@ CREATE PROCEDURE sp_RegistrarPresupuestoCompra
 AS
 BEGIN
     INSERT INTO PresupuestoCompra (id_proveedor, fecha, total)
-    VALUES (@id_proveedor, @fecha, @total)
+    VALUES (@id_proveedor, @fecha, @total);
+    SELECT SCOPE_IDENTITY() AS id_presupuesto;
+END
+GO
+
+CREATE PROCEDURE sp_AgregarItemPresupuestoCompra
+    @id_presupuesto INT,
+    @id_producto INT,
+    @cantidad INT,
+    @precioUnitario DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO DetallePresupuestoCompra (id_presupuesto, id_producto, cantidad, precioUnitario)
+    VALUES (@id_presupuesto, @id_producto, @cantidad, @precioUnitario);
+    UPDATE PresupuestoCompra SET total = (
+        SELECT ISNULL(SUM(cantidad * precioUnitario),0) FROM DetallePresupuestoCompra WHERE id_presupuesto = @id_presupuesto
+    ) WHERE id_presupuesto = @id_presupuesto;
+END
+GO
+
+CREATE PROCEDURE sp_RegistrarOrdenCompra
+    @id_presupuesto INT,
+    @fecha DATE,
+    @total DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO OrdenCompra (id_presupuesto, id_proveedor, fecha, total)
+    SELECT p.id_presupuesto, p.id_proveedor, @fecha, @total FROM PresupuestoCompra p WHERE p.id_presupuesto = @id_presupuesto;
+END
+GO
+
+CREATE PROCEDURE sp_AgregarItemOrdenCompra
+    @id_ordenCompra INT,
+    @id_producto INT,
+    @cantidad INT,
+    @precioUnitario DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO DetalleOrdenCompra (id_ordenCompra, id_producto, cantidad, precioUnitario)
+    VALUES (@id_ordenCompra, @id_producto, @cantidad, @precioUnitario);
+    UPDATE OrdenCompra SET total = (
+        SELECT ISNULL(SUM(cantidad * precioUnitario),0) FROM DetalleOrdenCompra WHERE id_ordenCompra = @id_ordenCompra
+    ) WHERE id_ordenCompra = @id_ordenCompra;
+END
+GO
+
+CREATE PROCEDURE sp_ConvertirPresupuestoAOrden
+    @id_presupuesto INT,
+    @fecha DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF @fecha IS NULL SET @fecha = GETDATE();
+    DECLARE @total DECIMAL(18,2);
+    SELECT @total = ISNULL(SUM(cantidad * precioUnitario),0) FROM DetallePresupuestoCompra WHERE id_presupuesto = @id_presupuesto;
+    INSERT INTO OrdenCompra (id_presupuesto, id_proveedor, fecha, total)
+    SELECT p.id_presupuesto, p.id_proveedor, @fecha, @total FROM PresupuestoCompra p WHERE p.id_presupuesto = @id_presupuesto;
+    DECLARE @newOrdenId INT = SCOPE_IDENTITY();
+    INSERT INTO DetalleOrdenCompra (id_ordenCompra, id_producto, cantidad, precioUnitario)
+    SELECT @newOrdenId, id_producto, cantidad, precioUnitario FROM DetallePresupuestoCompra WHERE id_presupuesto = @id_presupuesto;
+    SELECT @newOrdenId AS id_ordenCompra;
+END
+GO
+
+CREATE PROCEDURE sp_ListarPresupuestosCompra
+    @id_proveedor INT = NULL,
+    @fechaDesde DATE = NULL,
+    @fechaHasta DATE = NULL
+AS
+BEGIN
+    SELECT p.id_presupuesto,
+        p.id_proveedor,
+        pr.nombre AS proveedorNombre,
+        pr.CUIT AS proveedorCUIT,
+        p.fecha,
+        p.total,
+        (SELECT COUNT(*) FROM DetallePresupuestoCompra d WHERE d.id_presupuesto = p.id_presupuesto) AS items
+    FROM PresupuestoCompra p
+    LEFT JOIN Proveedores pr ON pr.id_proveedor = p.id_proveedor
+    WHERE (@id_proveedor IS NULL OR p.id_proveedor = @id_proveedor)
+      AND (@fechaDesde IS NULL OR p.fecha >= @fechaDesde)
+      AND (@fechaHasta IS NULL OR p.fecha <= @fechaHasta)
+    ORDER BY p.fecha DESC;
+END
+GO
+
+CREATE PROCEDURE sp_ListarOrdenesCompra
+    @id_proveedor INT = NULL,
+    @entregado BIT = NULL
+AS
+BEGIN
+    SELECT o.id_ordenCompra,
+        o.id_presupuesto,
+        o.id_proveedor,
+        pr.nombre AS proveedorNombre,
+        pr.CUIT AS proveedorCUIT,
+        o.fecha,
+        o.total,
+        o.entregado,
+        (SELECT COUNT(*) FROM DetalleOrdenCompra d WHERE d.id_ordenCompra = o.id_ordenCompra) AS items
+    FROM OrdenCompra o
+    LEFT JOIN Proveedores pr ON pr.id_proveedor = o.id_proveedor
+    WHERE (@id_proveedor IS NULL OR o.id_proveedor = @id_proveedor)
+      AND (@entregado IS NULL OR o.entregado = @entregado)
+    ORDER BY o.fecha DESC;
+END
+GO
+
+CREATE PROCEDURE sp_MarcarOrdenCompraRecibida
+    @id_ordenCompra INT
+AS
+BEGIN
+    UPDATE OrdenCompra SET entregado = 1 WHERE id_ordenCompra = @id_ordenCompra;
+END
+GO
+CREATE PROCEDURE sp_ListarItemsPresupuestoCompra
+    @id_presupuesto INT
+AS
+BEGIN
+    SELECT d.id_detallePresupuesto AS id_detalle,
+           d.id_presupuesto,
+           d.id_producto,
+           d.cantidad,
+           d.precioUnitario,
+           d.subtotal
+    FROM DetallePresupuestoCompra d
+    WHERE d.id_presupuesto = @id_presupuesto
+    ORDER BY d.id_detallePresupuesto ASC;
+END
+GO
+CREATE PROCEDURE sp_ListarItemsOrdenCompra
+    @id_ordenCompra INT
+AS
+BEGIN
+    SELECT d.id_detalleOrden AS id_detalle,
+           d.id_ordenCompra,
+           d.id_producto,
+           d.cantidad,
+           d.precioUnitario,
+           d.recibidoCantidad,
+           d.subtotal
+    FROM DetalleOrdenCompra d
+    WHERE d.id_ordenCompra = @id_ordenCompra
+    ORDER BY d.id_detalleOrden ASC;
 END
 GO
 
@@ -2013,6 +2419,27 @@ BEGIN
     VALUES (@codigo, @razonSocial, @cuit, @email, @formaPago, CAST(@tiempoEntrega AS INT), @descuento)
 END
 GO
+CREATE PROCEDURE sp_AgregarProveedorExtended
+    @codigo VARCHAR(50),
+    @razonSocial VARCHAR(100),
+    @cuit VARCHAR(20),
+    @Email VARCHAR(100),
+    @formaPago VARCHAR(100),
+    @tiempoEntrega VARCHAR(50),
+    @descuento DECIMAL(5,2),
+    @Telefono VARCHAR(50),
+    @Direccion VARCHAR(150),
+    @Provincia VARCHAR(60),
+    @Ciudad VARCHAR(60),
+    @CondicionIVA VARCHAR(60),
+    @PlazoPagoDias INT,
+    @Observaciones VARCHAR(255)
+AS
+BEGIN
+    INSERT INTO Proveedores (codigo, razonSocial, CUIT, Email, formaPago, TiempoEntrega, Descuento, Telefono, Direccion, Provincia, Ciudad, CondicionIVA, PlazoPagoDias, Observaciones)
+    VALUES (@codigo, @razonSocial, @cuit, @Email, @formaPago, CAST(@tiempoEntrega AS INT), @descuento, @Telefono, @Direccion, @Provincia, @Ciudad, @CondicionIVA, @PlazoPagoDias, @Observaciones)
+END
+GO
 
 CREATE PROCEDURE sp_ModificarProveedor
     @id_proveedor INT,
@@ -2036,12 +2463,55 @@ BEGIN
     WHERE id_proveedor = @id_proveedor
 END
 GO
+CREATE PROCEDURE sp_ModificarProveedorExtended
+    @id_proveedor INT,
+    @codigo VARCHAR(50),
+    @razonSocial VARCHAR(100),
+    @cuit VARCHAR(20),
+    @Email VARCHAR(100),
+    @formaPago VARCHAR(100),
+    @tiempoEntrega VARCHAR(50),
+    @descuento DECIMAL(5,2),
+    @Telefono VARCHAR(50),
+    @Direccion VARCHAR(150),
+    @Provincia VARCHAR(60),
+    @Ciudad VARCHAR(60),
+    @CondicionIVA VARCHAR(60),
+    @PlazoPagoDias INT,
+    @Observaciones VARCHAR(255)
+AS
+BEGIN
+    UPDATE Proveedores SET
+        codigo=@codigo,
+        razonSocial=@razonSocial,
+        CUIT=@cuit,
+        Email=@Email,
+        formaPago=@formaPago,
+        TiempoEntrega=CAST(@tiempoEntrega AS INT),
+        Descuento=@descuento,
+        Telefono=@Telefono,
+        Direccion=@Direccion,
+        Provincia=@Provincia,
+        Ciudad=@Ciudad,
+        CondicionIVA=@CondicionIVA,
+        PlazoPagoDias=@PlazoPagoDias,
+        Observaciones=@Observaciones
+    WHERE id_proveedor=@id_proveedor
+END
+GO
 
 CREATE PROCEDURE sp_EliminarProveedor
     @id_proveedor INT
 AS
 BEGIN
     DELETE FROM Proveedores WHERE id_proveedor = @id_proveedor
+END
+GO
+CREATE PROCEDURE sp_EliminarProveedorExtended
+    @id_proveedor INT
+AS
+BEGIN
+    DELETE FROM Proveedores WHERE id_proveedor=@id_proveedor
 END
 GO
 
@@ -2062,6 +2532,13 @@ BEGIN
     WHERE razonSocial LIKE '%' + @nombre + '%'
 END
 GO
+CREATE PROCEDURE sp_SearchProveedoresByNombreExtended
+    @nombre VARCHAR(100)
+AS
+BEGIN
+    SELECT * FROM Proveedores WHERE nombre LIKE '%' + @nombre + '%'
+END
+GO
 
 CREATE PROCEDURE sp_ConsultarProveedoresPorCUIT
     @cuit VARCHAR(20)
@@ -2080,6 +2557,13 @@ BEGIN
     WHERE CUIT LIKE '%' + @cuit + '%'
 END
 GO
+CREATE PROCEDURE sp_SearchProveedoresByCUITExtended
+    @cuit VARCHAR(20)
+AS
+BEGIN
+    SELECT * FROM Proveedores WHERE CUIT LIKE '%' + @cuit + '%'
+END
+GO
 
 CREATE PROCEDURE sp_AgregarTelefonoProveedor
     @id_proveedor INT,
@@ -2092,6 +2576,30 @@ AS
 BEGIN
     INSERT INTO ProveedorTelefonos (id_proveedor, contacto, sector, telefono, email, horario)
     VALUES (@id_proveedor, @contacto, @sector, @telefono, @email, @horario)
+END
+GO
+IF OBJECT_ID('dbo.ProveedorContactos','U') IS NULL
+BEGIN
+CREATE TABLE ProveedorContactos(
+    id_contactoProveedor INT PRIMARY KEY IDENTITY(1,1),
+    codigo VARCHAR(50),
+    Nombre VARCHAR(80),
+    Cargo VARCHAR(80),
+    Email VARCHAR(100),
+    Telefono VARCHAR(50)
+);
+END
+GO
+CREATE PROCEDURE sp_AgregarProveedorContacto
+    @codigo VARCHAR(50),
+    @Nombre VARCHAR(80),
+    @Cargo VARCHAR(80),
+    @Email VARCHAR(100),
+    @Telefono VARCHAR(50)
+AS
+BEGIN
+    INSERT INTO ProveedorContactos(codigo,Nombre,Cargo,Email,Telefono)
+    VALUES(@codigo,@Nombre,@Cargo,@Email,@Telefono)
 END
 GO
 
@@ -2109,11 +2617,14 @@ GO
 
 CREATE PROCEDURE sp_RelacionarProductoProveedor
     @id_proveedor INT,
-    @id_producto INT
+    @id_producto INT,
+    @precioCompra DECIMAL(18,2) = NULL,
+    @tiempoEntrega INT = NULL,
+    @descuento DECIMAL(5,2) = NULL
 AS
 BEGIN
-    INSERT INTO ProductoProveedor (id_proveedor, id_producto)
-    VALUES (@id_proveedor, @id_producto)
+    INSERT INTO ProductoProveedor (id_proveedor, id_producto, precioCompra, tiempoEntrega, descuento)
+    VALUES (@id_proveedor, @id_producto, @precioCompra, @tiempoEntrega, @descuento)
 END
 GO
 
@@ -2121,13 +2632,14 @@ CREATE PROCEDURE sp_ConsultarProductosPorProveedor
     @id_proveedor INT
 AS
 BEGIN
-
     SELECT 
         p.id_producto,
         p.codigo,
         p.nombre,
         p.descripcion,
-        pp.precioCompra AS precio
+        pp.precioCompra,
+        pp.tiempoEntrega,
+        pp.descuento
     FROM ProductoProveedor pp
     INNER JOIN Productos p ON pp.id_producto = p.id_producto
     WHERE pp.id_proveedor = @id_proveedor
@@ -2143,10 +2655,36 @@ BEGIN
         pr.razonSocial,
         pr.CUIT,
         pr.formaPago,
-        pr.Descuento
+        pp.precioCompra,
+        pp.tiempoEntrega,
+        pp.descuento
     FROM ProductoProveedor pp
     INNER JOIN Proveedores pr ON pp.id_proveedor = pr.id_proveedor
     WHERE pp.id_producto = @id_producto
+END
+GO
+CREATE PROCEDURE sp_DeleteRelacionProductoProveedor
+    @id_producto INT,
+    @id_proveedor INT
+AS
+BEGIN
+    DELETE FROM ProductoProveedor WHERE id_producto = @id_producto AND id_proveedor = @id_proveedor;
+END
+GO
+
+CREATE PROCEDURE sp_ActualizarRelacionProductoProveedor
+    @id_producto INT,
+    @id_proveedor INT,
+    @precioCompra DECIMAL(18,2) = NULL,
+    @tiempoEntrega INT = NULL,
+    @descuento DECIMAL(5,2) = NULL
+AS
+BEGIN
+    UPDATE ProductoProveedor SET
+        precioCompra = @precioCompra,
+        tiempoEntrega = @tiempoEntrega,
+        descuento = @descuento
+    WHERE id_producto = @id_producto AND id_proveedor = @id_proveedor;
 END
 GO
 
@@ -2164,11 +2702,18 @@ CREATE PROCEDURE sp_AgregarProducto
     @estado VARCHAR(50),
     @ubicacion VARCHAR(100),
     @habilitado BIT,
-    @id_categoria INT
+    @id_categoria INT,
+    @unidadMedida VARCHAR(20) = NULL,
+    @peso DECIMAL(18,2) = NULL,
+    @volumen DECIMAL(18,2) = NULL,
+    @puntoReposicion INT = NULL,
+    @diasVencimiento INT = NULL,
+    @loteObligatorio BIT = NULL,
+    @controlVencimiento BIT = NULL
 AS
 BEGIN
-    INSERT INTO Productos (codigo, codBarras, nombre, descripcion, id_marca, precioCompra, precioVenta, estado, ubicacion, habilitado, id_categoria)
-    VALUES (@codigo, @codBarras, @nombre, @descripcion, @id_marca, @precioCompra, @precioVenta, @estado, @ubicacion, @habilitado, @id_categoria)
+    INSERT INTO Productos (codigo, codBarras, nombre, descripcion, id_marca, precioCompra, precioVenta, estado, ubicacion, habilitado, id_categoria, unidadMedida, peso, volumen, puntoReposicion, diasVencimiento, loteObligatorio, controlVencimiento)
+    VALUES (@codigo, @codBarras, @nombre, @descripcion, @id_marca, @precioCompra, @precioVenta, @estado, @ubicacion, @habilitado, @id_categoria, @unidadMedida, @peso, @volumen, @puntoReposicion, @diasVencimiento, @loteObligatorio, @controlVencimiento)
 END
 GO
 
@@ -2184,7 +2729,14 @@ CREATE PROCEDURE sp_ModificarProducto
     @estado VARCHAR(50),
     @ubicacion VARCHAR(100),
     @habilitado BIT,
-    @id_categoria INT
+    @id_categoria INT,
+    @unidadMedida VARCHAR(20) = NULL,
+    @peso DECIMAL(18,2) = NULL,
+    @volumen DECIMAL(18,2) = NULL,
+    @puntoReposicion INT = NULL,
+    @diasVencimiento INT = NULL,
+    @loteObligatorio BIT = NULL,
+    @controlVencimiento BIT = NULL
 AS
 BEGIN
     UPDATE Productos
@@ -2198,7 +2750,14 @@ BEGIN
         estado = @estado,
         ubicacion = @ubicacion,
         habilitado = @habilitado,
-        id_categoria = @id_categoria
+        id_categoria = @id_categoria,
+        unidadMedida = @unidadMedida,
+        peso = @peso,
+        volumen = @volumen,
+        puntoReposicion = @puntoReposicion,
+        diasVencimiento = @diasVencimiento,
+        loteObligatorio = @loteObligatorio,
+        controlVencimiento = @controlVencimiento
     WHERE id_producto = @id_producto
 END
 GO
@@ -2699,15 +3258,22 @@ BEGIN
         FROM Stock s
         GROUP BY s.id_producto
     )
-    SELECT p.id_producto,
-           p.codigo,
-           p.nombre,
-           c.categoria,
-           m.marca,
-           COALESCE(p.precioVenta, 0) AS precioVenta,
-           COALESCE(sa.StockActual, 0) AS StockActual,
-           COALESCE(sa.StockMinimo, 0) AS StockMinimo,
-           COALESCE(sa.StockMaximo, 0) AS StockMaximo
+        SELECT p.id_producto,
+            p.codigo,
+            p.nombre,
+            c.categoria,
+            m.marca,
+            COALESCE(p.precioVenta, 0) AS precioVenta,
+            COALESCE(sa.StockActual, 0) AS StockActual,
+            COALESCE(sa.StockMinimo, 0) AS StockMinimo,
+            COALESCE(sa.StockMaximo, 0) AS StockMaximo,
+            COALESCE(p.unidadMedida,'') AS unidadMedida,
+            COALESCE(p.peso,0) AS peso,
+            COALESCE(p.volumen,0) AS volumen,
+            COALESCE(p.puntoReposicion,0) AS puntoReposicion,
+            COALESCE(p.diasVencimiento,0) AS diasVencimiento,
+            COALESCE(p.loteObligatorio,0) AS loteObligatorio,
+            COALESCE(p.controlVencimiento,0) AS controlVencimiento
     FROM Productos p
     LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
     LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
@@ -2737,15 +3303,22 @@ BEGIN
         GROUP BY s.id_producto
     ),
     Filtered AS (
-        SELECT p.id_producto,
-               p.codigo,
-               p.nombre,
-               c.categoria,
-               m.marca,
-               COALESCE(p.precioVenta, 0) AS precioVenta,
-               COALESCE(sa.StockActual, 0) AS StockActual,
-               COALESCE(sa.StockMinimo, 0) AS StockMinimo,
-               COALESCE(sa.StockMaximo, 0) AS StockMaximo
+         SELECT p.id_producto,
+             p.codigo,
+             p.nombre,
+             c.categoria,
+             m.marca,
+             COALESCE(p.precioVenta, 0) AS precioVenta,
+             COALESCE(sa.StockActual, 0) AS StockActual,
+             COALESCE(sa.StockMinimo, 0) AS StockMinimo,
+             COALESCE(sa.StockMaximo, 0) AS StockMaximo,
+             COALESCE(p.unidadMedida,'') AS unidadMedida,
+             COALESCE(p.peso,0) AS peso,
+             COALESCE(p.volumen,0) AS volumen,
+             COALESCE(p.puntoReposicion,0) AS puntoReposicion,
+             COALESCE(p.diasVencimiento,0) AS diasVencimiento,
+             COALESCE(p.loteObligatorio,0) AS loteObligatorio,
+             COALESCE(p.controlVencimiento,0) AS controlVencimiento
         FROM Productos p
         LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
         LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
