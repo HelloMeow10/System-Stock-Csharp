@@ -34,7 +34,7 @@ namespace BusinessLogic.Services
             await _repository.CreateOrderAsync(budgetId, request.Fecha, request.Total);
         }
 
-        public async Task CreateInvoiceAsync(CreatePurchaseInvoiceRequest request)
+        public async Task CreateInvoiceAsync(CreatePurchaseInvoiceSimpleRequest request)
         {
             await _repository.CreateInvoiceAsync(request);
         }

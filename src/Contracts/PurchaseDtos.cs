@@ -28,7 +28,7 @@ namespace Contracts
         public decimal Total { get; set; }
     }
 
-    public class CreatePurchaseInvoiceRequest
+    public class CreatePurchaseInvoiceSimpleRequest
     {
         public int IdProveedor { get; set; }
         public int IdRemito { get; set; }

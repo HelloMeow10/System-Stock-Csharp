@@ -92,12 +92,14 @@
         <div class="modal-content">
             <h3>Nueva Factura de Venta</h3>
             <div class="form-group">
-                <FluentSelect Items="@customers"
-                              OptionText="@(c => c.Name)"
-                              OptionValue="@(c => c.Id.ToString())"
-                              @bind-Value="salesForm.ClienteIdStr"
+                <FluentSelect @bind-Value="salesForm.ClienteIdStr"
                               Label="Cliente"
-                              Placeholder="Seleccione Cliente..." />
+                              Placeholder="Seleccione Cliente...">
+                    @foreach (var c in customers)
+                    {
+                        <FluentOption Value="@c.Id.ToString()">@c.Nombre</FluentOption>
+                    }
+                </FluentSelect>
             </div>
             <div class="form-group">
                 <FluentSelect Items="@docTypes"
@@ -111,8 +113,8 @@
             <h4>Items</h4>
             <div class="items-grid">
                 <FluentSelect Items="@products"
-                              OptionText="@(p => $"{p.Codigo} - {p.Nombre}")"
-                              OptionValue="@(p => p.Id.ToString())"
+                              OptionText="@((ProductDto p) => $"{p.Codigo} - {p.Nombre}")"
+                              OptionValue="@((ProductDto p) => p.Id.ToString())"
                               @bind-Value="newItem.ProductIdStr"
                               Label="Producto"
                               Placeholder="Agregar Producto..." />
@@ -125,7 +127,9 @@
                 <PropertyColumn Property="@(p => p.Descripcion)" Title="Producto" />
                 <PropertyColumn Property="@(p => p.Cantidad)" Title="Cant" />
                 <PropertyColumn Property="@(p => p.PrecioUnitario)" Format="C2" Title="Precio" />
-                <PropertyColumn Property="@(p => p.Cantidad * p.PrecioUnitario)" Format="C2" Title="Subtotal" />
+                <TemplateColumn Title="Subtotal">
+                    @((context.Cantidad * context.PrecioUnitario).ToString("C2"))
+                </TemplateColumn>
                 <TemplateColumn Title="Acciones">
                     <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => salesForm.Items.Remove(context))" Appearance="Appearance.Light" />
                 </TemplateColumn>
@@ -150,8 +154,8 @@
             <h3>Registrar Factura de Compra</h3>
             <div class="form-group">
                 <FluentSelect Items="@suppliers"
-                              OptionText="@(s => s.Name)"
-                              OptionValue="@(s => s.Id.ToString())"
+                              OptionText="@((SupplierDto s) => s.Nombre)"
+                              OptionValue="@((SupplierDto s) => s.Id.ToString())"
                               @bind-Value="purchaseForm.ProveedorIdStr"
                               Label="Proveedor"
                               Placeholder="Seleccione Proveedor..." />
@@ -166,8 +170,8 @@
             <h4>Items</h4>
             <div class="items-grid">
                 <FluentSelect Items="@products"
-                              OptionText="@(p => $"{p.Codigo} - {p.Nombre}")"
-                              OptionValue="@(p => p.Id.ToString())"
+                              OptionText="@((ProductDto p) => $"{p.Codigo} - {p.Nombre}")"
+                              OptionValue="@((ProductDto p) => p.Id.ToString())"
                               @bind-Value="newItem.ProductIdStr"
                               Label="Producto"
                               Placeholder="Agregar Producto..." />
@@ -180,7 +184,9 @@
                 <PropertyColumn Property="@(p => p.Descripcion)" Title="Producto" />
                 <PropertyColumn Property="@(p => p.Cantidad)" Title="Cant" />
                 <PropertyColumn Property="@(p => p.PrecioUnitario)" Format="C2" Title="Precio" />
-                <PropertyColumn Property="@(p => p.Cantidad * p.PrecioUnitario)" Format="C2" Title="Subtotal" />
+                <TemplateColumn Title="Subtotal">
+                    @((context.Cantidad * context.PrecioUnitario).ToString("C2"))
+                </TemplateColumn>
                 <TemplateColumn Title="Acciones">
                     <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => purchaseForm.Items.Remove(context))" Appearance="Appearance.Light" />
                 </TemplateColumn>
@@ -272,7 +278,7 @@
     {
         if (customers.Count == 0)
         {
-            customers = (await ClientService.SearchClientsAsync(null)).ToList();
+            customers = (await ClientService.GetAllAsync()).ToList();
             var p = await ProductService.GetProductsAsync(null, 1, 1000);
             products = p.Items.ToList();
         }

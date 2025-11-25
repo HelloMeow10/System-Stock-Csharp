@@ -157,7 +157,7 @@
             var requests = receptionItems.Select(i => new IngresoMercaderiaRequest
             {
                 ProductoId = i.ProductId,
-                UsuarioId = int.Parse(currentUser.Id), // Assuming Id is int-parsable or I need to map it
+                UsuarioId = currentUser.BackendIdUsuario ?? 0,
                 Cantidad = i.ReceivedQuantity,
                 Lote = i.Lot,
                 FechaVencimiento = i.ExpiryDate,

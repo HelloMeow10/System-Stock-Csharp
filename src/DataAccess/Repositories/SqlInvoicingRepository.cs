@@ -4,9 +4,22 @@ using Microsoft.Data.SqlClient;
 
 namespace DataAccess.Repositories
 {
-    public class SqlInvoicingRepository : RepositoryBase, IInvoicingRepository
+    public class SqlInvoicingRepository : IInvoicingRepository
     {
-        public SqlInvoicingRepository(DatabaseConnectionFactory connectionFactory) : base(connectionFactory) { }
+        private readonly DatabaseConnectionFactory _connectionFactory;
+
+        public SqlInvoicingRepository(DatabaseConnectionFactory connectionFactory)
+        {
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        }
+
+        private static async Task EnsureOpenAsync(IDbConnection connection, CancellationToken ct)
+        {
+            if (connection is SqlConnection sqlConn && sqlConn.State != ConnectionState.Open)
+            {
+                await sqlConn.OpenAsync(ct);
+            }
+        }
 
         public async Task<IEnumerable<InvoiceDto>> GetPurchaseInvoicesAsync(DateTime? from, DateTime? to, int? supplierId, CancellationToken ct = default)
         {

@@ -158,7 +158,7 @@ public class SqlStockRepository : IStockRepository
             await sqlConn.OpenAsync(ct);
         }
     }
-}
+
 
     public async Task<IEnumerable<StockValuationDto>> GetStockValuationAsync(CancellationToken ct = default)
     {

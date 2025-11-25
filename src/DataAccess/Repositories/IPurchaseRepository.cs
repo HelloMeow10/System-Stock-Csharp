@@ -8,7 +8,7 @@ namespace DataAccess.Repositories
         Task<int> CreateBudgetAsync(int supplierId, DateTime date, decimal total);
         Task CreateOrderAsync(int budgetId, DateTime date, decimal total);
         Task CreateRemitoAsync(int orderId, string remitoNumber, DateTime date, bool hasInvoice);
-        Task CreateInvoiceAsync(CreatePurchaseInvoiceRequest request);
+        Task CreateInvoiceAsync(CreatePurchaseInvoiceSimpleRequest request);
         Task<IEnumerable<PurchaseInvoiceDto>> GetInvoicesAsync(DateTime? start, DateTime? end, int? supplierId, int? productId);
     }
 }
