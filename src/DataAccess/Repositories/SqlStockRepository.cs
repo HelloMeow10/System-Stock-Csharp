@@ -159,3 +159,127 @@ public class SqlStockRepository : IStockRepository
         }
     }
 }
+
+    public async Task<IEnumerable<StockValuationDto>> GetStockValuationAsync(CancellationToken ct = default)
+    {
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+        using var cmd = new SqlCommand(@"
+            SELECT 
+                p.codigo, p.nombre AS Producto, c.categoria,
+                s.stock, p.precioCompra,
+                (s.stock * ISNULL(p.precioCompra, 0)) AS ValorTotal
+            FROM Stock s
+            INNER JOIN Productos p ON s.id_producto = p.id_producto
+            LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
+            WHERE s.stock > 0", (SqlConnection)conn);
+        
+        var list = new List<StockValuationDto>();
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            list.Add(new StockValuationDto(
+                Codigo: reader.GetString(0),
+                Producto: reader.GetString(1),
+                Categoria: reader.IsDBNull(2) ? "" : reader.GetString(2),
+                StockActual: reader.GetInt32(3),
+                PrecioCompra: reader.IsDBNull(4) ? 0 : reader.GetDecimal(4),
+                ValorTotal: reader.IsDBNull(5) ? 0 : reader.GetDecimal(5)
+            ));
+        }
+        return list;
+    }
+
+    public async Task<IEnumerable<StockAlertDto>> GetAlertsAsync(CancellationToken ct = default)
+    {
+        var alerts = new List<StockAlertDto>();
+        using var conn = _connectionFactory.CreateConnection();
+        await EnsureOpenAsync(conn, ct);
+
+        // 1. Low Stock Alerts
+        using (var cmd = new SqlCommand(@"
+            SELECT 
+                p.codigo, p.nombre,
+                SUM(ISNULL(s.stock, 0)) as StockActual,
+                MAX(ISNULL(s.stockMinimo, 0)) as StockMinimo,
+                MAX(ISNULL(p.puntoReposicion, 0)) as PuntoReposicion
+            FROM Productos p
+            LEFT JOIN Stock s ON p.id_producto = s.id_producto
+            WHERE p.habilitado = 1
+            GROUP BY p.id_producto, p.codigo, p.nombre
+            HAVING SUM(ISNULL(s.stock, 0)) <= MAX(ISNULL(s.stockMinimo, 0))
+                OR (MAX(ISNULL(p.puntoReposicion, 0)) > 0 AND SUM(ISNULL(s.stock, 0)) <= MAX(ISNULL(p.puntoReposicion, 0)))", (SqlConnection)conn))
+        {
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var stock = reader.GetInt32(2);
+                var min = reader.GetInt32(3);
+                var repo = reader.GetInt32(4);
+                
+                string tipo = "Stock Bajo";
+                string severidad = "warning";
+
+                if (stock <= min)
+                {
+                    tipo = "Stock Crítico";
+                    severidad = "danger";
+                }
+                else if (repo > 0 && stock <= repo)
+                {
+                    tipo = "Punto Reposición";
+                    severidad = "warning";
+                }
+
+                alerts.Add(new StockAlertDto(
+                    Codigo: reader.GetString(0),
+                    Producto: reader.GetString(1),
+                    StockActual: stock,
+                    StockMinimo: min,
+                    PuntoReposicion: repo,
+                    TipoAlerta: tipo,
+                    Severidad: severidad
+                ));
+            }
+        }
+
+        // 2. Expiration Alerts
+        using (var cmd = new SqlCommand(@"
+            SELECT 
+                p.codigo, p.nombre,
+                s.stock,
+                s.lote,
+                s.fechaVencimiento,
+                ISNULL(p.unidadesAvisoVencimiento, 30) as DiasAviso
+            FROM Stock s
+            JOIN Productos p ON s.id_producto = p.id_producto
+            WHERE s.stock > 0 
+              AND s.fechaVencimiento IS NOT NULL
+              AND s.fechaVencimiento <= DATEADD(day, ISNULL(p.unidadesAvisoVencimiento, 30), GETDATE())", (SqlConnection)conn))
+        {
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var fechaVenc = reader.GetDateTime(4);
+                var diasRestantes = (fechaVenc - DateTime.Today).Days;
+                
+                string tipo = diasRestantes <= 0 ? "Vencido" : "Próximo a Vencer";
+                string severidad = diasRestantes <= 0 ? "danger" : "warning";
+
+                alerts.Add(new StockAlertDto(
+                    Codigo: reader.GetString(0),
+                    Producto: reader.GetString(1),
+                    StockActual: reader.GetInt32(2),
+                    StockMinimo: 0, // Not relevant for this alert
+                    PuntoReposicion: 0, // Not relevant
+                    TipoAlerta: tipo,
+                    Severidad: severidad,
+                    Lote: reader.IsDBNull(3) ? null : reader.GetString(3),
+                    FechaVencimiento: fechaVenc
+                ));
+            }
+        }
+
+        return alerts.OrderBy(a => a.Severidad == "danger" ? 0 : 1).ThenBy(a => a.Producto);
+    }
+}

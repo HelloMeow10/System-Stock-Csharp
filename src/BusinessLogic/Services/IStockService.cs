@@ -1,5 +1,7 @@
 using Contracts;
 
+using Contracts;
+
 namespace BusinessLogic.Services;
 
 public interface IStockService
@@ -10,4 +12,6 @@ public interface IStockService
     Task<IEnumerable<ScrapReportItemDto>> GetScrapAsync(DateOnly from, DateOnly to, CancellationToken ct = default);
     Task<IEnumerable<ScrapReasonDto>> GetScrapReasonsAsync(CancellationToken ct = default);
     Task<IEnumerable<StockItemDto>> GetStockAsync(CancellationToken ct = default);
+    Task<IEnumerable<StockValuationDto>> GetStockValuationAsync(CancellationToken ct = default);
+    Task<IEnumerable<StockAlertDto>> GetAlertsAsync(CancellationToken ct = default);
 }

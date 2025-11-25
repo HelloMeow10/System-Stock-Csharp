@@ -1,166 +1,81 @@
 @page "/alertas"
-@using AgileStockPro.Web.Services
-@using AgileStockPro.Web.Models
-@using AgileStockPro.Web.Components
-@using AgileStockPro.Web.Components.Shared
-@inject IAppDataService Data
-@inject AgileStockPro.Web.Services.IAuthService AuthService
-@inject AgileStockPro.Web.Services.Api.ApiProductService ProductApi
+@using BusinessLogic.Services
+@using Contracts
+@inject IStockService StockService
+@inject IToastService Toast
 
-<AuthGuard>
-	<PageHeader Title="Alertas" />
+<PageTitle>Alertas de Stock</PageTitle>
 
-	@if (!string.IsNullOrWhiteSpace(error))
-	{
-		<div class="error">@error</div>
-	}
-	else if (items is null || productAlerts is null)
-	{
-		<p>Cargando...</p>
-	}
-	else if ((items?.Count ?? 0) == 0 && (productAlerts?.Count ?? 0) == 0)
-	{
-		<p class="muted">No hay alertas.</p>
-	}
-	else
-	{
-		var list = items?.Where(a => a is not null).ToList() ?? new List<Alerta>();
-		<table>
-			<thead>
-				<tr>
-					<th>Fecha</th>
-					<th>Mensaje</th>
-					<th>Severidad</th>
-				</tr>
-			</thead>
-			<tbody>
-			@foreach (var a in list)
-			{
-				<tr>
-					<td>@(a?.Date.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
-					<td>@(a?.Message ?? "-")</td>
-					<td>
-						<span class="badge @((a?.Severity ?? "info") == "danger" ? "danger" : (a?.Severity ?? "info") == "warning" ? "warning" : "success")">@(a?.Severity ?? "info")</span>
-					</td>
-				</tr>
-			}
-			</tbody>
-		</table>
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    <h1>Alertas de Stock</h1>
 
-        <h4 style="margin-top:28px;">Alertas de Productos</h4>
-        @if ((productAlerts?.Count ?? 0) == 0)
-        {
-            <p class="muted">No hay alertas de stock o vencimiento.</p>
-        }
-        else
-        {
-            <table>
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Nombre</th>
-                        <th>Stock</th>
-                        <th>Min</th>
-                        <th>Reposición</th>
-                        <th>Estado</th>
-                        <th>Lote</th>
-                        <th>Ctrl Venc.</th>
-                        <th>Días Venc.</th>
-                        <th>Severidad</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var pa in productAlerts!)
-                {
-                    <tr>
-                        <td>@pa.Codigo</td>
-                        <td>@pa.Nombre</td>
-                        <td>@pa.Stock</td>
-                        <td>@pa.Min</td>
-                        <td>@pa.Repo</td>
-                        <td>@pa.Tipo</td>
-                        <td>@(pa.LoteObligatorio ? "Sí" : "No")</td>
-                        <td>@(pa.ControlVencimiento ? "Sí" : "No")</td>
-                        <td>@pa.DiasVencimiento</td>
-                        <td>
-                            <span class="badge @(pa.Severidad == "danger" ? "danger" : pa.Severidad == "warning" ? "warning" : "success")">@pa.Severidad</span>
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        }
-	}
-</AuthGuard>
+    <div style="margin-bottom: 20px;">
+        <FluentButton Appearance="Appearance.Accent" OnClick="LoadAlerts">Actualizar</FluentButton>
+    </div>
+
+    @if (isLoading)
+    {
+        <FluentProgressRing />
+    }
+    else if (alerts == null || !alerts.Any())
+    {
+        <p>No hay alertas activas.</p>
+    }
+    else
+    {
+        <FluentDataGrid Items="@alerts.AsQueryable()" ResizableColumns="true">
+            <PropertyColumn Property="@(p => p.Codigo)" Title="Código" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Producto)" Title="Producto" Sortable="true" />
+            <PropertyColumn Property="@(p => p.StockActual)" Title="Stock Actual" Sortable="true" />
+            <PropertyColumn Property="@(p => p.StockMinimo)" Title="Stock Mínimo" />
+            <PropertyColumn Property="@(p => p.PuntoReposicion)" Title="Punto Reposición" />
+            <PropertyColumn Property="@(p => p.Lote)" Title="Lote" />
+            <PropertyColumn Property="@(p => p.FechaVencimiento)" Format="dd/MM/yyyy" Title="Vencimiento" Sortable="true" />
+            <TemplateColumn Title="Tipo Alerta" Sortable="true" SortBy="@sortByType">
+                <FluentBadge Appearance="@GetBadgeAppearance(context.Severidad)">
+                    @context.TipoAlerta
+                </FluentBadge>
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+</div>
 
 @code {
-	private IReadOnlyList<Alerta>? items;
-	private List<ProductAlert>? productAlerts;
-	private string? error;
-	private AgileStockPro.Web.Models.AppUser? currentUser;
-	protected override async Task OnInitializedAsync()
-	{
-		try
-		{
-			currentUser = await AuthService.GetCurrentUserAsync();
-			items = await Data.GetAlertsAsync() ?? Array.Empty<Alerta>();
-			var products = await ProductApi.GetProductsAsync();
-			productAlerts = BuildProductAlerts(products.ToList());
-		}
-		catch (Exception ex)
-		{
-			error = ex.Message;
-		}
-	}
+    private IEnumerable<StockAlertDto>? alerts;
+    private bool isLoading = false;
 
-	private static List<ProductAlert> BuildProductAlerts(List<Product> products)
-	{
-		var result = new List<ProductAlert>();
-		foreach (var p in products)
-		{
-			string? tipo = null; string severidad = "info";
-			if (p.Stock <= Math.Max(1, p.MinStock / 2)) { tipo = "Stock Crítico"; severidad = "danger"; }
-			else if (p.Stock < p.MinStock) { tipo = "Stock Bajo"; severidad = "warning"; }
-			else if (p.PuntoReposicion > 0 && p.Stock <= p.PuntoReposicion) { tipo = "Reposición"; severidad = "warning"; }
-			if (p.ControlVencimiento && p.DiasVencimiento > 0)
-			{
-				// Sin fecha de fabricación / vencimiento específica solo mostramos control activo.
-				var vencTipo = p.DiasVencimiento <= 30 ? "Vencimiento Próximo" : "Control Vencimiento";
-				// Si ya había tipo, lo concatenamos.
-				if (tipo is null) tipo = vencTipo; else tipo += $" + {vencTipo}";
-				severidad = p.DiasVencimiento <= 30 ? "warning" : severidad;
-			}
-			if (tipo is not null)
-			{
-				result.Add(new ProductAlert
-				{
-					Codigo = p.Id,
-					Nombre = p.Name,
-					Stock = p.Stock,
-					Min = p.MinStock,
-					Repo = p.PuntoReposicion,
-					Tipo = tipo,
-					Severidad = severidad,
-					LoteObligatorio = p.LoteObligatorio,
-					ControlVencimiento = p.ControlVencimiento,
-					DiasVencimiento = p.DiasVencimiento
-				});
-			}
-		}
-		return result.OrderByDescending(a => a.Severidad == "danger").ThenByDescending(a => a.Severidad == "warning").ToList();
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAlerts();
+    }
 
-	class ProductAlert
-	{
-		public string Codigo { get; set; } = string.Empty;
-		public string Nombre { get; set; } = string.Empty;
-		public int Stock { get; set; }
-		public int Min { get; set; }
-		public int Repo { get; set; }
-		public string Tipo { get; set; } = string.Empty;
-		public string Severidad { get; set; } = string.Empty;
-		public bool LoteObligatorio { get; set; }
-		public bool ControlVencimiento { get; set; }
-		public int DiasVencimiento { get; set; }
-	}
+    private async Task LoadAlerts()
+    {
+        isLoading = true;
+        try
+        {
+            alerts = await StockService.GetAlertsAsync();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error cargando alertas: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private Appearance GetBadgeAppearance(string severity)
+    {
+        return severity switch
+        {
+            "danger" => Appearance.Accent, // Red-ish usually, or use custom style
+            "warning" => Appearance.Neutral, // Orange-ish
+            _ => Appearance.Neutral
+        };
+    }
+
+    GridSort<StockAlertDto> sortByType = GridSort<StockAlertDto>
+        .ByAscending(p => p.TipoAlerta);
 }

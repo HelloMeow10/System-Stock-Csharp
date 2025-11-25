@@ -12,37 +12,11 @@
     <NavLink href="/dashboard" Match="NavLinkMatch.All" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-dashboard" Icon="@(Icons.Regular.Size20.Home)" /></span>
       <span class="nav-text">Dashboard</span>
-    </NavLink>
-    @if (Collapsed)
-    {
-        <FluentTooltip Anchor="nav-dashboard">Dashboard</FluentTooltip>
-    }
-
-    <div class="nav-section">Compras</div>
-    <NavLink href="/products" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-products" Icon="@(Icons.Regular.Size20.Box)" /></span>
-      <span class="nav-text">Productos</span>
-    </NavLink>
-    @if (Collapsed)
-    {
         <FluentTooltip Anchor="nav-products">Productos</FluentTooltip>
     }
     <NavLink href="/proveedores" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-proveedores" Icon="@(Icons.Regular.Size20.People)" /></span>
       <span class="nav-text">Proveedores</span>
-    </NavLink>
-    @if (Collapsed)
-    {
-        <FluentTooltip Anchor="nav-proveedores">Proveedores</FluentTooltip>
-    }
-
-    <div class="nav-section">Almacenes</div>
-    <NavLink href="/almacenes" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-almacenes" Icon="@(Icons.Regular.Size20.Building)" /></span>
-      <span class="nav-text">Almacenes</span>
-    </NavLink>
-    @if (Collapsed)
-    {
         <FluentTooltip Anchor="nav-almacenes">Almacenes</FluentTooltip>
     }
     <NavLink href="/stock" class="nav-link">
@@ -107,25 +81,6 @@
 
     <NavLink href="/alertas" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-alertas" Icon="@(Icons.Regular.Size20.Warning)" /></span>
-      <span class="nav-text">Alertas</span>
-    </NavLink>
-    @if (Collapsed)
-    {
-        <FluentTooltip Anchor="nav-alertas">Alertas</FluentTooltip>
-    }
-    <NavLink href="/reportes-inventario" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-reportes-inventario" Icon="@(Icons.Regular.Size20.Table)" /></span>
-      <span class="nav-text">Rep. Inventario</span>
-    </NavLink>
-    @if (Collapsed)
-    {
-        <FluentTooltip Anchor="nav-reportes-inventario">Reportes Inventario</FluentTooltip>
-    }
-    <NavLink href="/scrap" class="nav-link">
-      <span class="nav-icon"><FluentIcon Id="nav-scrap" Icon="@(Icons.Regular.Size20.Delete)" /></span>
-      <span class="nav-text">Scrap</span>
-    </NavLink>
-    @if (Collapsed)
     {
         <FluentTooltip Anchor="nav-scrap">Scrap</FluentTooltip>
     }
@@ -194,21 +149,6 @@
     }
     }
     @if (User is not null)
-    {
-      <NavLink href="/change-password" class="nav-link">
-        <span class="nav-icon"><FluentIcon Id="nav-chpass" Icon="@(Icons.Regular.Size20.Key)" /></span>
-        <span class="nav-text">Cambiar contraseña</span>
-      </NavLink>
-      @if (Collapsed)
-      {
-          <FluentTooltip Anchor="nav-chpass">Cambiar contraseña</FluentTooltip>
-      }
-    }
-    }
-  </nav>
-</aside>
-
-@code {
   [Parameter] public bool Collapsed { get; set; }
   [Parameter] public AgileStockPro.Web.Models.AppUser? User { get; set; }
 }

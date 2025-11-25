@@ -6,6 +6,7 @@
 @inject IPurchaseService PurchaseService
 @inject IDialogService DialogService
 @inject AgileStockPro.Web.Services.IAuthService AuthService
+@inject NavigationManager Nav
 
 <PageTitle>Órdenes de Compra</PageTitle>
 
@@ -40,7 +41,7 @@
                 }
                 else
                 {
-                    <FluentBadge Appearance="Appearance.Neutral">No</FluentBadge>
+                    <FluentButton Appearance="Appearance.Lightweight" OnClick="@(() => Nav.NavigateTo($"/ordenes-compra/recibir/{context.Id}"))">Recibir</FluentButton>
                 }
             </TemplateColumn>
         </FluentDataGrid>

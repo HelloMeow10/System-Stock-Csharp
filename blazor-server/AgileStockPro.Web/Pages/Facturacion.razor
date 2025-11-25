@@ -1,60 +1,403 @@
 @page "/facturacion"
-@using AgileStockPro.Web.Services
-@using AgileStockPro.Web.Models
-@using AgileStockPro.Web.Components
-@inject IAppDataService Data
-@inject AgileStockPro.Web.Services.IAuthService AuthService
+@using BusinessLogic.Services
+@using Contracts
+@inject IInvoicingService InvoicingService
+@inject ISupplierService SupplierService
+@inject IClientService ClientService
+@inject IProductCatalogService ProductService
+@inject IToastService Toast
 
-<AuthGuard>
-<PageHeader Title="Facturación" />
+<PageTitle>Facturación</PageTitle>
 
-@if (!string.IsNullOrWhiteSpace(error))
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    <h1>Facturación</h1>
+
+    <FluentTabs ActiveTabId="@activeTabId" OnTabChange="HandleTabChange">
+        <FluentTab Id="ventas" Label="Ventas">
+            <div style="margin-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>Facturas de Venta</h3>
+                    <FluentButton Appearance="Appearance.Accent" OnClick="@(() => ShowSalesForm())">Nueva Factura Venta</FluentButton>
+                </div>
+
+                <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
+                    <FluentDatePicker @bind-Value="salesFrom" Label="Desde" />
+                    <FluentDatePicker @bind-Value="salesTo" Label="Hasta" />
+                    <FluentButton OnClick="LoadSalesInvoices">Filtrar</FluentButton>
+                </div>
+
+                @if (isLoadingSales)
+                {
+                    <FluentProgressRing />
+                }
+                else if (salesInvoices == null || !salesInvoices.Any())
+                {
+                    <p>No hay facturas de venta en el rango seleccionado.</p>
+                }
+                else
+                {
+                    <FluentDataGrid Items="@salesInvoices.AsQueryable()" ResizableColumns="true">
+                        <PropertyColumn Property="@(p => p.Id)" Title="#" />
+                        <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Title="Fecha" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.TipoDocumento)" Title="Tipo" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Numero)" Title="Número" />
+                        <PropertyColumn Property="@(p => p.EntidadNombre)" Title="Cliente" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Total)" Format="C2" Title="Total" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Estado)" Title="Estado" />
+                    </FluentDataGrid>
+                }
+            </div>
+        </FluentTab>
+
+        <FluentTab Id="compras" Label="Compras">
+            <div style="margin-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>Facturas de Compra</h3>
+                    <FluentButton Appearance="Appearance.Accent" OnClick="@(() => ShowPurchaseForm())">Registrar Factura Compra</FluentButton>
+                </div>
+
+                <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
+                    <FluentDatePicker @bind-Value="purchaseFrom" Label="Desde" />
+                    <FluentDatePicker @bind-Value="purchaseTo" Label="Hasta" />
+                    <FluentButton OnClick="LoadPurchaseInvoices">Filtrar</FluentButton>
+                </div>
+
+                @if (isLoadingPurchases)
+                {
+                    <FluentProgressRing />
+                }
+                else if (purchaseInvoices == null || !purchaseInvoices.Any())
+                {
+                    <p>No hay facturas de compra en el rango seleccionado.</p>
+                }
+                else
+                {
+                    <FluentDataGrid Items="@purchaseInvoices.AsQueryable()" ResizableColumns="true">
+                        <PropertyColumn Property="@(p => p.Id)" Title="#" />
+                        <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Title="Fecha" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Numero)" Title="Número" />
+                        <PropertyColumn Property="@(p => p.EntidadNombre)" Title="Proveedor" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Total)" Format="C2" Title="Total" Sortable="true" />
+                    </FluentDataGrid>
+                }
+            </div>
+        </FluentTab>
+    </FluentTabs>
+</div>
+
+@* Modal for Sales Invoice *@
+@if (showSalesForm)
 {
-    <div class="error">@error</div>
-}
-else if (items is null)
-{
-	<p>Cargando...</p>
-}
-else
-{
-	<table>
-		<thead>
-			<tr>
-				<th>#</th>
-				<th>Cliente</th>
-				<th>Fecha</th>
-				<th>Total</th>
-				<th>Estado</th>
-			</tr>
-		</thead>
-		<tbody>
-		@foreach (var f in items)
-		{
-			<tr>
-				<td>@f.Id</td>
-				<td>@f.Customer</td>
-				<td>@f.Date.ToString("dd/MM/yyyy")</td>
-				<td>@f.Total.ToString("C")</td>
-				<td>@f.Status</td>
-			</tr>
-		}
-		</tbody>
-	</table>
+    <div class="modal-backdrop">
+        <div class="modal-content">
+            <h3>Nueva Factura de Venta</h3>
+            <div class="form-group">
+                <FluentSelect Items="@customers"
+                              OptionText="@(c => c.Name)"
+                              OptionValue="@(c => c.Id.ToString())"
+                              @bind-Value="salesForm.ClienteIdStr"
+                              Label="Cliente"
+                              Placeholder="Seleccione Cliente..." />
+            </div>
+            <div class="form-group">
+                <FluentSelect Items="@docTypes"
+                              @bind-Value="salesForm.TipoDocumento"
+                              Label="Tipo Documento" />
+            </div>
+            <div class="form-group">
+                <FluentDatePicker @bind-Value="salesForm.Fecha" Label="Fecha" />
+            </div>
+
+            <h4>Items</h4>
+            <div class="items-grid">
+                <FluentSelect Items="@products"
+                              OptionText="@(p => $"{p.Codigo} - {p.Nombre}")"
+                              OptionValue="@(p => p.Id.ToString())"
+                              @bind-Value="newItem.ProductIdStr"
+                              Label="Producto"
+                              Placeholder="Agregar Producto..." />
+                <FluentNumberField @bind-Value="newItem.Cantidad" Label="Cant" Min="1" />
+                <FluentNumberField @bind-Value="newItem.Precio" Label="Precio" />
+                <FluentButton OnClick="AddSalesItem">Agregar</FluentButton>
+            </div>
+
+            <FluentDataGrid Items="@salesForm.Items.AsQueryable()" Style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                <PropertyColumn Property="@(p => p.Descripcion)" Title="Producto" />
+                <PropertyColumn Property="@(p => p.Cantidad)" Title="Cant" />
+                <PropertyColumn Property="@(p => p.PrecioUnitario)" Format="C2" Title="Precio" />
+                <PropertyColumn Property="@(p => p.Cantidad * p.PrecioUnitario)" Format="C2" Title="Subtotal" />
+                <TemplateColumn Title="Acciones">
+                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => salesForm.Items.Remove(context))" Appearance="Appearance.Light" />
+                </TemplateColumn>
+            </FluentDataGrid>
+            <div style="text-align: right; margin-top: 10px; font-weight: bold;">
+                Total: @salesForm.Items.Sum(x => x.Cantidad * x.PrecioUnitario).ToString("C2")
+            </div>
+
+            <div class="modal-actions">
+                <FluentButton OnClick="@(() => showSalesForm = false)">Cancelar</FluentButton>
+                <FluentButton Appearance="Appearance.Accent" OnClick="SubmitSalesInvoice" Loading="@isSubmitting">Guardar</FluentButton>
+            </div>
+        </div>
+    </div>
 }
 
-</AuthGuard>
+@* Modal for Purchase Invoice *@
+@if (showPurchaseForm)
+{
+    <div class="modal-backdrop">
+        <div class="modal-content">
+            <h3>Registrar Factura de Compra</h3>
+            <div class="form-group">
+                <FluentSelect Items="@suppliers"
+                              OptionText="@(s => s.Name)"
+                              OptionValue="@(s => s.Id.ToString())"
+                              @bind-Value="purchaseForm.ProveedorIdStr"
+                              Label="Proveedor"
+                              Placeholder="Seleccione Proveedor..." />
+            </div>
+            <div class="form-group">
+                <FluentTextField @bind-Value="purchaseForm.Numero" Label="Número Factura" />
+            </div>
+            <div class="form-group">
+                <FluentDatePicker @bind-Value="purchaseForm.Fecha" Label="Fecha" />
+            </div>
+
+            <h4>Items</h4>
+            <div class="items-grid">
+                <FluentSelect Items="@products"
+                              OptionText="@(p => $"{p.Codigo} - {p.Nombre}")"
+                              OptionValue="@(p => p.Id.ToString())"
+                              @bind-Value="newItem.ProductIdStr"
+                              Label="Producto"
+                              Placeholder="Agregar Producto..." />
+                <FluentNumberField @bind-Value="newItem.Cantidad" Label="Cant" Min="1" />
+                <FluentNumberField @bind-Value="newItem.Precio" Label="Precio" />
+                <FluentButton OnClick="AddPurchaseItem">Agregar</FluentButton>
+            </div>
+
+            <FluentDataGrid Items="@purchaseForm.Items.AsQueryable()" Style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                <PropertyColumn Property="@(p => p.Descripcion)" Title="Producto" />
+                <PropertyColumn Property="@(p => p.Cantidad)" Title="Cant" />
+                <PropertyColumn Property="@(p => p.PrecioUnitario)" Format="C2" Title="Precio" />
+                <PropertyColumn Property="@(p => p.Cantidad * p.PrecioUnitario)" Format="C2" Title="Subtotal" />
+                <TemplateColumn Title="Acciones">
+                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => purchaseForm.Items.Remove(context))" Appearance="Appearance.Light" />
+                </TemplateColumn>
+            </FluentDataGrid>
+            <div style="text-align: right; margin-top: 10px; font-weight: bold;">
+                Total: @purchaseForm.Items.Sum(x => x.Cantidad * x.PrecioUnitario).ToString("C2")
+            </div>
+
+            <div class="modal-actions">
+                <FluentButton OnClick="@(() => showPurchaseForm = false)">Cancelar</FluentButton>
+                <FluentButton Appearance="Appearance.Accent" OnClick="SubmitPurchaseInvoice" Loading="@isSubmitting">Guardar</FluentButton>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .modal-backdrop {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-content {
+        background: white; padding: 20px; border-radius: 8px; width: 600px; max-width: 90%;
+        max-height: 90vh; overflow-y: auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .form-group { margin-bottom: 15px; }
+    .items-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 10px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+</style>
 
 @code {
-	private IReadOnlyList<Factura>? items;
-	private string? error;
-	private AgileStockPro.Web.Models.AppUser? currentUser;
-	protected override async Task OnInitializedAsync()
-	{
-		try {
-			currentUser = await AuthService.GetCurrentUserAsync();
-			items = await Data.GetInvoicesAsync();
-		}
-		catch (Exception ex) { error = ex.Message; }
-	}
+    string activeTabId = "ventas";
+    bool isLoadingSales;
+    bool isLoadingPurchases;
+    bool isSubmitting;
+    bool showSalesForm;
+    bool showPurchaseForm;
+
+    IEnumerable<InvoiceDto>? salesInvoices;
+    IEnumerable<InvoiceDto>? purchaseInvoices;
+
+    // Filters
+    DateTime? salesFrom = DateTime.Today.AddDays(-30);
+    DateTime? salesTo = DateTime.Today;
+    DateTime? purchaseFrom = DateTime.Today.AddDays(-30);
+    DateTime? purchaseTo = DateTime.Today;
+
+    // Lists
+    List<ClientDto> customers = new();
+    List<SupplierDto> suppliers = new();
+    List<ProductDto> products = new();
+    List<string> docTypes = new() { "Factura", "NotaCredito", "NotaDebito" };
+
+    // Forms
+    SalesFormModel salesForm = new();
+    PurchaseFormModel purchaseForm = new();
+    ItemModel newItem = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSalesInvoices();
+    }
+
+    async Task HandleTabChange(FluentTab tab)
+    {
+        activeTabId = tab.Id;
+        if (activeTabId == "compras" && purchaseInvoices == null)
+            await LoadPurchaseInvoices();
+    }
+
+    async Task LoadSalesInvoices()
+    {
+        isLoadingSales = true;
+        try { salesInvoices = await InvoicingService.GetSalesInvoicesAsync(salesFrom, salesTo, null); }
+        catch (Exception ex) { Toast.ShowError(ex.Message); }
+        finally { isLoadingSales = false; }
+    }
+
+    async Task LoadPurchaseInvoices()
+    {
+        isLoadingPurchases = true;
+        try { purchaseInvoices = await InvoicingService.GetPurchaseInvoicesAsync(purchaseFrom, purchaseTo, null); }
+        catch (Exception ex) { Toast.ShowError(ex.Message); }
+        finally { isLoadingPurchases = false; }
+    }
+
+    async Task ShowSalesForm()
+    {
+        if (customers.Count == 0)
+        {
+            customers = (await ClientService.SearchClientsAsync(null)).ToList();
+            var p = await ProductService.GetProductsAsync(null, 1, 1000);
+            products = p.Items.ToList();
+        }
+        salesForm = new();
+        newItem = new();
+        showSalesForm = true;
+    }
+
+    async Task ShowPurchaseForm()
+    {
+        if (suppliers.Count == 0)
+        {
+            suppliers = (await SupplierService.GetAllAsync()).ToList();
+            var p = await ProductService.GetProductsAsync(null, 1, 1000);
+            products = p.Items.ToList();
+        }
+        purchaseForm = new();
+        newItem = new();
+        showPurchaseForm = true;
+    }
+
+    void AddSalesItem()
+    {
+        if (string.IsNullOrEmpty(newItem.ProductIdStr) || newItem.Cantidad <= 0) return;
+        var prod = products.FirstOrDefault(p => p.Id.ToString() == newItem.ProductIdStr);
+        if (prod == null) return;
+
+        salesForm.Items.Add(new InvoiceDetailRequest
+        {
+            ProductoId = prod.Id,
+            Descripcion = prod.Nombre,
+            Cantidad = newItem.Cantidad,
+            PrecioUnitario = newItem.Precio > 0 ? newItem.Precio : prod.Precio // Use input price or default
+        });
+        newItem = new();
+    }
+
+    void AddPurchaseItem()
+    {
+        if (string.IsNullOrEmpty(newItem.ProductIdStr) || newItem.Cantidad <= 0) return;
+        var prod = products.FirstOrDefault(p => p.Id.ToString() == newItem.ProductIdStr);
+        if (prod == null) return;
+
+        purchaseForm.Items.Add(new InvoiceDetailRequest
+        {
+            ProductoId = prod.Id,
+            Descripcion = prod.Nombre,
+            Cantidad = newItem.Cantidad,
+            PrecioUnitario = newItem.Precio // Must be entered for purchases
+        });
+        newItem = new();
+    }
+
+    async Task SubmitSalesInvoice()
+    {
+        if (string.IsNullOrEmpty(salesForm.ClienteIdStr) || !salesForm.Items.Any())
+        {
+            Toast.ShowError("Complete cliente e items.");
+            return;
+        }
+        isSubmitting = true;
+        try
+        {
+            var req = new CreateSalesInvoiceRequest
+            {
+                ClienteId = int.Parse(salesForm.ClienteIdStr),
+                TipoDocumento = salesForm.TipoDocumento,
+                Fecha = salesForm.Fecha ?? DateTime.Now,
+                Items = salesForm.Items
+            };
+            await InvoicingService.CreateSalesInvoiceAsync(req);
+            Toast.ShowSuccess("Factura creada.");
+            showSalesForm = false;
+            await LoadSalesInvoices();
+        }
+        catch (Exception ex) { Toast.ShowError(ex.Message); }
+        finally { isSubmitting = false; }
+    }
+
+    async Task SubmitPurchaseInvoice()
+    {
+        if (string.IsNullOrEmpty(purchaseForm.ProveedorIdStr) || !purchaseForm.Items.Any() || string.IsNullOrEmpty(purchaseForm.Numero))
+        {
+            Toast.ShowError("Complete proveedor, número e items.");
+            return;
+        }
+        isSubmitting = true;
+        try
+        {
+            var req = new CreatePurchaseInvoiceRequest
+            {
+                ProveedorId = int.Parse(purchaseForm.ProveedorIdStr),
+                Numero = purchaseForm.Numero,
+                Fecha = purchaseForm.Fecha ?? DateTime.Now,
+                Items = purchaseForm.Items
+            };
+            await InvoicingService.CreatePurchaseInvoiceAsync(req);
+            Toast.ShowSuccess("Factura registrada.");
+            showPurchaseForm = false;
+            await LoadPurchaseInvoices();
+        }
+        catch (Exception ex) { Toast.ShowError(ex.Message); }
+        finally { isSubmitting = false; }
+    }
+
+    class SalesFormModel
+    {
+        public string? ClienteIdStr { get; set; }
+        public string TipoDocumento { get; set; } = "Factura";
+        public DateTime? Fecha { get; set; } = DateTime.Now;
+        public List<InvoiceDetailRequest> Items { get; set; } = new();
+    }
+
+    class PurchaseFormModel
+    {
+        public string? ProveedorIdStr { get; set; }
+        public string Numero { get; set; } = string.Empty;
+        public DateTime? Fecha { get; set; } = DateTime.Now;
+        public List<InvoiceDetailRequest> Items { get; set; } = new();
+    }
+
+    class ItemModel
+    {
+        public string? ProductIdStr { get; set; }
+        public int Cantidad { get; set; } = 1;
+        public decimal Precio { get; set; }
+    }
 }
