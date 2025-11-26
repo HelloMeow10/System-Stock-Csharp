@@ -20,6 +20,47 @@
 	--container-border-strong: color-mix(in srgb, var(--neutral-stroke-layer-rest) 88%, black 12%);
 }
 
+/* Tema oscuro profesional: activa con app.setTheme('dark') que coloca data-theme="dark" en <html> */
+:root[data-theme="dark"] {
+	color-scheme: dark;
+	/* Base */
+	--fill-color: #0b1220; /* fondo principal */
+	--text-primary-color: #e5e7eb; /* texto principal */
+	--text-muted-color: #9aa4b2; /* texto secundario */
+	--stroke-color: #243042; /* líneas y bordes suaves */
+	--focus-ring: #4f46e580; /* anillo de enfoque acorde al acento */
+	/* Acento permanece, pero ajustamos variantes para buen contraste */
+	--accent-600: hsl(var(--accent-hue) var(--accent-sat) 54%);
+	--accent-700: hsl(var(--accent-hue) var(--accent-sat) 48%);
+	--on-accent: #ffffff;
+	/* Capas neutrales (inspiradas en Fluent dark) */
+	--neutral-layer-1: #0e1626; /* cards/panel */
+	--neutral-layer-2: #131c2e; /* inputs, filas alternas */
+	--neutral-layer-3: #182338; /* hover, deshabilitados */
+	--neutral-foreground-rest: #e5e7eb;
+	--neutral-foreground-hint: #9aa4b2;
+	--neutral-stroke-layer-rest: #2b3a51;
+	--container-border: #1f2a3b;
+	--container-border-strong: #2a3a53;
+}
+
+/* Ensure navigation links in dark mode contrast with the sidebar background */
+:root[data-theme="dark"] .sidebar .nav-link,
+:root[data-theme="dark"] .sidebar a {
+	color: var(--neutral-foreground-rest) !important;
+}
+:root[data-theme="dark"] .sidebar .nav-link .nav-text {
+	color: var(--neutral-foreground-rest) !important;
+}
+:root[data-theme="dark"] .sidebar .nav-link:hover {
+	background: color-mix(in srgb, var(--accent) 14%, transparent);
+	color: var(--neutral-foreground-rest) !important;
+}
+:root[data-theme="dark"] .nav-link.active, :root[data-theme="dark"] .nav-link.active:hover {
+	background: color-mix(in srgb, var(--accent) 18%, transparent);
+	color: var(--neutral-foreground-rest) !important;
+}
+
 body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--fill-color); color: var(--text-primary-color); }
 a { color: var(--accent); }
 a:hover { text-decoration: underline; }
@@ -171,26 +212,105 @@ input.search:focus { outline: 2px solid var(--focus-ring); outline-offset: 2px; 
 .form-control, input.form-control, .input { box-sizing: border-box; width: 100%; padding: .5rem .75rem; border: 1px solid var(--stroke-color); border-radius: 8px; background: var(--neutral-layer-2); color: var(--neutral-foreground-rest); transition: border-color .12s, box-shadow .12s, background .12s; }
 .panel-body { max-width: 520px; margin: 0.5rem 0; padding: .5rem; }
 .panel .form-control { max-width: 420px; }
-.input-with-icon { position: relative; display: block; }
-.input-with-icon .form-control { padding-right: 2.4rem; }
-.icon-btn { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted-color); width: 1.8rem; height: 1.8rem; display: grid; place-items: center; }
+.input-with-icon { position: relative; display: block; /* ensure positioned ancestor for absolute icon */ direction: ltr; }
+.input-with-icon .form-control { padding-right: 3.4rem; padding-inline-end: 3.4rem; }
+.icon-btn { position: absolute; /* prefer logical insets to avoid LTR/RTL surprises */ right: .5rem; left: auto; inset-inline-end: .5rem; inset-inline-start: auto; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted-color); width: 2.4rem; height: calc(100% - 8px); display: grid; place-items: center; padding: 0; border-radius: 6px; z-index: 10; }
 .icon-btn:focus { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 6px; }
-.icon-btn:hover { color: var(--accent); }
+.icon-btn:hover { color: var(--accent); background: transparent; }
 .icon-svg { width: 18px; height: 18px; display: block; }
 /* Ensure FluentIcon (which renders an <svg>) sizes correctly inside the icon button */
 .icon-btn svg { width: 18px; height: 18px; display: block; }
+.icon-btn:active { transform: translateY(-50%) scale(0.98); }
+
+/* Optional requirement styling */
+.password-reqs li.optional { opacity: 0.7; font-style: italic; color: var(--text-muted-color); }
+.password-reqs li.optional::before { background: color-mix(in srgb, var(--stroke-color) 70%, transparent); }
 .form-control:focus, .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--focus-ring); }
 .form-control[readonly], .form-control:disabled, .input[readonly], .input:disabled { background: var(--neutral-layer-3); opacity: 0.85; cursor: not-allowed; }
 
-/* Password requirements list */
-.password-reqs { list-style: none; margin: .5rem 0 0 0; padding-left: 0; display: grid; gap: .25rem; }
-.password-reqs li { font-size: .95rem; color: var(--text-muted-color); display: flex; align-items: center; gap: .5rem; transition: color .25s ease, opacity .45s ease, transform .35s ease; }
-.password-reqs li::before { content: ""; width: .75rem; height: .75rem; border-radius: 4px; display: inline-block; flex-shrink: 0; transition: background .25s ease, transform .35s ease, opacity .45s ease; }
-.password-reqs li.ok { color: var(--palette-green-foreground-2, #198754); transform: translateX(6px); transition: color .12s ease, opacity .45s ease .6s, transform .35s ease .6s; opacity: 0; }
-.password-reqs li.ok::before { background: var(--palette-green-foreground-2, #198754); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.05); }
-.password-reqs li.ok.fade-out { opacity: 0; transform: translateX(12px); }
-.password-reqs li.fail { color: var(--palette-red-foreground-2, #dc3545); }
-.password-reqs li.fail::before { background: var(--palette-red-foreground-2, #dc3545); }
+/* Password requirements shown as compact "pills" so they don't push layout when satisfied */
+.password-reqs {
+	list-style: none;
+	margin: .5rem 0 0 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: .5rem;
+}
+.password-reqs li {
+	display: inline-flex;
+	align-items: center;
+	gap: .4rem;
+	padding: 0; /* simple list, no pill padding */
+	border-radius: 0;
+	background: transparent;
+	border: none;
+	font-size: .92rem;
+	color: var(--text-muted-color);
+	transition: color .14s ease, transform .08s ease;
+}
+.password-reqs li::before {
+	content: '•';
+	display: inline-block;
+	margin-right: .45rem;
+	font-size: .9rem;
+	color: currentColor;
+	opacity: 0.7;
+}
+.password-reqs li.ok {
+	color: var(--palette-green-foreground-2, #198754);
+	font-weight: 600;
+}
+.password-reqs li.fail {
+	color: var(--palette-red-foreground-2, #dc3545);
+}
+.password-reqs li.optional { /* when not required */
+	opacity: 0.9;
+	font-style: italic;
+	color: var(--text-muted-color);
+}
+/* optional but satisfied: softer green */
+.password-reqs li.optional.ok {
+	color: color-mix(in srgb, var(--palette-green-foreground-2, #198754) 60%, var(--text-muted-color) 40%);
+}
+
+/* Floating behavior: show requirements as a floating pill-group above/right of the input
+	 Falls back to static flow on small screens. */
+.input-with-icon .password-reqs {
+	position: absolute;
+	left: 0;
+	top: calc(100% + .45rem); /* place below the input */
+	transform: none;
+	display: none; /* shown when .visible is present */
+	flex-direction: column;
+	gap: .4rem;
+	padding: .5rem;
+	background: var(--neutral-layer-1); /* visible background so it doesn't mix with other text */
+	border: 1px solid color-mix(in srgb, var(--stroke-color) 70%, transparent);
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba(8,12,16,0.08);
+	z-index: 60;
+	width: min(420px, calc(100% + 2rem));
+}
+.input-with-icon .password-reqs.visible { display: flex; }
+.input-with-icon .password-reqs li { margin: 0; }
+
+@media (max-width: 600px) {
+	.input-with-icon .password-reqs {
+		position: static;
+		transform: none;
+		padding: .4rem 0;
+		gap: .5rem;
+		box-shadow: none;
+		border: none;
+		background: transparent;
+		margin-top: .5rem;
+		display: none; /* still hidden by default on small screens */
+		width: 100%;
+	}
+	.input-with-icon .password-reqs.visible { display: block; }
+	.input-with-icon .password-reqs li { background: transparent; border: none; padding: 0; display: block; }
+}
 
 /* Adjust spacing inside panels */
 .panel { padding: .5rem; }
