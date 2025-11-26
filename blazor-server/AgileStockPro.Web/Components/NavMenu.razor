@@ -122,14 +122,7 @@
       {
         <FluentTooltip Anchor="nav-users">Usuarios</FluentTooltip>
       }
-      <NavLink href="/usuarios/alta" class="nav-link">
-        <span class="nav-icon"><FluentIcon Id="nav-users-create" Icon="@(Icons.Regular.Size20.AddSquare)" /></span>
-        <span class="nav-text">Alta Usuario</span>
-      </NavLink>
-      @if (Collapsed)
-      {
-        <FluentTooltip Anchor="nav-users-create">Alta Usuario</FluentTooltip>
-      }
+      @* Alta Usuario fusionado en Usuarios: removido del menú *@
       <NavLink href="/personas" class="nav-link">
         <span class="nav-icon"><FluentIcon Id="nav-personas" Icon="@(Icons.Regular.Size20.Person)" /></span>
         <span class="nav-text">Personas</span>
@@ -153,6 +146,14 @@
       @if (Collapsed)
       {
         <FluentTooltip Anchor="nav-security-questions">Preguntas seguridad</FluentTooltip>
+      }
+      <NavLink href="/mis-preguntas" class="nav-link">
+        <span class="nav-icon"><FluentIcon Id="nav-my-questions" Icon="@(Icons.Regular.Size20.QuestionCircle)" /></span>
+        <span class="nav-text">Mis Preguntas</span>
+      </NavLink>
+      @if (Collapsed)
+      {
+        <FluentTooltip Anchor="nav-my-questions">Configurar mis respuestas</FluentTooltip>
       }
     }
   </nav>

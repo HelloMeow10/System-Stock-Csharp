@@ -1,3 +1,4 @@
+<AuthGuard RequireSecuritySetup="true">
 @page "/ordenes-compra"
 @using BusinessLogic.Services
 @using Contracts
@@ -46,7 +47,9 @@
             </TemplateColumn>
         </FluentDataGrid>
     }
-</div>
+    </div>
+
+</AuthGuard>
 
 @code {
     private IEnumerable<PurchaseOrderDto>? orders;
