@@ -79,7 +79,7 @@ else
 {
     <div class="panel" style="margin-top:1rem;">
         <div class="panel-header">@(editing.Id == Guid.Empty ? "Nuevo usuario" : $"Editar: {editing.Username}")</div>
-        <div style="display:grid; grid-template-columns: 160px 1fr; gap:.5rem; align-items:center;">
+        <div class="form-grid">
             <label>Persona <span class="req">*</span></label>
             <div style="display:flex; gap:.5rem;">
                 <select class=@($"input {(Invalid("PersonaId") ? "invalid" : "")}") @bind="selectedPersonaId" @bind:after="OnPersonaSelected">
@@ -103,11 +103,11 @@ else
             @if (Invalid("Username")) { <span class="error-text" style="grid-column:2">@GetError("Username")</span> }
 
             <label>Nombre</label>
-            <input class="input" @bind-value="editing.Name" readonly style="background-color:#f0f0f0;" />
+            <input class="input" @bind-value="editing.Name" readonly />
             <label>Apellido</label>
-            <input class="input" @bind-value="editing.LastName" readonly style="background-color:#f0f0f0;" />
+            <input class="input" @bind-value="editing.LastName" readonly />
             <label>Email</label>
-            <input class=@($"input {(Invalid("Email") ? "invalid" : "")}") @bind-value="editing.Email" readonly style="background-color:#f0f0f0;" />
+            <input class=@($"input {(Invalid("Email") ? "invalid" : "")}") @bind-value="editing.Email" readonly />
             @if (Invalid("Email")) { <span class="error-text" style="grid-column:2">@GetError("Email")</span> }
             
             <label>Rol <span class="req">*</span></label>
@@ -124,9 +124,9 @@ else
             @if (Invalid("RolId")) { <span class="error-text" style="grid-column:2">@GetError("RolId")</span> }
             
             <label>Habilitado</label>
-            <input type="checkbox" @bind="editing.Habilitado" style="width:auto;" />
+            <input type="checkbox" @bind="editing.Habilitado" />
             <label>Forzar cambio contraseña</label>
-            <input type="checkbox" @bind="editing.MustChangePassword" style="width:auto;" />
+            <input type="checkbox" @bind="editing.MustChangePassword" />
             <label>Fecha expiración</label>
             <input class="input" type="date" @bind-value="editing.Expira" @bind-value:format="yyyy-MM-dd" />
         </div>
