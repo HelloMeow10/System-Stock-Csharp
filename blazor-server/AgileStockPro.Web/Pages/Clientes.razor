@@ -7,6 +7,7 @@
 @inject IDialogService DialogService
 @inject AgileStockPro.Web.Services.IAuthService AuthService
 
+<AuthGuard RequireSecuritySetup="true">
 <PageTitle>Clientes</PageTitle>
 
 <div style="padding: 20px;">
@@ -48,6 +49,8 @@
         </FluentDataGrid>
     }
 </div>
+
+</AuthGuard>
 
 @code {
     private IEnumerable<ClientDto>? clients;

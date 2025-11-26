@@ -140,4 +140,14 @@ public class StubStockRepository : IStockRepository
         // Stub implementation: return empty list or dummy data
         return Task.FromResult(Enumerable.Empty<StockItemDto>());
     }
+
+    public Task<IEnumerable<StockValuationDto>> GetStockValuationAsync(CancellationToken ct = default)
+    {
+        return Task.FromResult(Enumerable.Empty<StockValuationDto>());
+    }
+
+    public Task<IEnumerable<StockAlertDto>> GetAlertsAsync(CancellationToken ct = default)
+    {
+        return Task.FromResult(Enumerable.Empty<StockAlertDto>());
+    }
 }

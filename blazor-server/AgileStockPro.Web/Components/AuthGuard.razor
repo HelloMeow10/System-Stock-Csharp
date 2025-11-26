@@ -1,11 +1,12 @@
 @inject AgileStockPro.Web.Services.IAuthService Auth
+@inject AgileStockPro.Web.Services.IUserStore Store
 @inject NavigationManager Nav
 
 @if (!_checked)
 {
     <div></div>
 }
-else if (_allow && _user != null && (!RequireAdmin || _user.IsAdmin))
+else if (_allow && _user != null && (!RequireAdmin || _user.IsAdmin) && (!_requireSecuritySetup || !_needsSecuritySetup))
 {
     @ChildContent
 }
@@ -13,15 +14,42 @@ else if (_allow && _user != null && (!RequireAdmin || _user.IsAdmin))
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public bool RequireAdmin { get; set; }
+    [Parameter] public bool RequireSecuritySetup { get; set; }
 
     private AgileStockPro.Web.Models.AppUser? _user;
     private bool _checked;
     private bool _allow;
+    private bool _requireSecuritySetup;
+    private bool _needsSecuritySetup;
 
     protected override async Task OnInitializedAsync()
     {
         _user = await Auth.GetCurrentUserAsync();
         _allow = _user != null;
+        _requireSecuritySetup = RequireSecuritySetup;
+        if (_allow && _requireSecuritySetup)
+        {
+            try
+            {
+                var policy = await Store.GetPolicyAsync();
+                var required = policy?.QuestionsCount ?? 2;
+                var hasCount = _user!.SecurityQuestions?.Count ?? 0;
+                _needsSecuritySetup = hasCount < required;
+                if (_needsSecuritySetup)
+                {
+                    // Force user to setup security questions before proceeding
+                    Nav.NavigateTo($"/seguridad-preguntas?setup=1&returnUrl={Uri.EscapeDataString(Nav.Uri)}", true);
+                }
+            }
+            catch { /* if policy not available, default to 2 */
+                var hasCount = _user!.SecurityQuestions?.Count ?? 0;
+                _needsSecuritySetup = hasCount < 2;
+                if (_needsSecuritySetup)
+                {
+                    Nav.NavigateTo($"/seguridad-preguntas?setup=1&returnUrl={Uri.EscapeDataString(Nav.Uri)}", true);
+                }
+            }
+        }
         _checked = true;
         if (!_allow)
         {

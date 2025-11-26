@@ -17,4 +17,6 @@ public interface IPurchasingRepository
     Task UpdateQuoteItemAsync(int itemId, int cantidad, decimal precioUnitario);
     Task DeleteOrderItemAsync(int itemId);
     Task UpdateOrderItemAsync(int itemId, int cantidad, decimal precioUnitario);
+    Task<PurchaseOrderDto?> GetOrderByIdAsync(int id);
+    Task<IEnumerable<PurchaseReportDto>> GetPurchaseReportAsync(DateTime? start, DateTime? end);
 }

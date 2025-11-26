@@ -6,7 +6,7 @@ namespace BusinessLogic.Services
     {
         Task<IEnumerable<PurchaseOrderDto>> GetOrdersAsync(bool? delivered = null);
         Task CreateOrderAsync(CreatePurchaseOrderRequest request);
-        Task CreateInvoiceAsync(CreatePurchaseInvoiceRequest request);
+        Task CreateInvoiceAsync(CreatePurchaseInvoiceSimpleRequest request);
         Task<IEnumerable<PurchaseInvoiceDto>> GetInvoicesAsync(DateTime? start, DateTime? end, int? supplierId, int? productId);
     }
 }

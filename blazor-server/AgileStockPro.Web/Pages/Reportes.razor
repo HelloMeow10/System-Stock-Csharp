@@ -1,0 +1,189 @@
+@page "/reportes"
+@using BusinessLogic.Services
+@using Contracts
+@inject ISalesService SalesService
+@inject IPurchasingService PurchasingService
+@inject IStockService StockService
+@inject IToastService Toast
+
+<PageTitle>Reportes</PageTitle>
+
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    <h1>Reportes</h1>
+
+    <FluentTabs ActiveId="@activeTabId" OnTabChange="HandleTabChange">
+        <FluentTab Id="tab-ventas" Label="Ventas">
+            <div style="margin-top: 20px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end;">
+                    <FluentDatePicker @bind-Value="startDateSales" Label="Desde" />
+                    <FluentDatePicker @bind-Value="endDateSales" Label="Hasta" />
+                    <FluentButton Appearance="Appearance.Accent" OnClick="LoadSales">Filtrar</FluentButton>
+                </div>
+
+                @if (salesReport == null)
+                {
+                    <p>Seleccione un rango de fechas y haga clic en Filtrar.</p>
+                }
+                else if (!salesReport.Any())
+                {
+                    <p>No se encontraron ventas en el rango seleccionado.</p>
+                }
+                else
+                {
+                    <FluentDataGrid Items="@salesReport.AsQueryable()" ResizableColumns="true">
+                        <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Title="Fecha" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Cliente)" Title="Cliente" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Producto)" Title="Producto" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Categoria)" Title="Categoría" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Cantidad)" Title="Cant." Sortable="true" />
+                        <PropertyColumn Property="@(p => p.PrecioUnitario)" Format="C2" Title="Precio Unit." />
+                        <PropertyColumn Property="@(p => p.Subtotal)" Format="C2" Title="Subtotal" />
+                    </FluentDataGrid>
+                    <div style="margin-top: 10px; font-weight: bold; text-align: right;">
+                        Total Ventas: @salesReport.Sum(x => x.Subtotal).ToString("C2")
+                    </div>
+                }
+            </div>
+        </FluentTab>
+
+        <FluentTab Id="tab-compras" Label="Compras">
+            <div style="margin-top: 20px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end;">
+                    <FluentDatePicker @bind-Value="startDatePurchases" Label="Desde" />
+                    <FluentDatePicker @bind-Value="endDatePurchases" Label="Hasta" />
+                    <FluentButton Appearance="Appearance.Accent" OnClick="LoadPurchases">Filtrar</FluentButton>
+                </div>
+
+                @if (purchaseReport == null)
+                {
+                    <p>Seleccione un rango de fechas y haga clic en Filtrar.</p>
+                }
+                else if (!purchaseReport.Any())
+                {
+                    <p>No se encontraron compras en el rango seleccionado.</p>
+                }
+                else
+                {
+                    <FluentDataGrid Items="@purchaseReport.AsQueryable()" ResizableColumns="true">
+                        <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Title="Fecha" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Proveedor)" Title="Proveedor" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Producto)" Title="Producto" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Cantidad)" Title="Cant." Sortable="true" />
+                        <PropertyColumn Property="@(p => p.PrecioUnitario)" Format="C2" Title="Precio Unit." />
+                        <PropertyColumn Property="@(p => p.Subtotal)" Format="C2" Title="Subtotal" />
+                        <TemplateColumn Title="Estado">
+                            @if (context.Entregado)
+                            {
+                                <FluentBadge Appearance="Appearance.Accent">Recibido</FluentBadge>
+                            }
+                            else
+                            {
+                                <FluentBadge Appearance="Appearance.Neutral">Pendiente</FluentBadge>
+                            }
+                        </TemplateColumn>
+                    </FluentDataGrid>
+                    <div style="margin-top: 10px; font-weight: bold; text-align: right;">
+                        Total Compras: @purchaseReport.Sum(x => x.Subtotal).ToString("C2")
+                    </div>
+                }
+            </div>
+        </FluentTab>
+
+        <FluentTab Id="tab-stock" Label="Valorización de Stock">
+            <div style="margin-top: 20px;">
+                <FluentButton Appearance="Appearance.Accent" OnClick="LoadStockValuation" Style="margin-bottom: 20px;">Actualizar</FluentButton>
+
+                @if (stockValuation == null)
+                {
+                    <FluentProgressRing />
+                }
+                else
+                {
+                    <FluentDataGrid Items="@stockValuation.AsQueryable()" ResizableColumns="true">
+                        <PropertyColumn Property="@(p => p.Codigo)" Title="Código" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Producto)" Title="Producto" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Categoria)" Title="Categoría" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.StockActual)" Title="Stock" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.PrecioCompra)" Format="C2" Title="Costo Unit." Sortable="true" />
+                        <PropertyColumn Property="@(p => p.ValorTotal)" Format="C2" Title="Valor Total" Sortable="true" />
+                    </FluentDataGrid>
+                    <div style="margin-top: 10px; font-weight: bold; text-align: right;">
+                        Valor Total del Inventario: @stockValuation.Sum(x => x.ValorTotal).ToString("C2")
+                    </div>
+                }
+            </div>
+        </FluentTab>
+    </FluentTabs>
+</div>
+
+@code {
+    string activeTabId = "tab-ventas";
+
+    // Sales Filters
+    DateTime? startDateSales = DateTime.Today.AddDays(-30);
+    DateTime? endDateSales = DateTime.Today;
+    IEnumerable<SalesReportDto>? salesReport;
+
+    // Purchase Filters
+    DateTime? startDatePurchases = DateTime.Today.AddDays(-30);
+    DateTime? endDatePurchases = DateTime.Today;
+    IEnumerable<PurchaseReportDto>? purchaseReport;
+
+    // Stock Valuation
+    IEnumerable<StockValuationDto>? stockValuation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load initial data for the default tab
+        await LoadSales();
+    }
+
+    private void HandleTabChange(FluentTab tab)
+    {
+        activeTabId = tab.Id;
+        if (activeTabId == "tab-stock" && stockValuation == null)
+        {
+            _ = LoadStockValuation();
+        }
+        else if (activeTabId == "tab-compras" && purchaseReport == null)
+        {
+            _ = LoadPurchases();
+        }
+    }
+
+    private async Task LoadSales()
+    {
+        try
+        {
+            salesReport = await SalesService.GetSalesReportAsync(startDateSales, endDateSales);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error cargando reporte de ventas: {ex.Message}");
+        }
+    }
+
+    private async Task LoadPurchases()
+    {
+        try
+        {
+            purchaseReport = await PurchasingService.GetPurchaseReportAsync(startDatePurchases, endDatePurchases);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error cargando reporte de compras: {ex.Message}");
+        }
+    }
+
+    private async Task LoadStockValuation()
+    {
+        try
+        {
+            stockValuation = await StockService.GetStockValuationAsync();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error cargando valorización de stock: {ex.Message}");
+        }
+    }
+}

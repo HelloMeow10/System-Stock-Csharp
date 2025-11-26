@@ -59,4 +59,16 @@ namespace Contracts
         public int UsuarioId { get; set; }
         public int MotivoScrapId { get; set; }
     }
+
+    public record StockAlertDto(
+        string Codigo,
+        string Producto,
+        int StockActual,
+        int StockMinimo,
+        int PuntoReposicion,
+        string TipoAlerta,
+        string Severidad,
+        string? Lote = null,
+        DateTime? FechaVencimiento = null
+    );
 }

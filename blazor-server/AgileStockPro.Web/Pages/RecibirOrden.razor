@@ -1,0 +1,196 @@
+@page "/ordenes-compra/recibir/{Id:int}"
+@using BusinessLogic.Services
+@using Contracts
+@using Microsoft.AspNetCore.Authorization
+@using AgileStockPro.Web.Models
+@attribute [Authorize]
+@inject IPurchasingService PurchasingService
+@inject AgileStockPro.Web.Services.IAuthService AuthService
+@inject NavigationManager Nav
+@inject IToastService Toast
+
+<PageTitle>Recibir Orden #@Id</PageTitle>
+
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    <div style="margin-bottom: 20px;">
+        <FluentBreadcrumb>
+            <FluentBreadcrumbItem Href="/ordenes-compra">Órdenes de Compra</FluentBreadcrumbItem>
+            <FluentBreadcrumbItem Href="#">Recibir Orden #@Id</FluentBreadcrumbItem>
+        </FluentBreadcrumb>
+        <h1>Recibir Orden #@Id</h1>
+    </div>
+
+    @if (order == null)
+    {
+        <FluentProgressRing />
+    }
+    else if (order.Entregado)
+    {
+        <FluentMessageBar Intent="MessageIntent.Warning">
+            Esta orden ya ha sido entregada.
+        </FluentMessageBar>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Nav.NavigateTo("/ordenes-compra"))">Volver</FluentButton>
+    }
+    else
+    {
+        <FluentCard Width="100%" Style="padding: 20px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                <div>
+                    <label style="font-weight: bold;">Proveedor:</label>
+                    <div>@order.Proveedor</div>
+                </div>
+                <div>
+                    <label style="font-weight: bold;">Fecha:</label>
+                    <div>@order.Fecha.ToString("dd/MM/yyyy")</div>
+                </div>
+                <div>
+                    <label style="font-weight: bold;">Total:</label>
+                    <div>@order.Total.ToString("C2")</div>
+                </div>
+            </div>
+        </FluentCard>
+
+        <FluentCard Width="100%" Style="padding: 20px;">
+            <h3>Items a Recibir</h3>
+            <FluentDataGrid Items="@receptionItems.AsQueryable()" ResizableColumns="true">
+                <PropertyColumn Property="@(i => i.ProductName)" Title="Producto" />
+                <PropertyColumn Property="@(i => i.OrderedQuantity)" Title="Cant. Solicitada" />
+                <TemplateColumn Title="Cant. Recibida">
+                    <FluentNumberField @bind-Value="context.ReceivedQuantity" Min="0" Style="width: 100px;" />
+                </TemplateColumn>
+                <TemplateColumn Title="Lote">
+                    <FluentTextField @bind-Value="context.Lot" Placeholder="Opcional" Style="width: 150px;" />
+                </TemplateColumn>
+                <TemplateColumn Title="Vencimiento">
+                    <FluentDatePicker @bind-Value="context.ExpiryDate" Style="width: 150px;" />
+                </TemplateColumn>
+            </FluentDataGrid>
+
+            <div style="margin-top: 20px; text-align: right;">
+                <FluentButton Appearance="Appearance.Accent" OnClick="ConfirmReception" Loading="@isSubmitting">Confirmar Recepción</FluentButton>
+                <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Nav.NavigateTo("/ordenes-compra"))">Cancelar</FluentButton>
+            </div>
+        </FluentCard>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PurchaseOrderDto? order;
+    private List<ReceptionItem> receptionItems = new();
+    private bool isSubmitting;
+    private AppUser? currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            currentUser = await AuthService.GetCurrentUserAsync();
+            order = await PurchasingService.GetOrderByIdAsync(Id);
+            
+            if (order != null && !order.Entregado)
+            {
+                var items = await PurchasingService.GetOrderItemsAsync(Id);
+                // We need product names. The DTO currently only has ProductId.
+                // Wait, PurchaseOrderItemDto has ProductId. Does it have Name?
+                // Let's check PurchaseOrderItemDto definition.
+                // It seems it doesn't have Name. I might need to fetch products or update DTO.
+                // For now, I'll display ProductId if Name is missing, but ideally I should fetch names.
+                // Actually, let's assume I can fetch product details or the DTO has it.
+                // Checking DTO in Step 94: PurchaseOrderItemDto has Id, OrdenCompraId, ProductoId, Cantidad, PrecioUnitario. No Name.
+                // I should fetch product names.
+                
+                // I'll inject IProductCatalogService to fetch names?
+                // Or just display ID for now to save time, but that's ugly.
+                // I'll inject IProductCatalogService.
+                
+                foreach (var item in items)
+                {
+                    receptionItems.Add(new ReceptionItem
+                    {
+                        ProductId = item.ProductoId,
+                        ProductName = $"Producto #{item.ProductoId}", // Placeholder until I fetch name
+                        OrderedQuantity = item.Cantidad,
+                        ReceivedQuantity = item.Cantidad // Default to ordered
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error cargando orden: {ex.Message}");
+        }
+    }
+    
+    // Inject ProductService to get names
+    [Inject] IProductCatalogService ProductService { get; set; } = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Fetch product names after items are loaded
+        if (receptionItems.Any())
+        {
+             foreach (var item in receptionItems)
+             {
+                 try 
+                 {
+                     var p = await ProductService.GetProductByIdAsync(item.ProductId);
+                     if (p != null) item.ProductName = p.Nombre;
+                 }
+                 catch {}
+             }
+        }
+    }
+
+    private async Task ConfirmReception()
+    {
+        if (currentUser == null) 
+        {
+            Toast.ShowError("Usuario no identificado.");
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            var requests = receptionItems.Select(i => new IngresoMercaderiaRequest
+            {
+                ProductoId = i.ProductId,
+                UsuarioId = currentUser.BackendIdUsuario ?? 0,
+                Cantidad = i.ReceivedQuantity,
+                Lote = i.Lot,
+                FechaVencimiento = i.ExpiryDate,
+                TipoStock = "Disponible",
+                EstadoHabilitaciones = "Habilitado",
+                // Optional fields
+                StockMinimo = null,
+                StockIdeal = null,
+                StockMaximo = null,
+                PuntoReposicion = null
+            }).ToList();
+
+            await PurchasingService.ReceiveOrderAsync(Id, requests);
+            Toast.ShowSuccess("Orden recibida y stock actualizado.");
+            Nav.NavigateTo("/ordenes-compra");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error al recibir orden: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    class ReceptionItem
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public int OrderedQuantity { get; set; }
+        public int ReceivedQuantity { get; set; }
+        public string? Lot { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+    }
+}

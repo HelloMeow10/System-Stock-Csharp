@@ -1,0 +1,218 @@
+@page "/ventas/nueva"
+@using BusinessLogic.Services
+@using Contracts
+@using Microsoft.AspNetCore.Authorization
+@using AgileStockPro.Web.Models
+@attribute [Authorize]
+@inject ISalesService SalesService
+@inject IClientService ClientService
+@inject IProductCatalogService ProductService
+@inject IToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Nueva Venta</PageTitle>
+
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    <div style="margin-bottom: 20px;">
+        <FluentBreadcrumb>
+            <FluentBreadcrumbItem Href="/ventas">Ventas</FluentBreadcrumbItem>
+            <FluentBreadcrumbItem Href="#">Nueva Venta</FluentBreadcrumbItem>
+        </FluentBreadcrumb>
+        <h1>Nueva Venta</h1>
+    </div>
+
+    <FluentCard Width="100%" Style="padding: 20px; margin-bottom: 20px;">
+        <h3>Datos del Cliente</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: end;">
+            <FluentSelect Items="@clients" 
+                          OptionText="@(c => $"{c.Nombre} ({c.CuitDni})")"
+                          OptionValue="@(c => c.Id.ToString())"
+                          @bind-Value="@selectedClientId"
+                          Label="Cliente"
+                          Placeholder="Seleccione un cliente..."
+                          Style="width: 100%;" />
+            
+            <div>
+                <FluentButton Appearance="Appearance.Outline" OnClick="@(() => Nav.NavigateTo("/clientes"))">Gestionar Clientes</FluentButton>
+            </div>
+        </div>
+    </FluentCard>
+
+    <FluentCard Width="100%" Style="padding: 20px; margin-bottom: 20px;">
+        <h3>Agregar Productos</h3>
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; align-items: end;">
+            <FluentSelect Items="@products" 
+                          OptionText="@(p => $"{p.Nombre} (Stock: {p.StockActual}) - {p.Precio:C}")"
+                          OptionValue="@(p => p.Id.ToString())"
+                          @bind-Value="@selectedProductId"
+                          Label="Producto"
+                          Placeholder="Seleccione un producto..."
+                          Style="width: 100%;" />
+
+            <FluentNumberField @bind-Value="quantity" Label="Cantidad" Min="1" />
+            
+            <FluentButton Appearance="Appearance.Accent" OnClick="AddToCart" IconStart="@(new Icons.Regular.Size20.AddCircle())">Agregar</FluentButton>
+        </div>
+        @if (!string.IsNullOrEmpty(addProductError))
+        {
+            <div style="color: var(--error); margin-top: 10px;">@addProductError</div>
+        }
+    </FluentCard>
+
+    @if (cartItems.Any())
+    {
+        <FluentCard Width="100%" Style="padding: 20px;">
+            <h3>Detalle de Venta</h3>
+            <FluentDataGrid Items="@cartItems.AsQueryable()" ResizableColumns="true">
+                <PropertyColumn Property="@(i => i.ProductName)" Title="Producto" />
+                <PropertyColumn Property="@(i => i.Quantity)" Title="Cantidad" />
+                <PropertyColumn Property="@(i => i.UnitPrice)" Title="Precio Unit." Format="C2" />
+                <PropertyColumn Property="@(i => i.Subtotal)" Title="Subtotal" Format="C2" />
+                <TemplateColumn Title="Acciones">
+                    <FluentButton Appearance="Appearance.Lightweight" IconStart="@(new Icons.Regular.Size20.Delete())" OnClick="@(() => RemoveFromCart(context))" />
+                </TemplateColumn>
+            </FluentDataGrid>
+
+            <div style="margin-top: 20px; text-align: right;">
+                <h3>Total: @cartItems.Sum(i => i.Subtotal).ToString("C2")</h3>
+                <FluentButton Appearance="Appearance.Accent" OnClick="ConfirmSale" Loading="@isSubmitting" Style="margin-top: 10px;">Confirmar Venta</FluentButton>
+            </div>
+        </FluentCard>
+    }
+</div>
+
+@code {
+    private List<ClientDto> clients = new();
+    private List<ProductDto> products = new();
+    private string? selectedClientId;
+    private string? selectedProductId;
+    private int quantity = 1;
+    private string? addProductError;
+    private bool isSubmitting;
+
+    private List<CartItem> cartItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            clients = (await ClientService.GetAllAsync()).ToList();
+            // Fetching first 100 products for now. In a real app, this should be a search.
+            var productResponse = await ProductService.GetProductsAsync(null, 1, 100);
+            products = productResponse.Items.ToList();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error cargando datos: {ex.Message}");
+        }
+    }
+
+    private void AddToCart()
+    {
+        addProductError = null;
+
+        if (string.IsNullOrEmpty(selectedProductId))
+        {
+            addProductError = "Seleccione un producto.";
+            return;
+        }
+
+        if (quantity <= 0)
+        {
+            addProductError = "La cantidad debe ser mayor a 0.";
+            return;
+        }
+
+        int prodId = int.Parse(selectedProductId);
+        var product = products.FirstOrDefault(p => p.Id == prodId);
+        if (product == null) return;
+
+        // Check local stock (including what's already in cart)
+        var inCart = cartItems.FirstOrDefault(i => i.ProductId == prodId);
+        int currentQtyInCart = inCart?.Quantity ?? 0;
+
+        if (product.StockActual < (quantity + currentQtyInCart))
+        {
+            addProductError = $"Stock insuficiente. Disponible: {product.StockActual}. En carrito: {currentQtyInCart}.";
+            return;
+        }
+
+        if (inCart != null)
+        {
+            inCart.Quantity += quantity;
+        }
+        else
+        {
+            cartItems.Add(new CartItem
+            {
+                ProductId = product.Id,
+                ProductName = product.Nombre,
+                Quantity = quantity,
+                UnitPrice = product.Precio
+            });
+        }
+
+        // Reset inputs
+        quantity = 1;
+        selectedProductId = null; // Optional: keep selected or clear
+    }
+
+    private void RemoveFromCart(CartItem item)
+    {
+        cartItems.Remove(item);
+    }
+
+    private async Task ConfirmSale()
+    {
+        if (string.IsNullOrEmpty(selectedClientId))
+        {
+            Toast.ShowError("Seleccione un cliente.");
+            return;
+        }
+
+        if (!cartItems.Any())
+        {
+            Toast.ShowError("El carrito está vacío.");
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            var request = new CreateSaleOrderRequest
+            {
+                IdCliente = int.Parse(selectedClientId),
+                Fecha = DateTime.Now,
+                TipoDocumento = "NotaPedido",
+                Total = cartItems.Sum(i => i.Subtotal),
+                Items = cartItems.Select(i => new SaleOrderDetailRequest
+                {
+                    IdProducto = i.ProductId,
+                    Cantidad = i.Quantity,
+                    PrecioUnitario = i.UnitPrice
+                }).ToList()
+            };
+
+            await SalesService.CreateSaleAsync(request);
+            Toast.ShowSuccess("Venta registrada correctamente.");
+            Nav.NavigateTo("/ventas");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    class CartItem
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal Subtotal => Quantity * UnitPrice;
+    }
+}

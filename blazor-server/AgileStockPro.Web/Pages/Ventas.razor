@@ -6,6 +6,7 @@
 @inject ISalesService SalesService
 @inject IDialogService DialogService
 @inject AgileStockPro.Web.Services.IAuthService AuthService
+@inject NavigationManager Nav
 
 <PageTitle>Ventas</PageTitle>
 
@@ -58,8 +59,8 @@
         sales = await SalesService.GetSalesAsync(startDate, endDate, null);
     }
 
-    private async Task CreateSale()
+    private void CreateSale()
     {
-        // TODO: Implement Dialog for creating sale
+        Nav.NavigateTo("/ventas/nueva");
     }
 }

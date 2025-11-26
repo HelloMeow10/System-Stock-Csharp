@@ -163,7 +163,7 @@ namespace DataAccess.Repositories
             });
         }
 
-        public async Task CreateInvoiceAsync(CreatePurchaseInvoiceRequest request)
+        public async Task CreateInvoiceAsync(CreatePurchaseInvoiceSimpleRequest request)
         {
             await ExecuteNonQueryAsync("sp_RegistrarFacturaCompra", p =>
             {

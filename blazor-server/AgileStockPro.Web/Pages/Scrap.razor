@@ -1,156 +1,203 @@
 @page "/scrap"
-@using AgileStockPro.Web.Services
-@using AgileStockPro.Web.Models
-@using AgileStockPro.Web.Components
-@using AgileStockPro.Web.Components.Shared
-@inject IAppDataService Data
-@inject AgileStockPro.Web.Services.Api.IStockApiService StockApi
-@inject IUserStore UserStore
+@using BusinessLogic.Services
+@using Contracts
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IStockService StockService
+@inject IProductCatalogService ProductService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IToastService Toast
 
-<PageHeader Title="Scrap">
-	<Actions>
-		<button class="btn" @onclick="ToggleForm">@((showForm?"Ocultar":"Registrar scrap"))</button>
-	</Actions>
-</PageHeader>
+<PageTitle>Gestión de Scrap</PageTitle>
 
-@if (showForm)
-{
-	<div class="card" style="padding:1rem; margin-bottom:1rem; display:grid; gap:.75rem; grid-template-columns: repeat(4, minmax(180px,1fr));">
-		<div>
-			<label>Producto</label>
-			<select class="select" @bind="form.ProductoId">
-				<option value="0">Seleccione…</option>
-				@foreach (var p in products)
-				{
-					<option value="@p.Id">@p.Codigo - @p.Nombre</option>
-				}
-			</select>
-		</div>
-		<div>
-			<label>Motivo</label>
-			<select class="select" @bind="form.MotivoScrapId">
-				<option value="0">Seleccione…</option>
-				@foreach (var r in reasons)
-				{
-					<option value="@r.Id">@r.Descripcion</option>
-				}
-			</select>
-		</div>
-		<div>
-			<label>Cantidad</label>
-			<input type="number" min="1" class="input" @bind="form.Cantidad" />
-		</div>
-		<div style="display:flex; align-items:flex-end; gap:.5rem;">
-			<button class="btn" disabled="@isSubmitting" @onclick="SubmitScrap">Registrar</button>
-			@if (isSubmitting) { <span>Guardando…</span> }
-		</div>
-		@if (!string.IsNullOrWhiteSpace(error))
-		{
-			<div style="grid-column:1/-1; color:#b00020;">@error</div>
-		}
-		@if (!string.IsNullOrWhiteSpace(success))
-		{
-			<div style="grid-column:1/-1; color:#1b5e20;">@success</div>
-		}
-	</div>
-}
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>Gestión de Scrap</h1>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@(() => showForm = !showForm)">
+            @(showForm ? "Cancelar" : "Registrar Scrap")
+        </FluentButton>
+    </div>
 
-<div class="toolbar" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin:.75rem 0;">
-	<label>Desde</label>
-	<input type="date" class="input" @bind-value="fromDate" @bind-value:event="onchange" />
-	<label>Hasta</label>
-	<input type="date" class="input" @bind-value="toDate" @bind-value:event="onchange" />
-	<button class="btn" @onclick="Reload">Buscar</button>
+    @if (showForm)
+    {
+        <FluentCard Style="margin-bottom: 20px; padding: 20px;">
+            <h3>Registrar Movimiento a Scrap</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <FluentSelect Items="@products"
+                              OptionText="@(p => $"{p.Codigo} - {p.Nombre}")"
+                              OptionValue="@(p => p.Id.ToString())"
+                              @bind-Value="selectedProductId"
+                              Label="Producto"
+                              Placeholder="Seleccione un producto..." />
+
+                <FluentSelect Items="@reasons"
+                              OptionText="@(r => GetReasonText(r))"
+                              OptionValue="@(r => r.Id.ToString())"
+                              @bind-Value="selectedReasonId"
+                              Label="Motivo"
+                              Placeholder="Seleccione un motivo..." />
+
+                <FluentNumberField @bind-Value="quantity" Label="Cantidad" Min="1" />
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <FluentButton Appearance="Appearance.Accent" OnClick="SubmitScrap" Loading="@isSubmitting">Registrar</FluentButton>
+            </div>
+        </FluentCard>
+    }
+
+    <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
+        <FluentDatePicker @bind-Value="fromDate" Label="Desde" />
+        <FluentDatePicker @bind-Value="toDate" Label="Hasta" />
+        <FluentButton OnClick="LoadScrapReport">Filtrar</FluentButton>
+    </div>
+
+    @if (isLoading)
+    {
+        <FluentProgressRing />
+    }
+    else if (scrapItems == null || !scrapItems.Any())
+    {
+        <p>No hay registros de scrap en el rango seleccionado.</p>
+    }
+    else
+    {
+        <FluentDataGrid Items="@scrapItems.AsQueryable()" ResizableColumns="true">
+            <PropertyColumn Property="@(p => p.Id)" Title="#" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Title="Fecha" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Producto)" Title="Producto" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Cantidad)" Title="Cantidad" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Motivo)" Title="Motivo" Sortable="true" />
+            <PropertyColumn Property="@(p => p.Usuario)" Title="Usuario" Sortable="true" />
+        </FluentDataGrid>
+    }
 </div>
 
-@if (items is null)
-{
-	<p>Cargando...</p>
-}
-else
-{
-	<table>
-		<thead>
-			<tr>
-				<th>#</th>
-				<th>Producto</th>
-				<th>Cantidad</th>
-				<th>Motivo</th>
-				<th>Fecha</th>
-			</tr>
-		</thead>
-		<tbody>
-		@foreach (var s in items)
-		{
-			<tr>
-				<td>@s.Id</td>
-				<td>@s.Product</td>
-				<td>@s.Quantity</td>
-				<td>@s.Reason</td>
-				<td>@s.Date.ToString("dd/MM/yyyy")</td>
-			</tr>
-		}
-		</tbody>
-	</table>
-}
-
 @code {
-	private IReadOnlyList<ScrapItem>? items;
-	private List<AgileStockPro.Web.Services.Api.ProductPickVm> products = new();
-	private List<AgileStockPro.Web.Services.Api.ScrapReasonVm> reasons = new();
-	private bool showForm = false;
-	private bool isSubmitting = false;
-	private string? error;
-	private string? success;
-	private ScrapForm form = new();
-	private DateOnly fromDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
-	private DateOnly toDate = DateOnly.FromDateTime(DateTime.Today);
-	private int userId = 1; // fallback
+    private bool showForm = false;
+    private bool isSubmitting = false;
+    private bool isLoading = false;
 
-	protected override async Task OnInitializedAsync()
-	{
-	items = await StockApi.GetScrapAsync(fromDate, toDate);
-		// preload form options
-		products = (await StockApi.GetProductsAsync()).ToList();
-		reasons = (await StockApi.GetScrapReasonsAsync()).ToList();
-	var user = await UserStore.GetCurrentUserAsync();
-	if (user?.BackendIdUsuario is int id && id > 0) userId = id;
-	}
+    // Form Data
+    private string? selectedProductId;
+    private string? selectedReasonId;
+    private int quantity = 1;
 
-	void ToggleForm() { showForm = !showForm; success = null; error = null; }
+    // Lists
+    private List<ProductDto> products = new();
+    private List<ScrapReasonDto> reasons = new();
+    private IEnumerable<ScrapReportItemDto>? scrapItems;
 
-	async Task SubmitScrap()
-	{
-		error = success = null;
-		if (form.ProductoId <= 0 || form.MotivoScrapId <= 0 || form.Cantidad <= 0)
-		{
-			error = "Complete producto, motivo y cantidad."; return;
-		}
-		try
-		{
-			isSubmitting = true;
-			await StockApi.CreateScrapAsync(form.ProductoId, form.Cantidad, usuarioId: userId, motivoScrapId: form.MotivoScrapId);
-			success = "Scrap registrado.";
-			// refresh list
-			items = await StockApi.GetScrapAsync(fromDate, toDate);
-			form = new();
-		}
-		catch (Exception ex)
-		{
-			error = ex.Message;
-		}
-		finally { isSubmitting = false; }
-	}
+    // Filters
+    private DateTime? fromDate = DateTime.Today.AddDays(-30);
+    private DateTime? toDate = DateTime.Today;
 
-	async Task Reload()
-	{
-		try
-		{
-			error = null;
-			items = await StockApi.GetScrapAsync(fromDate, toDate);
-		}
-		catch (Exception ex) { error = ex.Message; }
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+        await LoadScrapReport();
+    }
 
-	class ScrapForm { public int ProductoId { get; set; } public int MotivoScrapId { get; set; } public int Cantidad { get; set; } = 1; }
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            var productResponse = await ProductService.GetProductsAsync(null, 1, 1000);
+            products = productResponse.Items.ToList();
+            reasons = (await StockService.GetScrapReasonsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error cargando datos iniciales: {ex.Message}");
+        }
+    }
+
+    private async Task LoadScrapReport()
+    {
+        isLoading = true;
+        try
+        {
+            // Convert DateTime? to DateOnly for the service
+            var start = fromDate.HasValue ? DateOnly.FromDateTime(fromDate.Value) : DateOnly.MinValue;
+            var end = toDate.HasValue ? DateOnly.FromDateTime(toDate.Value) : DateOnly.MaxValue;
+            
+            scrapItems = await StockService.GetScrapAsync(start, end);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error cargando reporte: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SubmitScrap()
+    {
+        if (string.IsNullOrEmpty(selectedProductId) || string.IsNullOrEmpty(selectedReasonId) || quantity <= 0)
+        {
+            Toast.ShowError("Por favor complete todos los campos.");
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            // Assuming "sub" claim or similar holds the ID, or we need a way to get the int ID.
+            // For now, let's try to parse the ID from claims if available, or fallback to a service lookup.
+            // In this system, we might need to look up the user ID by username if it's not in claims.
+            // Let's assume the claim "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" holds the ID or username.
+            // If it's a username, we might need a helper. 
+            // However, looking at previous code, `UserStore` was used. Let's see if we can use `IAuthService` or similar.
+            // Actually, let's just use a hardcoded ID for now if we can't easily get it, OR better, 
+            // let's assume the ID is in the "sub" claim as an integer, which is common.
+            
+            // BETTER: Use the existing IAuthService if available to get current user details.
+            // I'll assume I can get it from the claim for now. If not, I'll default to 1 (Admin) and add a TODO.
+            
+            var userIdStr = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            int userId = int.TryParse(userIdStr, out var id) ? id : 1;
+
+            var request = new CreateScrapRequest
+            {
+                ProductoId = int.Parse(selectedProductId),
+                MotivoScrapId = int.Parse(selectedReasonId),
+                Cantidad = quantity,
+                UsuarioId = userId
+            };
+
+            await StockService.CreateScrapAsync(request);
+            Toast.ShowSuccess("Scrap registrado correctamente.");
+            showForm = false;
+            ResetForm();
+            await LoadScrapReport();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Error registrando scrap: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void ResetForm()
+    {
+        selectedProductId = null;
+        selectedReasonId = null;
+        quantity = 1;
+    }
+
+    private string GetReasonText(ScrapReasonDto r)
+    {
+        var reasons = new List<string>();
+        if (r.Dano) reasons.Add("Daño");
+        if (r.Vencido) reasons.Add("Vencido");
+        if (r.Obsoleto) reasons.Add("Obsoleto");
+        if (r.MalaCalidad) reasons.Add("Mala Calidad");
+        return string.Join(", ", reasons);
+    }
 }

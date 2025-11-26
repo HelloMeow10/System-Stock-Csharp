@@ -33,7 +33,10 @@ window.app = {
     } catch { return null; }
   },
   setAccent: function (color) {
-    try { document.documentElement.style.setProperty('--accent-color', color); } catch {}
+    try {
+      // Align with CSS variable used by app.css
+      document.documentElement.style.setProperty('--accent', color);
+    } catch {}
   },
   setTheme: function (theme) {
     try { document.documentElement.setAttribute('data-theme', theme); } catch {}

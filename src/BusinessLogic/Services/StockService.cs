@@ -25,4 +25,10 @@ public class StockService : IStockService
 
     public Task<IEnumerable<StockItemDto>> GetStockAsync(CancellationToken ct = default)
         => _repo.GetStockAsync(ct);
+
+    public Task<IEnumerable<StockValuationDto>> GetStockValuationAsync(CancellationToken ct = default)
+        => _repo.GetStockValuationAsync(ct);
+
+    public Task<IEnumerable<StockAlertDto>> GetAlertsAsync(CancellationToken ct = default)
+        => _repo.GetAlertsAsync(ct);
 }

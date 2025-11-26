@@ -1,0 +1,147 @@
+@page "/mis-preguntas"
+@using AgileStockPro.Web.Components
+@using AgileStockPro.Web.Services.Api
+@inject AgileStockPro.Web.Services.IAuthService Auth
+@inject AgileStockPro.Web.Services.IUserStore Store
+@inject ISecurityQuestionsAdminService QuestionsService
+@inject Microsoft.JSInterop.IJSRuntime JS
+@inject IToastService Toast
+
+<AuthGuard>
+    <PageHeader Title="Mis Preguntas de Seguridad" Subtitle="Configura o actualiza tus respuestas" />
+
+    @if (loading)
+    {
+        <FluentProgressRing />
+    }
+    else if (!needsSetup && answers.Count >= requiredCount && !editing)
+    {
+        <div class="panel" style="max-width:680px; padding:14px;">
+            <h3>Preguntas configuradas</h3>
+            <ol style="line-height:1.5;">
+                @foreach (var a in answers)
+                {
+                    <li>@a.Pregunta</li>
+                }
+            </ol>
+            <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => BeginEdit(true))">Cambiar respuestas</FluentButton>
+        </div>
+    }
+    else
+    {
+        <div class="panel" style="max-width:760px; padding:14px;">
+            <h3>@(needsSetup ? "Configurar preguntas de seguridad" : "Actualizar respuestas")</h3>
+            <p>Debes completar <strong>@requiredCount</strong> preguntas. Selecciona y responde cada una.</p>
+            <div style="display:grid; gap:12px;">
+                @for (int i = 0; i < requiredCount; i++)
+                {
+                    var entry = editEntries[i];
+                    <div class="panel" style="padding:10px; display:grid; gap:6px;">
+                        <label style="font-weight:600;">Pregunta @(i+1)</label>
+                        <FluentSelect @bind-Value="entry.SelectedId" Items="catalog" OptionText="@((PreguntaSeguridadDto q) => q.Pregunta)" OptionValue="@((PreguntaSeguridadDto q) => q.IdPregunta.ToString())" Disabled="@entry.Locked" />
+                        <FluentTextField @bind-Value="entry.Answer" Placeholder="Respuesta" Type="" />
+                    </div>
+                }
+            </div>
+            <div style="margin-top:14px; display:flex; gap:8px;">
+                <FluentButton OnClick="Cancel" Appearance="Appearance.Outline">Cancelar</FluentButton>
+                <FluentButton OnClick="Save" Appearance="Appearance.Accent" Disabled="@(!CanSave)" Loading="@saving">Guardar</FluentButton>
+            </div>
+        </div>
+    }
+</AuthGuard>
+
+@code {
+    private AgileStockPro.Web.Models.AppUser? user;
+    private bool loading = true;
+    private bool saving;
+    private bool needsSetup;
+    private bool editing;
+
+    private int requiredCount = 2;
+    private List<PreguntaSeguridadDto> catalog = new();
+    private List<PreguntaSeguridadDto> answers = new();
+
+    private List<EditEntry> editEntries = new();
+
+    class EditEntry {
+        public string? SelectedId { get; set; }
+        public string Answer { get; set; } = string.Empty;
+        public bool Locked { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            user = await Auth.GetCurrentUserAsync();
+            if (user == null) return;
+            var policy = await Store.GetPolicyAsync();
+            requiredCount = policy?.QuestionsCount ?? 2;
+            catalog = (await QuestionsService.GetAllAsync()).OrderBy(q => q.IdPregunta).ToList();
+            var existing = await Auth.GetSecurityQuestionsAsync(user.Username);
+            answers = catalog.Where(c => existing.Contains(c.Pregunta)).ToList();
+            needsSetup = answers.Count < requiredCount;
+            if (needsSetup) BeginEdit(false); else loading = false;
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void BeginEdit(bool isChange)
+    {
+        editing = true;
+        editEntries.Clear();
+        for (int i = 0; i < requiredCount; i++)
+        {
+            var locked = !needsSetup && i < answers.Count && isChange == false; // if not changing, keep locked
+            var selected = i < answers.Count ? answers[i].IdPregunta.ToString() : catalog.FirstOrDefault()?.IdPregunta.ToString();
+            editEntries.Add(new EditEntry { SelectedId = selected, Locked = false });
+        }
+    }
+
+    private void Cancel()
+    {
+        editing = false;
+        if (needsSetup) BeginEdit(false); // cannot leave without setup
+    }
+
+    private bool CanSave => editEntries.All(e => !string.IsNullOrWhiteSpace(e.SelectedId) && !string.IsNullOrWhiteSpace(e.Answer));
+
+    private async Task Save()
+    {
+        if (user == null || !CanSave) return;
+        saving = true;
+        try
+        {
+            // Build dictionary idPregunta -> hash(answer)
+            var dict = new Dictionary<int, string>();
+            foreach (var e in editEntries)
+            {
+                var id = int.Parse(e.SelectedId!);
+                var hash = await JS.InvokeAsync<string>("app.sha256", e.Answer.Trim());
+                dict[id] = hash;
+            }
+            var ok = await QuestionsService.SaveAnswersAsync(user.Username, dict);
+            if (ok)
+            {
+                Toast.ShowSuccess("Preguntas guardadas");
+                answers = catalog.Where(c => dict.Keys.Contains(c.IdPregunta)).ToList();
+                needsSetup = answers.Count < requiredCount;
+                editing = false;
+            }
+            else Toast.ShowError("No se pudo guardar");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        finally { saving = false; }
+    }
+}
