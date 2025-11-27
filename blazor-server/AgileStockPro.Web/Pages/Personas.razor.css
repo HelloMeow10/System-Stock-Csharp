@@ -1,0 +1,309 @@
+/* Scoped styles for Personas.razor - layout and professional form styles */
+
+.person-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,6,23,0.45);
+  display: flex;
+  align-items: center; /* center vertically to overlay content */
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1100;
+}
+
+.person-modal-panel {
+  width: min(880px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 0; /* panel already supplies internal padding via .panel rules */
+  box-shadow: 0 30px 80px rgba(2,6,23,0.35);
+}
+
+/* Ensure the panel content has comfortable internal padding (doesn't change modal position) */
+.person-modal-panel .panel-body {
+  padding: 1rem 1.25rem;
+}
+
+.person-form-grid {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: .75rem 1rem;
+  align-items: start;
+  align-content: start;
+}
+
+.person-form-grid label {
+  font-weight: 600;
+  color: var(--neutral-foreground-rest);
+  padding-top: .4rem;
+}
+
+/* Center labels inside the modal panel for visual balance */
+.person-modal-panel .person-form-grid label {
+  grid-column: 1 / -1; /* place label above its input */
+  justify-self: center; /* center label over the input */
+  text-align: left; /* keep label text left-aligned for readability */
+  transform: translateX(6px); /* nudge slightly to the right so it sits above input */
+  margin-bottom: 4px;
+}
+
+/* Small section titles inside the form to group related fields */
+.person-form-grid .section-title {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--text-primary-color);
+  margin: .9rem 0 .5rem;
+  padding: .35rem 0;
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  justify-content: center; /* center a bit */
+}
+
+/* Accent bar at left + dividing line to act as a clear visual divider */
+.person-form-grid .section-title::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 26px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 60%, black 20%));
+  flex: none;
+  margin-right: .5rem;
+}
+.person-form-grid .section-title::after {
+  content: '';
+  height: 1px;
+  background: color-mix(in srgb, var(--stroke-color) 18%, transparent);
+  display: block;
+  flex: 0 0 38%; /* make divider shorter so title appears more centered */
+  margin-left: .6rem;
+}
+
+.person-form-grid .label-muted {
+  display: block;
+  font-weight: 600;
+  color: var(--text-muted-color);
+  font-size: .92rem;
+  padding-top: .2rem;
+}
+
+.person-form-grid .input,
+.person-form-grid select,
+.person-form-grid input[type="text"],
+.person-form-grid input[type="date"],
+.person-form-grid .form-control {
+  width: 100%;
+  max-width: 520px; /* keep inputs readable inside the panel */
+  box-sizing: border-box;
+  padding: .6rem .8rem;
+  border-radius: 10px;
+  border: 1px solid var(--stroke-color);
+  background: var(--neutral-layer-2);
+  color: var(--neutral-foreground-rest);
+  transition: border-color .12s ease, box-shadow .12s ease;
+  justify-self: center; /* center larger inputs in their grid cell */
+  grid-column: 1 / -1; /* make inputs appear below labels (span full row) */
+  display: block;
+}
+
+/* Input size helpers (use from markup) */
+.input-short { max-width: 160px; }
+.input-medium { max-width: 320px; }
+.input-long { max-width: 520px; }
+
+/* Centered helpers for each size class (grid-aware) */
+.person-form-grid .input-medium,
+.person-form-grid .input-long {
+  justify-self: center;
+}
+
+/* input-short should align left under its label for better visual rhythm */
+.person-form-grid .input-short {
+  justify-self: center; /* center short inputs like the others */
+  margin-left: 0;
+}
+
+/* Stronger, modal-scoped rule to ensure input-short centers despite global .input width rules */
+.person-modal-panel .person-form-grid input.input-short,
+.person-modal-panel .person-form-grid select.input-short {
+  width: auto; /* allow max-width to take effect */
+  max-width: 160px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  justify-self: center;
+}
+
+/* Force-center date inputs inside the modal without changing their width/length */
+.person-modal-panel .person-form-grid input[type="date"] {
+  justify-self: center !important;
+}
+
+.person-form-grid .input:focus,
+.person-form-grid .form-control:focus,
+.person-form-grid select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* Error/help text spacing inside the grid */
+.person-form-grid .error-text {
+  grid-column: 1 / -1; /* show errors below the related input */
+  margin-top: .15rem;
+  color: var(--palette-red-foreground-2, #ef4444);
+  font-size: .85rem;
+  text-align: center;
+}
+
+/* Make some fields span full width when useful (e.g., long inputs) */
+.person-form-grid .span-full {
+  grid-column: 1 / -1;
+}
+
+/* Slightly larger gap before actions so buttons breathe */
+.person-modal-panel .modal-actions { margin-top: 1rem; }
+
+/* Actions row inside modal */
+.person-modal-panel .modal-actions {
+  display: flex;
+  gap: .5rem;
+  margin-top: .75rem;
+  justify-content: flex-start;
+  padding: .6rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--stroke-color) 60%, transparent);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--neutral-layer-1) 3%, transparent));
+}
+
+/* Responsive: single column form on small screens for readability */
+@media (max-width: 780px) {
+  .person-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .person-form-grid label { padding-top: 0; }
+  .person-form-grid .error-text { grid-column: 1 / -1; }
+  .person-modal-panel { width: calc(100vw - 2rem); }
+  /* On small screens, stretch inputs to full width for readability */
+  .person-form-grid .input,
+  .person-form-grid select,
+  .person-form-grid .form-control {
+    justify-self: stretch;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* Small visual polish for modal panel header inside this component */
+.person-modal-panel .panel-header {
+  padding: 12px 18px;
+}
+
+/* Ensure the floating backdrop content scrolls inside the panel and not the body */
+.person-modal-backdrop > .person-modal-panel { align-self: flex-start; margin-top: 4vh; }
+
+/* === Duplicate of global app.css visual tweaks (for override testing) === */
+
+/* Slightly larger internal padding for panels so form content breathes */
+.person-modal-panel .panel-body {
+  padding: 1.25rem 1.5rem; /* slightly larger than base */
+}
+
+/* Section title visual upgrade (matching app.css) */
+.person-form-grid .section-title {
+  /* Reinforce same visual style for duplicated block */
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--text-primary-color);
+  margin: 1rem 0 .6rem;
+  padding: .45rem 0;
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+/* Accent bar at left + dividing line to act as a clear visual divider (duplicate kept intentionally)
+   so scoped rules consistently override global styles during testing. */
+.person-form-grid .section-title::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 28px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 60%, black 20%));
+  flex: none;
+}
+.person-form-grid .section-title::after {
+  content: '';
+  height: 1px;
+  background: color-mix(in srgb, var(--stroke-color) 18%, transparent);
+  display: block;
+  flex: 1 1 auto;
+  margin-left: .6rem;
+}
+
+/* Make full-width inputs (e.g., calle) expand to the available panel width */
+.person-form-grid .input.span-full,
+.person-form-grid input.input-long.span-full {
+  grid-column: 1 / -1;
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Center the form content inside modal panels so it doesn't stick to the left edge */
+.person-modal-panel .panel-body .person-form-grid,
+.panel.person-modal-panel .panel-body .form-grid {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Slight visual upgrade for inputs */
+.person-form-grid .input,
+.person-form-grid select,
+.person-form-grid .form-control {
+  border-radius: 12px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 6px 18px rgba(2,6,23,0.03);
+}
+.person-form-grid .input,
+.person-form-grid select,
+.person-form-grid .form-control { justify-self: center; }
+.person-form-grid .input:focus,
+.person-form-grid select:focus {
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+/* Slightly round the modal panel and lift it visually for emphasis */
+.panel.person-modal-panel {
+  border-radius: 12px;
+  box-shadow: 0 40px 100px rgba(2,6,23,0.45);
+  border: 1px solid color-mix(in srgb, var(--stroke-color) 12%, transparent);
+}
+
+/* Ensure modal actions use the same shared look (matching global) */
+.person-modal-panel .modal-actions {
+  display: flex;
+  gap: .5rem;
+  margin-top: 1rem;
+  justify-content: flex-start;
+  padding: .6rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--stroke-color) 60%, transparent);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--neutral-layer-1) 3%, transparent));
+}
+
+/* Mobile fallback: keep error text full-width on smaller screens */
+@media (max-width: 780px) {
+  .person-form-grid .error-text { grid-column: 1 / -1; }
+}
+
+/* === End duplicate section === */

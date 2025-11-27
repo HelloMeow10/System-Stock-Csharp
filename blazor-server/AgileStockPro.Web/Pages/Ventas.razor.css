@@ -1,0 +1,145 @@
+/* Scoped styles for Ventas.razor — respetan variables de tema (claro/oscuro) */
+
+.page-ventas {
+  padding: 20px;
+  color: var(--text-primary-color);
+  background: transparent;
+}
+
+.page-ventas .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: .75rem;
+}
+.page-ventas .header-row h1 { margin: 0; font-size: 1.5rem; color: var(--text-primary-color); }
+
+.page-ventas .filters {
+  margin-bottom: 20px;
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Make buttons and pickers visually consistent using the app variables */
+.page-ventas ::deep(.fluent-button),
+.page-ventas ::deep(fluent-button) {
+  /* prefer component-provided appearances; ensure contrast for dark mode */
+  color: var(--neutral-foreground-rest);
+}
+
+/* Style FluentDataGrid or similar data components when present inside this page.
+   Use ::deep to reach into component DOM where necessary; rely on CSS variables
+   so the look follows the app dark theme automatically. */
+.page-ventas ::deep(.fluent-data-grid),
+.page-ventas ::deep(fluent-data-grid) {
+  background: var(--neutral-layer-1);
+  color: var(--neutral-foreground-rest);
+  border: 1px solid var(--container-border);
+  border-radius: 8px;
+  padding: .4rem;
+}
+
+.page-ventas ::deep(.fluent-data-grid ::part(column-header)) {
+  background: var(--neutral-layer-2);
+  color: var(--neutral-foreground-rest);
+}
+.page-ventas ::deep(.fluent-data-grid ::part(cell)) {
+  color: var(--neutral-foreground-rest);
+}
+
+/* Responsive tweaks */
+@media (max-width: 820px) {
+  .page-ventas { padding: 14px; }
+  .page-ventas .header-row { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .page-ventas .filters { width: 100%; }
+}
+
+/* Dark-mode explicit micro-tweaks (optional) — variables already adapt,
+   but keep a couple fallbacks to ensure readable borders/hover states. */
+:root[data-theme="dark"] .page-ventas ::deep(.fluent-button[appearance="accent"]) {
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+/* === Dark-mode fixes: inputs and data grid cells === */
+/* Ensure DatePickers and native inputs inside this page follow app dark variables */
+.page-ventas ::deep(input),
+.page-ventas ::deep(.fluent-date-picker input),
+.page-ventas ::deep(.fluent-datepicker input),
+.page-ventas ::deep(.fluent-picker input) {
+  background: var(--neutral-layer-2) !important;
+  color: var(--neutral-foreground-rest) !important;
+  border: 1px solid var(--stroke-color) !important;
+  border-radius: 8px !important;
+}
+
+/* Make the FluentDataGrid cells match the rest of the app in dark mode */
+.page-ventas ::deep(.fluent-data-grid ::part(column-header)) {
+  background: var(--neutral-layer-2) !important;
+  color: var(--neutral-foreground-rest) !important;
+  border-bottom: 1px solid var(--stroke-color) !important;
+}
+.page-ventas ::deep(.fluent-data-grid ::part(cell)) {
+  background: var(--neutral-layer-1) !important;
+  color: var(--neutral-foreground-rest) !important;
+  border-bottom: 1px solid var(--stroke-color) !important;
+}
+
+/* In some Fluent components the visible input is inside a shadow DOM or inner wrapper.
+   Apply a couple of broader fallbacks to catch those cases without breaking other pages. */
+.page-ventas ::deep(.fluent-date-picker),
+.page-ventas ::deep(.fluent-datepicker),
+.page-ventas ::deep(.fluent-picker) {
+  background: transparent !important;
+  color: var(--neutral-foreground-rest) !important;
+}
+
+/* Ensure filter controls have the same subtle border and don't appear white */
+.page-ventas .filters ::deep(button),
+.page-ventas .filters ::deep(.fluent-button) {
+  background: var(--neutral-layer-2) !important;
+  color: var(--neutral-foreground-rest) !important;
+  border: 1px solid var(--stroke-color) !important;
+}
+
+/* Try to target common shadow-DOM parts exposed by Fluent Web Components.
+   Different versions expose different part names; these are broad fallbacks.
+   If your specific component uses other `part` names, inspeccioná el elemento
+   en DevTools y ajustamos la regla al `part` correcto. */
+.page-ventas ::deep(fluent-date-picker::part(control)),
+.page-ventas ::deep(fluent-date-picker::part(input)),
+.page-ventas ::deep(fluent-date-picker::part(textbox)),
+.page-ventas ::deep(fluent-datepicker::part(control)),
+.page-ventas ::deep(fluent-datepicker::part(input)),
+.page-ventas ::deep(fluent-picker::part(control)),
+.page-ventas ::deep(fluent-picker::part(input)) {
+  background: var(--neutral-layer-2) !important;
+  color: var(--neutral-foreground-rest) !important;
+  border: 1px solid var(--stroke-color) !important;
+  border-radius: 8px !important;
+}
+
+/* FluentDataGrid: try common part names for headers/cells/filters */
+.page-ventas ::deep(fluent-data-grid::part(column-header)),
+.page-ventas ::deep(fluent-data-grid::part(header-cell)),
+.page-ventas ::deep(fluent-data-grid::part(cell)),
+.page-ventas ::deep(fluent-data-grid::part(row-cell)),
+.page-ventas ::deep(fluent-data-grid::part(filter)) {
+  background: var(--neutral-layer-1) !important;
+  color: var(--neutral-foreground-rest) !important;
+  border-color: var(--stroke-color) !important;
+}
+
+/* Broad fallback: target any input descendants inside fluent-* elements */
+.page-ventas ::deep(fluent-date-picker input),
+.page-ventas ::deep(fluent-datepicker input),
+.page-ventas ::deep(fluent-picker input),
+.page-ventas ::deep(fluent-data-grid input) {
+  background: var(--neutral-layer-2) !important;
+  color: var(--neutral-foreground-rest) !important;
+  border: 1px solid var(--stroke-color) !important;
+}
+
+

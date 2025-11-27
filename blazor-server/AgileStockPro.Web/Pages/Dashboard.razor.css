@@ -1,0 +1,79 @@
+/* Scoped dashboard styles — modern cards, activity feed and responsive layout
+   Uses app CSS variables so it adapts to dark/light themes. */
+
+.dashboard {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.dashboard .cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--neutral-layer-1) 70%, transparent), transparent);
+  border: 1px solid color-mix(in srgb, var(--stroke-color) 20%, transparent);
+  box-shadow: 0 8px 24px rgba(2,6,23,0.12);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.stat-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(2,6,23,0.16); }
+
+.stat-card .icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 56px;
+  font-weight: 700;
+  color: var(--on-accent);
+  background: linear-gradient(180deg, var(--accent), var(--accent-600));
+  box-shadow: 0 6px 18px rgba(2,6,23,0.08) inset;
+}
+
+.stat-card .content { display: flex; flex-direction: column; gap: 6px; }
+.stat-card .stat-title { font-size: 0.9rem; color: var(--text-muted-color); font-weight: 700; }
+.stat-card .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--text-primary-color); }
+.stat-card .stat-sub { font-size: .85rem; color: var(--text-muted-color); }
+
+.grid-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.panel { padding: 0; overflow: hidden; }
+.panel .panel-header { padding: 14px 16px; border-bottom: 1px solid color-mix(in srgb, var(--stroke-color) 14%, transparent); background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--neutral-layer-1) 2%, transparent)); }
+.panel .panel-body { padding: 12px 16px; }
+
+.recent-activity { display: flex; flex-direction: column; gap: 8px; padding: 8px 4px; }
+.recent-activity .activity-item { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: start; padding: 10px; border-radius: 8px; transition: background .12s; }
+.recent-activity .activity-item:hover { background: color-mix(in srgb, var(--neutral-layer-2) 6%, transparent); }
+.recent-activity .activity-item .avatar { width: 48px; height: 48px; border-radius: 8px; display: grid; place-items: center; background: var(--neutral-layer-2); color: var(--neutral-foreground-rest); font-weight: 700; }
+.recent-activity .activity-item .meta { font-size: .9rem; color: var(--text-muted-color); }
+
+.panel .table { width: 100%; border-collapse: collapse; }
+.panel .table thead th { background: transparent; color: var(--text-muted-color); border-bottom: none; padding: 12px 14px; }
+.panel .table tbody td { padding: 12px 14px; vertical-align: middle; }
+.panel .table tr { border-bottom: 1px solid color-mix(in srgb, var(--stroke-color) 10%, transparent); }
+
+/* Revertido: removida clase de sparkline */
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .dashboard .cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid-two { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .dashboard .cards { grid-template-columns: 1fr; }
+  .stat-card { padding: 14px; }
+  .stat-card .icon { width: 48px; height: 48px; }
+}
+
+/* Accessibility: focus styles for sortable header buttons */
+.th-btn:focus { outline: 3px solid var(--focus-ring); outline-offset: 2px; border-radius: 6px; }

@@ -69,8 +69,8 @@
 
 @if (editando != null)
 {
-    <div style="position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-start; justify-content:center; padding-top:5vh; z-index:1000;">
-    <div class="panel" style="width:min(960px,94vw); max-height:90vh; overflow:auto;">
+    <div class="person-modal-backdrop">
+    <div class="panel person-modal-panel">
         <div class="panel-header">@(editando.IdPersona == 0 ? "Nueva persona" : $"Editar: {editando.Nombre} {editando.Apellido}")</div>
         @if (submitted && errors.Count > 0)
         {
@@ -84,18 +84,15 @@
                 </ul>
             </div>
         }
-        <div style="display:grid; grid-template-columns: 160px 1fr; gap:.5rem; align-items:center;">
+        <div class="person-form-grid">
+            <div class="section-title">Datos personales</div>
+
             <label>Legajo <span class="req">*</span></label>
-            <input class=@($"input {(Invalid("Legajo") ? "invalid" : "")}") @bind="legajoInput" />
+            <input class=@($"input input-medium {(Invalid("Legajo") ? "invalid" : "")}") @bind="legajoInput" placeholder="Solo números" />
             @if (Invalid("Legajo")) { <span class="error-text">@GetError("Legajo")</span> }
-            <label>Nombre <span class="req">*</span></label>
-            <input class=@($"input {(Invalid("Nombre") ? "invalid" : "")}") @bind="editando.Nombre" />
-            @if (Invalid("Nombre")) { <span class="error-text">@GetError("Nombre")</span> }
-            <label>Apellido <span class="req">*</span></label>
-            <input class=@($"input {(Invalid("Apellido") ? "invalid" : "")}") @bind="editando.Apellido" />
-            @if (Invalid("Apellido")) { <span class="error-text">@GetError("Apellido")</span> }
+
             <label>Tipo Doc <span class="req">*</span></label>
-            <select class=@($"input {(Invalid("IdTipoDoc") ? "invalid" : "")}") @bind="selectedTipoDocId">
+            <select class=@($"input input-medium {(Invalid("IdTipoDoc") ? "invalid" : "")}") @bind="selectedTipoDocId">
                 <option value="0">Seleccione…</option>
                 @if (tiposDoc != null)
                 {
@@ -106,26 +103,50 @@
                 }
             </select>
             @if (Invalid("IdTipoDoc")) { <span class="error-text">@GetError("IdTipoDoc")</span> }
+
             <label>Número Doc <span class="req">*</span></label>
-            <input class=@($"input {(Invalid("NumDoc") ? "invalid" : "")}") @bind="editando.NumDoc" />
+            <input class=@($"input input-medium {(Invalid("NumDoc") ? "invalid" : "")}") @bind="editando.NumDoc" />
             @if (Invalid("NumDoc")) { <span class="error-text">@GetError("NumDoc")</span> }
+
             <label>CUIL</label>
-            <input class=@($"input {(Invalid("Cuil") ? "invalid" : "")}") @bind="editando.Cuil" />
+            <input class=@($"input input-medium {(Invalid("Cuil") ? "invalid" : "")}") @bind="editando.Cuil" />
             @if (Invalid("Cuil")) { <span class="error-text">@GetError("Cuil")</span> }
+
+            <label>Nombre <span class="req">*</span></label>
+            <input class=@($"input input-long {(Invalid("Nombre") ? "invalid" : "")}") @bind="editando.Nombre" />
+            @if (Invalid("Nombre")) { <span class="error-text">@GetError("Nombre")</span> }
+
+            <label>Apellido <span class="req">*</span></label>
+            <input class=@($"input input-long {(Invalid("Apellido") ? "invalid" : "")}") @bind="editando.Apellido" />
+            @if (Invalid("Apellido")) { <span class="error-text">@GetError("Apellido")</span> }
+
             <label>Fecha Nacimiento</label>
-            <InputDate class="input" @bind-Value="editando.FechaNacimiento" TValue="DateTime?" />
+            <InputDate class="input input-medium" @bind-Value="editando.FechaNacimiento" TValue="DateTime?" />
+
+            <label>Fecha Ingreso</label>
+            <InputDate class="input input-medium" @bind-Value="editando.FechaIngreso" TValue="DateTime?" />
+
+            <div class="section-title">Contacto</div>
+
             <label>Email</label>
-            <input class=@($"input {(Invalid("Correo") ? "invalid" : "")}") @bind="editando.Correo" />
+            <input class=@($"input input-long {(Invalid("Correo") ? "invalid" : "")}") @bind="editando.Correo" placeholder="ejemplo@dominio.com" />
             @if (Invalid("Correo")) { <span class="error-text">@GetError("Correo")</span> }
+
             <label>Celular</label>
-            <input class=@($"input {(Invalid("Celular") ? "invalid" : "")}") @bind="editando.Celular" />
+            <input class=@($"input input-medium {(Invalid("Celular") ? "invalid" : "")}") @bind="editando.Celular" />
             @if (Invalid("Celular")) { <span class="error-text">@GetError("Celular")</span> }
-            <label>Calle</label>
-            <input class="input" @bind="editando.Calle" />
+
+            <div class="section-title">Dirección</div>
+
+            <label class="">Calle</label>
+            <input class="input input-medium " @bind="editando.Calle" />
+
             <label>Altura</label>
-            <input class="input" @bind="editando.Altura" />
+            <input class=@($"input input-medium {(Invalid("Altura") ? "invalid" : "")}") @bind="editando.Altura" />
+            @if (Invalid("Altura")) { <span class="error-text">@GetError("Altura")</span> }
+
             <label>Provincia <span class="req">*</span></label>
-            <select class=@($"input {(Invalid("IdProvincia") ? "invalid" : "")}") @bind="selectedProvinciaId" @bind:after="ProvinciaChanged">
+            <select class=@($"input input-medium {(Invalid("IdProvincia") ? "invalid" : "")}") @bind="selectedProvinciaId" @bind:after="ProvinciaChanged">
                 <option value="0">Seleccione…</option>
                 @if (provincias != null)
                 {
@@ -136,8 +157,9 @@
                 }
             </select>
             @if (Invalid("IdProvincia")) { <span class="error-text">@GetError("IdProvincia")</span> }
+
             <label>Partido <span class="req">*</span></label>
-            <select class=@($"input {(Invalid("IdPartido") ? "invalid" : "")}") @bind="selectedPartidoId" @bind:after="PartidoChanged">
+            <select class=@($"input input-medium {(Invalid("IdPartido") ? "invalid" : "")}") @bind="selectedPartidoId" @bind:after="PartidoChanged">
                 <option value="0">Seleccione…</option>
                 @if (partidos != null)
                 {
@@ -148,8 +170,9 @@
                 }
             </select>
             @if (Invalid("IdPartido")) { <span class="error-text">@GetError("IdPartido")</span> }
+
             <label>Localidad <span class="req">*</span></label>
-            <select class=@($"input {(Invalid("IdLocalidad") ? "invalid" : "")}") @bind="selectedLocalidadId">
+            <select class=@($"input input-medium {(Invalid("IdLocalidad") ? "invalid" : "")}") @bind="selectedLocalidadId">
                 <option value="0">Seleccione…</option>
                 @if (localidades != null)
                 {
@@ -160,8 +183,9 @@
                 }
             </select>
             @if (Invalid("IdLocalidad")) { <span class="error-text">@GetError("IdLocalidad")</span> }
+
             <label>Género <span class="req">*</span></label>
-            <select class=@($"input {(Invalid("IdGenero") ? "invalid" : "")}") @bind="selectedGeneroId">
+            <select class=@($"input input-medium {(Invalid("IdGenero") ? "invalid" : "")}") @bind="selectedGeneroId">
                 <option value="0">Seleccione…</option>
                 @if (generos != null)
                 {
@@ -172,10 +196,8 @@
                 }
             </select>
             @if (Invalid("IdGenero")) { <span class="error-text">@GetError("IdGenero")</span> }
-            <label>Fecha Ingreso</label>
-            <InputDate class="input" @bind-Value="editando.FechaIngreso" TValue="DateTime?" />
         </div>
-        <div style="display:flex; gap:.5rem; margin-top:.75rem;">
+        <div class="modal-actions">
             <!-- Always allow click to show validation messages; rely on ValidatePersona() instead of disabling when !CanGuardar -->
             <button class="btn btn-primary" disabled="@busy" @onclick="Guardar">@(busy ? "Guardando…" : "Guardar")</button>
             <button class="btn" disabled="@busy" @onclick="Cancelar">Cancelar</button>

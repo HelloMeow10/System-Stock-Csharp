@@ -7,11 +7,12 @@
 @inject IDialogService DialogService
 @inject AgileStockPro.Web.Services.IAuthService AuthService
 @inject NavigationManager Nav
+@inject Microsoft.JSInterop.IJSRuntime JS
 
 <PageTitle>Ventas</PageTitle>
 
-<div style="padding: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<div class="page-ventas">
+    <div class="header-row">
         <h1>Ventas</h1>
         @if (currentUser?.IsAdmin == true)
         {
@@ -19,7 +20,7 @@
         }
     </div>
 
-    <div style="margin-bottom: 20px;">
+    <div class="filters">
         <FluentDatePicker @bind-Value="startDate" Label="Desde" />
         <FluentDatePicker @bind-Value="endDate" Label="Hasta" />
         <FluentButton OnClick="@LoadData">Filtrar</FluentButton>
@@ -52,6 +53,28 @@
     {
         currentUser = await AuthService.GetCurrentUserAsync();
         await LoadData();
+    }
+
+    private IJSObjectReference? _ventasShadowModule;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _ventasShadowModule = await JS.InvokeAsync<Microsoft.JSInterop.IJSObjectReference>("import", "/js/shadow-styles.js");
+                await _ventasShadowModule.InvokeVoidAsync("applyVentasShadowStyles");
+            }
+            catch { /* ignore failures — non-critical */ }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_ventasShadowModule != null)
+        {
+            try { await _ventasShadowModule.DisposeAsync(); } catch { }
+        }
     }
 
     private async Task LoadData()
