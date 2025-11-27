@@ -9,5 +9,6 @@ namespace DataAccess.Repositories
         Task AddSaleDetailAsync(int saleId, int productId, int quantity, decimal unitPrice);
         Task<IEnumerable<SaleOrderDto>> GetSalesAsync(DateTime? start, DateTime? end, int? clientId);
         Task<IEnumerable<SalesReportDto>> GetSalesReportAsync(DateTime? start, DateTime? end);
+        Task<int> GetDefaultSalesStatusIdAsync();
     }
 }

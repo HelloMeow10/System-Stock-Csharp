@@ -11,6 +11,23 @@ BEGIN
 END
 GO
 
+-- Seed EstadoVentas básico para evitar FK inválida al crear ventas
+IF NOT EXISTS (SELECT 1 FROM EstadoVentas)
+BEGIN
+    INSERT INTO EstadoVentas (facturada, entregada, cancelada) VALUES (0, 0, 0);
+END
+GO
+
+-- Asegurar que exista id_estadoVentas = 1
+IF NOT EXISTS (SELECT 1 FROM EstadoVentas WHERE id_estadoVentas = 1)
+BEGIN
+    SET IDENTITY_INSERT EstadoVentas ON;
+    INSERT INTO EstadoVentas (id_estadoVentas, facturada, entregada, cancelada)
+    VALUES (1, 0, 0, 0);
+    SET IDENTITY_INSERT EstadoVentas OFF;
+END
+GO
+
 -- Actualizar item de presupuesto de compra (cantidad / precio)
 IF OBJECT_ID('sp_ActualizarItemPresupuestoCompra', 'P') IS NOT NULL
     DROP PROCEDURE sp_ActualizarItemPresupuestoCompra;
@@ -2919,13 +2936,29 @@ CREATE PROCEDURE sp_AgregarPresupuestoVenta
     @id_cliente INT,
     @fecha DATE,
     @tipoDocumento VARCHAR(50),
-    @numeroDocumento VARCHAR(50),
+    @numeroDocumento VARCHAR(50) = NULL,
     @montoTotal DECIMAL(18,2),
-    @id_estadoVentas INT
+    @id_estadoVentas INT = NULL
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Si no se pasa un estado válido, tomar el primero disponible como fallback
+    IF @id_estadoVentas IS NULL OR NOT EXISTS (SELECT 1 FROM EstadoVentas WHERE id_estadoVentas = @id_estadoVentas)
+    BEGIN
+        SELECT TOP 1 @id_estadoVentas = id_estadoVentas FROM EstadoVentas ORDER BY id_estadoVentas;
+        IF @id_estadoVentas IS NULL
+        BEGIN
+            RAISERROR('No existe ningún registro en EstadoVentas. Ejecutá el seed correspondiente.',16,1);
+            RETURN;
+        END
+    END
+
     INSERT INTO Ventas (id_cliente, fecha, tipoDocumento, numeroDocumento, montoTotal, id_estadoVentas)
-    VALUES (@id_cliente, @fecha, @tipoDocumento, @numeroDocumento, @montoTotal, @id_estadoVentas)
+    VALUES (@id_cliente, @fecha, @tipoDocumento, @numeroDocumento, @montoTotal, @id_estadoVentas);
+
+    -- Devolver id creado para que el repositorio pueda leerlo
+    SELECT SCOPE_IDENTITY() AS id_venta;
 END
 GO
 
@@ -3211,8 +3244,8 @@ BEGIN
             COALESCE(p.volumen,0) AS volumen,
             COALESCE(p.puntoReposicion,0) AS puntoReposicion,
             COALESCE(p.diasVencimiento,0) AS diasVencimiento,
-            COALESCE(p.loteObligatorio,0) AS loteObligatorio,
-            COALESCE(p.controlVencimiento,0) AS controlVencimiento
+            CAST(COALESCE(p.loteObligatorio,0) AS BIT) AS loteObligatorio,
+            CAST(COALESCE(p.controlVencimiento,0) AS BIT) AS controlVencimiento
     FROM Productos p
     LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
     LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
@@ -3256,8 +3289,8 @@ BEGIN
                COALESCE(p.volumen,0) AS volumen,
                COALESCE(p.puntoReposicion,0) AS puntoReposicion,
                COALESCE(p.diasVencimiento,0) AS diasVencimiento,
-               COALESCE(p.loteObligatorio,0) AS loteObligatorio,
-               COALESCE(p.controlVencimiento,0) AS controlVencimiento
+               CAST(COALESCE(p.loteObligatorio,0) AS BIT) AS loteObligatorio,
+               CAST(COALESCE(p.controlVencimiento,0) AS BIT) AS controlVencimiento
         FROM Productos p
         LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
         LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
@@ -3297,8 +3330,8 @@ BEGIN
                COALESCE(p.volumen,0) AS volumen,
                COALESCE(p.puntoReposicion,0) AS puntoReposicion,
                COALESCE(p.diasVencimiento,0) AS diasVencimiento,
-               COALESCE(p.loteObligatorio,0) AS loteObligatorio,
-               COALESCE(p.controlVencimiento,0) AS controlVencimiento
+               CAST(COALESCE(p.loteObligatorio,0) AS BIT) AS loteObligatorio,
+               CAST(COALESCE(p.controlVencimiento,0) AS BIT) AS controlVencimiento
         FROM Productos p
         LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
         LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
@@ -3687,3 +3720,195 @@ PRINT 'Seed demo users completed.';
 UPDATE usuarios SET contrasena_script = 0xA6CD645C57030D00EB8F8CB4A2B21BBEDC54181871ACE4BB6E578D67337F4C05 WHERE usuario = 'admin';
 UPDATE usuarios SET contrasena_script = 0x2F87B976666AF7E41D8C279FDAFB8BD8926B6D4A0684BB14F88A01A11E124C7B WHERE usuario = 'operador';
 UPDATE usuarios SET contrasena_script = 0x3FFA80ABC142A9AC6EBAC9BEAB81048E5DFA827FEACDD346B6B41320B7986363 WHERE usuario = 'admin2';
+
+-- =============================================
+-- SEED DATA: Formas de Pago, Categorías, Marcas, Clientes y Productos
+-- Idempotente: sólo inserta si no existe cada registro clave
+-- Ejecutar tras crear toda la estructura.
+-- =============================================
+BEGIN TRAN;
+
+-- Formas de Pago básicas
+IF NOT EXISTS (SELECT 1 FROM FormaPago WHERE descripcion = 'Contado')
+    INSERT INTO FormaPago (descripcion) VALUES ('Contado');
+IF NOT EXISTS (SELECT 1 FROM FormaPago WHERE descripcion = 'Transferencia')
+    INSERT INTO FormaPago (descripcion) VALUES ('Transferencia');
+IF NOT EXISTS (SELECT 1 FROM FormaPago WHERE descripcion = 'Tarjeta Crédito')
+    INSERT INTO FormaPago (descripcion) VALUES ('Tarjeta Crédito');
+
+-- Categorías de Productos
+IF NOT EXISTS (SELECT 1 FROM CategoriasProducto WHERE categoria = 'Alimentos')
+    INSERT INTO CategoriasProducto (categoria, descripcion) VALUES ('Alimentos','Consumo diario');
+IF NOT EXISTS (SELECT 1 FROM CategoriasProducto WHERE categoria = 'Bebidas')
+    INSERT INTO CategoriasProducto (categoria, descripcion) VALUES ('Bebidas','Gaseosas y aguas');
+IF NOT EXISTS (SELECT 1 FROM CategoriasProducto WHERE categoria = 'Limpieza')
+    INSERT INTO CategoriasProducto (categoria, descripcion) VALUES ('Limpieza','Hogar y superficies');
+IF NOT EXISTS (SELECT 1 FROM CategoriasProducto WHERE categoria = 'Higiene')
+    INSERT INTO CategoriasProducto (categoria, descripcion) VALUES ('Higiene','Cuidado personal');
+
+-- Marcas
+IF NOT EXISTS (SELECT 1 FROM MarcasProducto WHERE marca = 'Genérica')
+    INSERT INTO MarcasProducto (marca) VALUES ('Genérica');
+IF NOT EXISTS (SELECT 1 FROM MarcasProducto WHERE marca = 'Acme')
+    INSERT INTO MarcasProducto (marca) VALUES ('Acme');
+IF NOT EXISTS (SELECT 1 FROM MarcasProducto WHERE marca = 'PremiumCo')
+    INSERT INTO MarcasProducto (marca) VALUES ('PremiumCo');
+
+-- Variables para FK
+DECLARE @idFormaContado INT = (SELECT TOP 1 id_formaPago FROM FormaPago WHERE descripcion='Contado');
+DECLARE @idFormaTransf INT = (SELECT TOP 1 id_formaPago FROM FormaPago WHERE descripcion='Transferencia');
+DECLARE @idFormaTarjeta INT = (SELECT TOP 1 id_formaPago FROM FormaPago WHERE descripcion='Tarjeta Crédito');
+DECLARE @idCatAlimentos INT = (SELECT TOP 1 id_categoria FROM CategoriasProducto WHERE categoria='Alimentos');
+DECLARE @idCatBebidas INT = (SELECT TOP 1 id_categoria FROM CategoriasProducto WHERE categoria='Bebidas');
+DECLARE @idCatLimpieza INT = (SELECT TOP 1 id_categoria FROM CategoriasProducto WHERE categoria='Limpieza');
+DECLARE @idMarcaGenerica INT = (SELECT TOP 1 id_marca FROM MarcasProducto WHERE marca='Genérica');
+DECLARE @idMarcaAcme INT = (SELECT TOP 1 id_marca FROM MarcasProducto WHERE marca='Acme');
+DECLARE @idMarcaPremium INT = (SELECT TOP 1 id_marca FROM MarcasProducto WHERE marca='PremiumCo');
+
+-- Clientes de prueba
+IF NOT EXISTS (SELECT 1 FROM Clientes WHERE codigo='CLI-0001')
+    INSERT INTO Clientes (codigo,nombre,razonSocial,CUIT_DNI,id_formaPago,limiteCredito,descuento,estado)
+    VALUES ('CLI-0001','Mercado Central','Mercado Central S.A.','30701234001',@idFormaContado,50000,5,'Activo');
+IF NOT EXISTS (SELECT 1 FROM Clientes WHERE codigo='CLI-0002')
+    INSERT INTO Clientes (codigo,nombre,razonSocial,CUIT_DNI,id_formaPago,limiteCredito,descuento,estado)
+    VALUES ('CLI-0002','Distribuidora Norte','Distribuidora Norte SRL','30711234002',@idFormaTransf,120000,7.5,'Activo');
+IF NOT EXISTS (SELECT 1 FROM Clientes WHERE codigo='CLI-0003')
+    INSERT INTO Clientes (codigo,nombre,razonSocial,CUIT_DNI,id_formaPago,limiteCredito,descuento,estado)
+    VALUES ('CLI-0003','Kiosco Avenida','Kiosco Avenida','20333444003',@idFormaContado,15000,0,'Activo');
+IF NOT EXISTS (SELECT 1 FROM Clientes WHERE codigo='CLI-0004')
+    INSERT INTO Clientes (codigo,nombre,razonSocial,CUIT_DNI,id_formaPago,limiteCredito,descuento,estado)
+    VALUES ('CLI-0004','Super Demo','Supermercado Demo S.A.','30733444004',@idFormaTarjeta,250000,3,'Activo');
+IF NOT EXISTS (SELECT 1 FROM Clientes WHERE codigo='CLI-0005')
+    INSERT INTO Clientes (codigo,nombre,razonSocial,CUIT_DNI,id_formaPago,limiteCredito,descuento,estado)
+    VALUES ('CLI-0005','Restó Plaza','Restó Plaza SAS','23344555005',@idFormaTransf,80000,2.5,'Activo');
+
+-- Productos de prueba
+IF NOT EXISTS (SELECT 1 FROM Productos WHERE codigo='PRD-0001')
+    INSERT INTO Productos (codigo,codBarras,nombre,descripcion,id_marca,precioCompra,precioVenta,estado,ubicacion,habilitado,id_categoria,unidadMedida,peso,volumen,puntoReposicion,diasVencimiento,loteObligatorio,controlVencimiento)
+    VALUES ('PRD-0001','779000100001','Arroz Largo Fino 1Kg','Bolsa de arroz largo fino',@idMarcaGenerica,450.00,620.00,'Activo','ALM-A1',1,@idCatAlimentos,'Kg',1.00,NULL,30,NULL,0,0);
+IF NOT EXISTS (SELECT 1 FROM Productos WHERE codigo='PRD-0002')
+    INSERT INTO Productos (codigo,codBarras,nombre,descripcion,id_marca,precioCompra,precioVenta,estado,ubicacion,habilitado,id_categoria,unidadMedida,peso,volumen,puntoReposicion,diasVencimiento,loteObligatorio,controlVencimiento)
+    VALUES ('PRD-0002','779000200002','Gaseosa Cola 2L','Botella PET',@idMarcaAcme,850.00,1150.00,'Activo','BEB-B2',1,@idCatBebidas,'Lt',2.00,2.00,40,180,0,1);
+IF NOT EXISTS (SELECT 1 FROM Productos WHERE codigo='PRD-0003')
+    INSERT INTO Productos (codigo,codBarras,nombre,descripcion,id_marca,precioCompra,precioVenta,estado,ubicacion,habilitado,id_categoria,unidadMedida,peso,volumen,puntoReposicion,diasVencimiento,loteObligatorio,controlVencimiento)
+    VALUES ('PRD-0003','779000300003','Detergente Líquido 500ml','Limpieza de vajilla',@idMarcaGenerica,320.00,540.00,'Activo','LIM-C1',1,@idCatLimpieza,'ml',0.50,0.50,25,730,0,0);
+IF NOT EXISTS (SELECT 1 FROM Productos WHERE codigo='PRD-0004')
+    INSERT INTO Productos (codigo,codBarras,nombre,descripcion,id_marca,precioCompra,precioVenta,estado,ubicacion,habilitado,id_categoria,unidadMedida,peso,volumen,puntoReposicion,diasVencimiento,loteObligatorio,controlVencimiento)
+    VALUES ('PRD-0004','779000400004','Shampoo Hidratante 400ml','Cuidado capilar',@idMarcaPremium,900.00,1450.00,'Activo','HIG-D4',1,@idCatAlimentos,'ml',0.40,0.40,15,730,0,0); -- usa categoría alimentos? ajustar si hay categoría Higiene separada
+IF NOT EXISTS (SELECT 1 FROM Productos WHERE codigo='PRD-0005')
+    INSERT INTO Productos (codigo,codBarras,nombre,descripcion,id_marca,precioCompra,precioVenta,estado,ubicacion,habilitado,id_categoria,unidadMedida,peso,volumen,puntoReposicion,diasVencimiento,loteObligatorio,controlVencimiento)
+    VALUES ('PRD-0005','779000500005','Harina 000 1Kg','Harina de trigo',@idMarcaGenerica,380.00,560.00,'Activo','ALM-A2',1,@idCatAlimentos,'Kg',1.00,NULL,35,NULL,0,0);
+IF NOT EXISTS (SELECT 1 FROM Productos WHERE codigo='PRD-0006')
+    INSERT INTO Productos (codigo,codBarras,nombre,descripcion,id_marca,precioCompra,precioVenta,estado,ubicacion,habilitado,id_categoria,unidadMedida,peso,volumen,puntoReposicion,diasVencimiento,loteObligatorio,controlVencimiento)
+    VALUES ('PRD-0006','779000600006','Agua Mineral 1.5L','Agua baja en sodio',@idMarcaAcme,300.00,470.00,'Activo','BEB-B3',1,@idCatBebidas,'Lt',1.50,1.50,45,365,0,0);
+IF NOT EXISTS (SELECT 1 FROM Productos WHERE codigo='PRD-0007')
+    INSERT INTO Productos (codigo,codBarras,nombre,descripcion,id_marca,precioCompra,precioVenta,estado,ubicacion,habilitado,id_categoria,unidadMedida,peso,volumen,puntoReposicion,diasVencimiento,loteObligatorio,controlVencimiento)
+    VALUES ('PRD-0007','779000700007','Lavandina 1L','Desinfección general',@idMarcaGenerica,250.00,410.00,'Activo','LIM-C2',1,@idCatLimpieza,'Lt',1.00,1.00,20,365,0,0);
+IF NOT EXISTS (SELECT 1 FROM Productos WHERE codigo='PRD-0008')
+    INSERT INTO Productos (codigo,codBarras,nombre,descripcion,id_marca,precioCompra,precioVenta,estado,ubicacion,habilitado,id_categoria,unidadMedida,peso,volumen,puntoReposicion,diasVencimiento,loteObligatorio,controlVencimiento)
+    VALUES ('PRD-0008','779000800008','Yerba Mate 1Kg','Yerba elaborada suave',@idMarcaPremium,1100.00,1580.00,'Activo','ALM-A3',1,@idCatAlimentos,'Kg',1.00,NULL,30,540,0,0);
+
+COMMIT;
+PRINT 'Seed clientes y productos completado.';
+
+-- =============================================
+-- SEED DATA: Stock inicial para productos demo
+-- Crea filas de stock si no existen por producto
+-- =============================================
+DECLARE @idUsuarioAdmin INT = (SELECT TOP 1 id_usuario FROM usuarios WHERE usuario = 'admin');
+IF @idUsuarioAdmin IS NULL
+    SET @idUsuarioAdmin = (SELECT TOP 1 id_usuario FROM usuarios ORDER BY id_usuario);
+
+-- Helper: upsert stock si no existe por código de producto
+IF NOT EXISTS (SELECT 1 FROM Stock s JOIN Productos p ON s.id_producto = p.id_producto WHERE p.codigo = 'PRD-0001')
+INSERT INTO Stock (id_producto, id_usuario, lote, stock, stockMinimo, stockIdeal, stockMaximo, tipoStock, puntoReposicion, fechaVencimiento, estadoHabilitaciones, id_movimientosStock)
+SELECT p.id_producto, @idUsuarioAdmin, NULL, 120, 30, 80, 300, 'Disponible', 40, NULL, 'Habilitado', NULL FROM Productos p WHERE p.codigo='PRD-0001';
+
+IF NOT EXISTS (SELECT 1 FROM Stock s JOIN Productos p ON s.id_producto = p.id_producto WHERE p.codigo = 'PRD-0002')
+INSERT INTO Stock (id_producto, id_usuario, lote, stock, stockMinimo, stockIdeal, stockMaximo, tipoStock, puntoReposicion, fechaVencimiento, estadoHabilitaciones, id_movimientosStock)
+SELECT p.id_producto, @idUsuarioAdmin, NULL, 60, 40, 80, 200, 'Disponible', 50, DATEADD(DAY, 180, GETDATE()), 'Habilitado', NULL FROM Productos p WHERE p.codigo='PRD-0002';
+
+IF NOT EXISTS (SELECT 1 FROM Stock s JOIN Productos p ON s.id_producto = p.id_producto WHERE p.codigo = 'PRD-0003')
+INSERT INTO Stock (id_producto, id_usuario, lote, stock, stockMinimo, stockIdeal, stockMaximo, tipoStock, puntoReposicion, fechaVencimiento, estadoHabilitaciones, id_movimientosStock)
+SELECT p.id_producto, @idUsuarioAdmin, NULL, 85, 25, 60, 180, 'Disponible', 35, NULL, 'Habilitado', NULL FROM Productos p WHERE p.codigo='PRD-0003';
+
+IF NOT EXISTS (SELECT 1 FROM Stock s JOIN Productos p ON s.id_producto = p.id_producto WHERE p.codigo = 'PRD-0004')
+INSERT INTO Stock (id_producto, id_usuario, lote, stock, stockMinimo, stockIdeal, stockMaximo, tipoStock, puntoReposicion, fechaVencimiento, estadoHabilitaciones, id_movimientosStock)
+SELECT p.id_producto, @idUsuarioAdmin, NULL, 35, 15, 40, 120, 'Disponible', 20, DATEADD(DAY, 365, GETDATE()), 'Habilitado', NULL FROM Productos p WHERE p.codigo='PRD-0004';
+
+IF NOT EXISTS (SELECT 1 FROM Stock s JOIN Productos p ON s.id_producto = p.id_producto WHERE p.codigo = 'PRD-0005')
+INSERT INTO Stock (id_producto, id_usuario, lote, stock, stockMinimo, stockIdeal, stockMaximo, tipoStock, puntoReposicion, fechaVencimiento, estadoHabilitaciones, id_movimientosStock)
+SELECT p.id_producto, @idUsuarioAdmin, NULL, 140, 35, 90, 260, 'Disponible', 45, NULL, 'Habilitado', NULL FROM Productos p WHERE p.codigo='PRD-0005';
+
+IF NOT EXISTS (SELECT 1 FROM Stock s JOIN Productos p ON s.id_producto = p.id_producto WHERE p.codigo = 'PRD-0006')
+INSERT INTO Stock (id_producto, id_usuario, lote, stock, stockMinimo, stockIdeal, stockMaximo, tipoStock, puntoReposicion, fechaVencimiento, estadoHabilitaciones, id_movimientosStock)
+SELECT p.id_producto, @idUsuarioAdmin, NULL, 95, 45, 85, 240, 'Disponible', 55, DATEADD(DAY, 365, GETDATE()), 'Habilitado', NULL FROM Productos p WHERE p.codigo='PRD-0006';
+
+IF NOT EXISTS (SELECT 1 FROM Stock s JOIN Productos p ON s.id_producto = p.id_producto WHERE p.codigo = 'PRD-0007')
+INSERT INTO Stock (id_producto, id_usuario, lote, stock, stockMinimo, stockIdeal, stockMaximo, tipoStock, puntoReposicion, fechaVencimiento, estadoHabilitaciones, id_movimientosStock)
+SELECT p.id_producto, @idUsuarioAdmin, NULL, 70, 20, 50, 180, 'Disponible', 30, NULL, 'Habilitado', NULL FROM Productos p WHERE p.codigo='PRD-0007';
+
+IF NOT EXISTS (SELECT 1 FROM Stock s JOIN Productos p ON s.id_producto = p.id_producto WHERE p.codigo = 'PRD-0008')
+INSERT INTO Stock (id_producto, id_usuario, lote, stock, stockMinimo, stockIdeal, stockMaximo, tipoStock, puntoReposicion, fechaVencimiento, estadoHabilitaciones, id_movimientosStock)
+SELECT p.id_producto, @idUsuarioAdmin, NULL, 110, 30, 80, 260, 'Disponible', 40, DATEADD(DAY, 540, GETDATE()), 'Habilitado', NULL FROM Productos p WHERE p.codigo='PRD-0008';
+
+PRINT 'Seed stock inicial completado.';
+
+-- =============================================
+-- SEED DATA: Proveedores y relaciones Producto-Proveedor
+-- =============================================
+BEGIN TRAN;
+
+DECLARE @idFormaContado2 INT = (SELECT TOP 1 id_formaPago FROM FormaPago WHERE descripcion='Contado');
+DECLARE @idFormaTransf2 INT = (SELECT TOP 1 id_formaPago FROM FormaPago WHERE descripcion='Transferencia');
+
+-- Proveedores demo
+IF NOT EXISTS (SELECT 1 FROM Proveedores WHERE codigo='PROV-0001')
+INSERT INTO Proveedores (codigo,nombre,razonSocial,CUIT,Email,Telefono,Direccion,Provincia,Ciudad,CondicionIVA,PlazoPagoDias,Observaciones,TiempoEntrega,Descuento,id_formaPago,formaPago)
+VALUES ('PROV-0001','Tech Supplies SA','Tech Supplies SA','30-12345678-9','contacto@techsupplies.com','011-5555-0001','Av. Siempre Viva 123','CABA','Buenos Aires','Responsable Inscripto',30,'Proveedor general',5,0,@idFormaTransf2,'Transferencia');
+
+IF NOT EXISTS (SELECT 1 FROM Proveedores WHERE codigo='PROV-0002')
+INSERT INTO Proveedores (codigo,nombre,razonSocial,CUIT,Email,Telefono,Direccion,Provincia,Ciudad,CondicionIVA,PlazoPagoDias,Observaciones,TiempoEntrega,Descuento,id_formaPago,formaPago)
+VALUES ('PROV-0002','Distribuidora Norte','Distribuidora Norte SRL','30-87654321-0','ventas@norte.com','381-444-2211','Belgrano 450','Tucumán','San Miguel','Monotributo',45,'Distribución regional',7,2.5,@idFormaTransf2,'Transferencia');
+
+IF NOT EXISTS (SELECT 1 FROM Proveedores WHERE codigo='PROV-0003')
+INSERT INTO Proveedores (codigo,nombre,razonSocial,CUIT,Email,Telefono,Direccion,Provincia,Ciudad,CondicionIVA,PlazoPagoDias,Observaciones,TiempoEntrega,Descuento,id_formaPago,formaPago)
+VALUES ('PROV-0003','Bebidas Sur','Bebidas del Sur SA','30-33445566-7','contacto@bebidassur.com','0291-400-1122','Ruta 3 Km 5','Buenos Aires','Bahía Blanca','Responsable Inscripto',20,'Bebidas y aguas',4,1.0,@idFormaContado2,'Contado');
+
+-- Relacionar productos con proveedores (si no existe la relación)
+DECLARE @prov1 INT = (SELECT TOP 1 id_proveedor FROM Proveedores WHERE codigo='PROV-0001');
+DECLARE @prov2 INT = (SELECT TOP 1 id_proveedor FROM Proveedores WHERE codigo='PROV-0002');
+DECLARE @prov3 INT = (SELECT TOP 1 id_proveedor FROM Proveedores WHERE codigo='PROV-0003');
+
+-- Helper to get product id by code
+DECLARE @p1 INT = (SELECT TOP 1 id_producto FROM Productos WHERE codigo='PRD-0001');
+DECLARE @p2 INT = (SELECT TOP 1 id_producto FROM Productos WHERE codigo='PRD-0002');
+DECLARE @p3 INT = (SELECT TOP 1 id_producto FROM Productos WHERE codigo='PRD-0003');
+DECLARE @p4 INT = (SELECT TOP 1 id_producto FROM Productos WHERE codigo='PRD-0004');
+DECLARE @p5 INT = (SELECT TOP 1 id_producto FROM Productos WHERE codigo='PRD-0005');
+DECLARE @p6 INT = (SELECT TOP 1 id_producto FROM Productos WHERE codigo='PRD-0006');
+DECLARE @p7 INT = (SELECT TOP 1 id_producto FROM Productos WHERE codigo='PRD-0007');
+DECLARE @p8 INT = (SELECT TOP 1 id_producto FROM Productos WHERE codigo='PRD-0008');
+
+-- Inserts idempotentes en ProductoProveedor
+IF @prov1 IS NOT NULL AND @p1 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ProductoProveedor WHERE id_proveedor=@prov1 AND id_producto=@p1)
+    INSERT INTO ProductoProveedor (id_proveedor,id_producto,precioCompra,tiempoEntrega,descuento) VALUES (@prov1,@p1,450.00,5,0);
+IF @prov1 IS NOT NULL AND @p5 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ProductoProveedor WHERE id_proveedor=@prov1 AND id_producto=@p5)
+    INSERT INTO ProductoProveedor (id_proveedor,id_producto,precioCompra,tiempoEntrega,descuento) VALUES (@prov1,@p5,380.00,5,0);
+IF @prov1 IS NOT NULL AND @p4 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ProductoProveedor WHERE id_proveedor=@prov1 AND id_producto=@p4)
+    INSERT INTO ProductoProveedor (id_proveedor,id_producto,precioCompra,tiempoEntrega,descuento) VALUES (@prov1,@p4,900.00,7,1.0);
+IF @prov1 IS NOT NULL AND @p8 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ProductoProveedor WHERE id_proveedor=@prov1 AND id_producto=@p8)
+    INSERT INTO ProductoProveedor (id_proveedor,id_producto,precioCompra,tiempoEntrega,descuento) VALUES (@prov1,@p8,1100.00,6,0);
+
+IF @prov2 IS NOT NULL AND @p3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ProductoProveedor WHERE id_proveedor=@prov2 AND id_producto=@p3)
+    INSERT INTO ProductoProveedor (id_proveedor,id_producto,precioCompra,tiempoEntrega,descuento) VALUES (@prov2,@p3,320.00,4,0);
+IF @prov2 IS NOT NULL AND @p7 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ProductoProveedor WHERE id_proveedor=@prov2 AND id_producto=@p7)
+    INSERT INTO ProductoProveedor (id_proveedor,id_producto,precioCompra,tiempoEntrega,descuento) VALUES (@prov2,@p7,250.00,4,0);
+
+IF @prov3 IS NOT NULL AND @p2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ProductoProveedor WHERE id_proveedor=@prov3 AND id_producto=@p2)
+    INSERT INTO ProductoProveedor (id_proveedor,id_producto,precioCompra,tiempoEntrega,descuento) VALUES (@prov3,@p2,850.00,3,0);
+IF @prov3 IS NOT NULL AND @p6 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ProductoProveedor WHERE id_proveedor=@prov3 AND id_producto=@p6)
+    INSERT INTO ProductoProveedor (id_proveedor,id_producto,precioCompra,tiempoEntrega,descuento) VALUES (@prov3,@p6,300.00,2,0);
+
+COMMIT;
+PRINT 'Seed proveedores y relaciones producto-proveedor completado.';

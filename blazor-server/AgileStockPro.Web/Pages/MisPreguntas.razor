@@ -1,4 +1,5 @@
 @page "/mis-preguntas"
+@using Microsoft.AspNetCore.WebUtilities
 @using AgileStockPro.Web.Components
 @using AgileStockPro.Web.Services.Api
 @inject AgileStockPro.Web.Services.IAuthService Auth
@@ -6,6 +7,7 @@
 @inject ISecurityQuestionsAdminService QuestionsService
 @inject Microsoft.JSInterop.IJSRuntime JS
 @inject IToastService Toast
+@inject NavigationManager Nav
 
 <AuthGuard>
     <PageHeader Title="Mis Preguntas de Seguridad" Subtitle="Configura o actualiza tus respuestas" />
@@ -21,7 +23,7 @@
             <ol style="line-height:1.5;">
                 @foreach (var a in answers)
                 {
-                    <li>@a.Pregunta</li>
+                    <li>@NormalizeMojibake(a.Pregunta)</li>
                 }
             </ol>
             <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => BeginEdit(true))">Cambiar respuestas</FluentButton>
@@ -38,7 +40,7 @@
                     var entry = editEntries[i];
                     <div class="panel" style="padding:10px; display:grid; gap:6px;">
                         <label style="font-weight:600;">Pregunta @(i+1)</label>
-                        <FluentSelect @bind-Value="entry.SelectedId" Items="catalog" OptionText="@((PreguntaSeguridadDto q) => q.Pregunta)" OptionValue="@((PreguntaSeguridadDto q) => q.IdPregunta.ToString())" Disabled="@entry.Locked" />
+                        <FluentSelect @bind-Value="entry.SelectedId" Items="catalog" OptionText="@((PreguntaSeguridadDto q) => NormalizeMojibake(q.Pregunta))" OptionValue="@((PreguntaSeguridadDto q) => q.IdPregunta.ToString())" Disabled="@entry.Locked" />
                         <FluentTextField @bind-Value="entry.Answer" Placeholder="Respuesta" Type="" />
                     </div>
                 }
@@ -57,6 +59,7 @@
     private bool saving;
     private bool needsSetup;
     private bool editing;
+    private string? returnUrl;
 
     private int requiredCount = 2;
     private List<PreguntaSeguridadDto> catalog = new();
@@ -83,6 +86,15 @@
             answers = catalog.Where(c => existing.Contains(c.Pregunta)).ToList();
             needsSetup = answers.Count < requiredCount;
             if (needsSetup) BeginEdit(false); else loading = false;
+            // Parse returnUrl so we can go back automatically after setup
+            var uri = new Uri(Nav.Uri);
+            var query = QueryHelpers.ParseQuery(uri.Query);
+            if (query.TryGetValue("returnUrl", out var r)) returnUrl = r.ToString();
+            if (!needsSetup && !editing && !string.IsNullOrWhiteSpace(returnUrl))
+            {
+                // Already configured, redirect back immediately
+                Nav.NavigateTo(returnUrl!, true);
+            }
         }
         catch (Exception ex)
         {
@@ -135,6 +147,10 @@
                 answers = catalog.Where(c => dict.Keys.Contains(c.IdPregunta)).ToList();
                 needsSetup = answers.Count < requiredCount;
                 editing = false;
+                if (!needsSetup && !string.IsNullOrWhiteSpace(returnUrl))
+                {
+                    Nav.NavigateTo(returnUrl!, true);
+                }
             }
             else Toast.ShowError("No se pudo guardar");
         }
@@ -143,5 +159,25 @@
             Toast.ShowError(ex.Message);
         }
         finally { saving = false; }
+    }
+
+    private static string NormalizeMojibake(string? s)
+    {
+        if (string.IsNullOrEmpty(s)) return string.Empty;
+        return s
+            .Replace("Â¿", "¿")
+            .Replace("Â¡", "¡")
+            .Replace("Ã¡", "á")
+            .Replace("ÃÁ", "Á")
+            .Replace("Ã©", "é")
+            .Replace("ÃÉ", "É")
+            .Replace("Ãí", "í")
+            .Replace("ÃÍ", "Í")
+            .Replace("Ã³", "ó")
+            .Replace("ÃÓ", "Ó")
+            .Replace("Ãú", "ú")
+            .Replace("ÃÚ", "Ú")
+            .Replace("Ãñ", "ñ")
+            .Replace("ÃÑ", "Ñ");
     }
 }

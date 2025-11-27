@@ -1,6 +1,8 @@
 @page "/facturacion"
 @using BusinessLogic.Services
 @using Contracts
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
 @inject IInvoicingService InvoicingService
 @inject ISupplierService SupplierService
 @inject IClientService ClientService
@@ -12,77 +14,123 @@
 <div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
     <h1>Facturación</h1>
 
-    <FluentTabs ActiveTabId="@activeTabId" OnTabChange="HandleTabChange">
-        <FluentTab Id="ventas" Label="Ventas">
-            <div style="margin-top: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>Facturas de Venta</h3>
-                    <FluentButton Appearance="Appearance.Accent" OnClick="@(() => ShowSalesForm())">Nueva Factura Venta</FluentButton>
-                </div>
+    <div style="display:flex; gap:.5rem; margin:10px 0 20px;">
+        <button class="btn @(activeTabId=="ventas"?"btn-primary":"")" @onclick="@(() => SetTab("ventas"))">Ventas</button>
+        <button class="btn @(activeTabId=="compras"?"btn-primary":"")" @onclick="@(() => SetTab("compras"))">Compras</button>
+    </div>
 
-                <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
-                    <FluentDatePicker @bind-Value="salesFrom" Label="Desde" />
-                    <FluentDatePicker @bind-Value="salesTo" Label="Hasta" />
-                    <FluentButton OnClick="LoadSalesInvoices">Filtrar</FluentButton>
-                </div>
-
-                @if (isLoadingSales)
-                {
-                    <FluentProgressRing />
-                }
-                else if (salesInvoices == null || !salesInvoices.Any())
-                {
-                    <p>No hay facturas de venta en el rango seleccionado.</p>
-                }
-                else
-                {
-                    <FluentDataGrid Items="@salesInvoices.AsQueryable()" ResizableColumns="true">
-                        <PropertyColumn Property="@(p => p.Id)" Title="#" />
-                        <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Title="Fecha" Sortable="true" />
-                        <PropertyColumn Property="@(p => p.TipoDocumento)" Title="Tipo" Sortable="true" />
-                        <PropertyColumn Property="@(p => p.Numero)" Title="Número" />
-                        <PropertyColumn Property="@(p => p.EntidadNombre)" Title="Cliente" Sortable="true" />
-                        <PropertyColumn Property="@(p => p.Total)" Format="C2" Title="Total" Sortable="true" />
-                        <PropertyColumn Property="@(p => p.Estado)" Title="Estado" />
-                    </FluentDataGrid>
-                }
+    @if (activeTabId == "ventas")
+    {
+        <div style="margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3>Facturas de Venta</h3>
+                <button class="btn btn-primary" @onclick="ShowSalesForm">Nueva Factura Venta</button>
             </div>
-        </FluentTab>
-
-        <FluentTab Id="compras" Label="Compras">
-            <div style="margin-top: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>Facturas de Compra</h3>
-                    <FluentButton Appearance="Appearance.Accent" OnClick="@(() => ShowPurchaseForm())">Registrar Factura Compra</FluentButton>
+            <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-end; flex-wrap:wrap;">
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label>Desde</label>
+                    <input type="date" class="input input-short" value="@salesFrom?.ToString("yyyy-MM-dd")" @onchange="OnSalesFromChanged" />
                 </div>
-
-                <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
-                    <FluentDatePicker @bind-Value="purchaseFrom" Label="Desde" />
-                    <FluentDatePicker @bind-Value="purchaseTo" Label="Hasta" />
-                    <FluentButton OnClick="LoadPurchaseInvoices">Filtrar</FluentButton>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label>Hasta</label>
+                    <input type="date" class="input input-short" value="@salesTo?.ToString("yyyy-MM-dd")" @onchange="OnSalesToChanged" />
                 </div>
-
-                @if (isLoadingPurchases)
-                {
-                    <FluentProgressRing />
-                }
-                else if (purchaseInvoices == null || !purchaseInvoices.Any())
-                {
-                    <p>No hay facturas de compra en el rango seleccionado.</p>
-                }
-                else
-                {
-                    <FluentDataGrid Items="@purchaseInvoices.AsQueryable()" ResizableColumns="true">
-                        <PropertyColumn Property="@(p => p.Id)" Title="#" />
-                        <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Title="Fecha" Sortable="true" />
-                        <PropertyColumn Property="@(p => p.Numero)" Title="Número" />
-                        <PropertyColumn Property="@(p => p.EntidadNombre)" Title="Proveedor" Sortable="true" />
-                        <PropertyColumn Property="@(p => p.Total)" Format="C2" Title="Total" Sortable="true" />
-                    </FluentDataGrid>
-                }
+                <button class="btn" @onclick="LoadSalesInvoices">Filtrar</button>
             </div>
-        </FluentTab>
-    </FluentTabs>
+            @if (isLoadingSales)
+            {
+                <div class="loading" style="padding:.75rem; font-size:.9rem; opacity:.8;">Cargando facturas de venta...</div>
+            }
+            else if (salesInvoices == null || !salesInvoices.Any())
+            {
+                <p>No hay facturas de venta en el rango seleccionado.</p>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Número</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in salesInvoices)
+                        {
+                            <tr>
+                                <td>@p.Id</td>
+                                <td>@p.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td>@p.TipoDocumento</td>
+                                <td>@p.Numero</td>
+                                <td>@p.EntidadNombre</td>
+                                <td>@p.Total.ToString("C2")</td>
+                                <td>@p.Estado</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+    else if (activeTabId == "compras")
+    {
+        <div style="margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3>Facturas de Compra</h3>
+                <button class="btn btn-primary" @onclick="ShowPurchaseForm">Registrar Factura Compra</button>
+            </div>
+            <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-end; flex-wrap:wrap;">
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label>Desde</label>
+                    <input type="date" class="input input-short" value="@purchaseFrom?.ToString("yyyy-MM-dd")" @onchange="OnPurchaseFromChanged" />
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label>Hasta</label>
+                    <input type="date" class="input input-short" value="@purchaseTo?.ToString("yyyy-MM-dd")" @onchange="OnPurchaseToChanged" />
+                </div>
+                <button class="btn" @onclick="LoadPurchaseInvoices">Filtrar</button>
+            </div>
+            @if (isLoadingPurchases)
+            {
+                <div class="loading" style="padding:.75rem; font-size:.9rem; opacity:.8;">Cargando facturas de compra...</div>
+            }
+            else if (purchaseInvoices == null || !purchaseInvoices.Any())
+            {
+                <p>No hay facturas de compra en el rango seleccionado.</p>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Fecha</th>
+                            <th>Número</th>
+                            <th>Proveedor</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in purchaseInvoices)
+                        {
+                            <tr>
+                                <td>@p.Id</td>
+                                <td>@p.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td>@p.Numero</td>
+                                <td>@p.EntidadNombre</td>
+                                <td>@p.Total.ToString("C2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
 </div>
 
 @* Modal for Sales Invoice *@
@@ -90,55 +138,71 @@
 {
     <div class="modal-backdrop">
         <div class="modal-content">
-            <h3>Nueva Factura de Venta</h3>
+            <h3 style="margin-top:0;">Nueva Factura de Venta</h3>
             <div class="form-group">
-                <FluentSelect Items="@customers"
-                              OptionText="@((ClientDto c) => c.Nombre)"
-                              OptionValue="@((ClientDto c) => c.Id.ToString())"
-                              @bind-Value="salesForm.ClienteIdStr"
-                              Label="Cliente"
-                              Placeholder="Seleccione Cliente..." />
+                <label>Cliente</label>
+                <select class="input" @bind="salesForm.ClienteIdStr">
+                    <option value="">Seleccione Cliente...</option>
+                    @foreach (var c in customers)
+                    {
+                        <option value="@c.Id">@c.Nombre</option>
+                    }
+                </select>
             </div>
             <div class="form-group">
-                <FluentSelect Items="@docTypes"
-                              @bind-Value="salesForm.TipoDocumento"
-                              Label="Tipo Documento" />
+                <label>Tipo Documento</label>
+                <select class="input" @bind="salesForm.TipoDocumento">
+                    @foreach(var t in docTypes){<option value="@t">@t</option>}
+                </select>
             </div>
             <div class="form-group">
-                <FluentDatePicker @bind-Value="salesForm.Fecha" Label="Fecha" />
+                <label>Fecha</label>
+                <input type="date" class="input" value="@salesForm.Fecha?.ToString("yyyy-MM-dd")" @onchange="OnSalesFormDateChanged" />
             </div>
 
-            <h4>Items</h4>
+            <h4 style="margin-bottom:8px;">Items</h4>
             <div class="items-grid">
-                <FluentSelect Items="@products"
-                              OptionText="@((ProductDto p) => $"{p.Codigo} - {p.Nombre}")"
-                              OptionValue="@((ProductDto p) => p.Id.ToString())"
-                              @bind-Value="newItem.ProductIdStr"
-                              Label="Producto"
-                              Placeholder="Agregar Producto..." />
-                <FluentNumberField @bind-Value="newItem.Cantidad" Label="Cant" Min="1" />
-                <FluentNumberField @bind-Value="newItem.Precio" Label="Precio" />
-                <FluentButton OnClick="AddSalesItem">Agregar</FluentButton>
+                <select class="input" @bind="newItem.ProductIdStr">
+                    <option value="">Producto...</option>
+                    @foreach(var p in products){<option value="@p.Id">@p.Codigo - @p.Nombre</option>}
+                </select>
+                <input class="input" type="number" min="1" @bind="newItem.Cantidad" />
+                <input class="input" type="number" step="0.01" @bind="newItem.Precio" />
+                <button class="btn" @onclick="AddSalesItem">Agregar</button>
             </div>
-
-            <FluentDataGrid Items="@salesForm.Items.AsQueryable()" Style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
-                <PropertyColumn Property="@(p => p.Descripcion)" Title="Producto" />
-                <PropertyColumn Property="@(p => p.Cantidad)" Title="Cant" />
-                <PropertyColumn Property="@(p => p.PrecioUnitario)" Format="C2" Title="Precio" />
-                <TemplateColumn Title="Subtotal">
-                    @((context.Cantidad * context.PrecioUnitario).ToString("C2"))
-                </TemplateColumn>
-                <TemplateColumn Title="Acciones">
-                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => salesForm.Items.Remove(context))" Appearance="Appearance.Neutral" />
-                </TemplateColumn>
-            </FluentDataGrid>
+            <div style="margin-top:10px; max-height:200px; overflow-y:auto; border:1px solid var(--stroke-color); border-radius:8px;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:var(--neutral-layer-2);">
+                            <th style="padding:6px 8px; text-align:left;">Producto</th>
+                            <th style="padding:6px 8px; text-align:left;">Cant</th>
+                            <th style="padding:6px 8px; text-align:left;">Precio</th>
+                            <th style="padding:6px 8px; text-align:left;">Subtotal</th>
+                            <th style="padding:6px 8px; text-align:left;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var it in salesForm.Items)
+                        {
+                            <tr>
+                                <td style="padding:6px 8px;">@it.Descripcion</td>
+                                <td style="padding:6px 8px;">@it.Cantidad</td>
+                                <td style="padding:6px 8px;">@it.PrecioUnitario.ToString("C2")</td>
+                                <td style="padding:6px 8px;">@( (it.Cantidad * it.PrecioUnitario).ToString("C2") )</td>
+                                <td style="padding:6px 8px;">
+                                    <button class="btn" @onclick="() => salesForm.Items.Remove(it)">Eliminar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
             <div style="text-align: right; margin-top: 10px; font-weight: bold;">
                 Total: @salesForm.Items.Sum(x => x.Cantidad * x.PrecioUnitario).ToString("C2")
             </div>
-
-            <div class="modal-actions">
-                <FluentButton OnClick="@(() => showSalesForm = false)">Cancelar</FluentButton>
-                <FluentButton Appearance="Appearance.Accent" OnClick="SubmitSalesInvoice" Loading="@isSubmitting">Guardar</FluentButton>
+            <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:10px;">
+                <button class="btn" @onclick="() => showSalesForm = false" disabled="@isSubmitting">Cancelar</button>
+                <button class="btn btn-primary" @onclick="SubmitSalesInvoice" disabled="@isSubmitting">@(isSubmitting?"Guardando...":"Guardar")</button>
             </div>
         </div>
     </div>
@@ -149,71 +213,80 @@
 {
     <div class="modal-backdrop">
         <div class="modal-content">
-            <h3>Registrar Factura de Compra</h3>
+            <h3 style="margin-top:0;">Registrar Factura de Compra</h3>
             <div class="form-group">
-                <FluentSelect Items="@suppliers"
-                              OptionText="@((SupplierDto s) => s.Nombre)"
-                              OptionValue="@((SupplierDto s) => s.Id.ToString())"
-                              @bind-Value="purchaseForm.ProveedorIdStr"
-                              Label="Proveedor"
-                              Placeholder="Seleccione Proveedor..." />
+                <label>Proveedor</label>
+                <select class="input" @bind="purchaseForm.ProveedorIdStr">
+                    <option value="">Seleccione Proveedor...</option>
+                    @foreach (var s in suppliers)
+                    {
+                        <option value="@s.Id">@s.Nombre</option>
+                    }
+                </select>
             </div>
             <div class="form-group">
-                <FluentTextField @bind-Value="purchaseForm.Numero" Label="Número Factura" />
+                <label>Número Factura</label>
+                <input class="input" @bind="purchaseForm.Numero" />
             </div>
             <div class="form-group">
-                <FluentDatePicker @bind-Value="purchaseForm.Fecha" Label="Fecha" />
+                <label>Fecha</label>
+                <input type="date" class="input" value="@purchaseForm.Fecha?.ToString("yyyy-MM-dd")" @onchange="OnPurchaseFormDateChanged" />
             </div>
 
-            <h4>Items</h4>
+            <h4 style="margin-bottom:8px;">Items</h4>
             <div class="items-grid">
-                <FluentSelect Items="@products"
-                              OptionText="@((ProductDto p) => $"{p.Codigo} - {p.Nombre}")"
-                              OptionValue="@((ProductDto p) => p.Id.ToString())"
-                              @bind-Value="newItem.ProductIdStr"
-                              Label="Producto"
-                              Placeholder="Agregar Producto..." />
-                <FluentNumberField @bind-Value="newItem.Cantidad" Label="Cant" Min="1" />
-                <FluentNumberField @bind-Value="newItem.Precio" Label="Precio" />
-                <FluentButton OnClick="AddPurchaseItem">Agregar</FluentButton>
+                <select class="input" @bind="newItem.ProductIdStr">
+                    <option value="">Producto...</option>
+                    @foreach(var p in products){<option value="@p.Id">@p.Codigo - @p.Nombre</option>}
+                </select>
+                <input class="input" type="number" min="1" @bind="newItem.Cantidad" />
+                <input class="input" type="number" step="0.01" @bind="newItem.Precio" />
+                <button class="btn" @onclick="AddPurchaseItem">Agregar</button>
             </div>
-
-            <FluentDataGrid Items="@purchaseForm.Items.AsQueryable()" Style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
-                <PropertyColumn Property="@(p => p.Descripcion)" Title="Producto" />
-                <PropertyColumn Property="@(p => p.Cantidad)" Title="Cant" />
-                <PropertyColumn Property="@(p => p.PrecioUnitario)" Format="C2" Title="Precio" />
-                <TemplateColumn Title="Subtotal">
-                    @((context.Cantidad * context.PrecioUnitario).ToString("C2"))
-                </TemplateColumn>
-                <TemplateColumn Title="Acciones">
-                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => purchaseForm.Items.Remove(context))" Appearance="Appearance.Neutral" />
-                </TemplateColumn>
-            </FluentDataGrid>
+            <div style="margin-top:10px; max-height:200px; overflow-y:auto; border:1px solid var(--stroke-color); border-radius:8px;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:var(--neutral-layer-2);">
+                            <th style="padding:6px 8px; text-align:left;">Producto</th>
+                            <th style="padding:6px 8px; text-align:left;">Cant</th>
+                            <th style="padding:6px 8px; text-align:left;">Precio</th>
+                            <th style="padding:6px 8px; text-align:left;">Subtotal</th>
+                            <th style="padding:6px 8px; text-align:left;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var it in purchaseForm.Items)
+                        {
+                            <tr>
+                                <td style="padding:6px 8px;">@it.Descripcion</td>
+                                <td style="padding:6px 8px;">@it.Cantidad</td>
+                                <td style="padding:6px 8px;">@it.PrecioUnitario.ToString("C2")</td>
+                                <td style="padding:6px 8px;">@( (it.Cantidad * it.PrecioUnitario).ToString("C2") )</td>
+                                <td style="padding:6px 8px;">
+                                    <button class="btn" @onclick="() => purchaseForm.Items.Remove(it)">Eliminar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
             <div style="text-align: right; margin-top: 10px; font-weight: bold;">
                 Total: @purchaseForm.Items.Sum(x => x.Cantidad * x.PrecioUnitario).ToString("C2")
             </div>
-
-            <div class="modal-actions">
-                <FluentButton OnClick="@(() => showPurchaseForm = false)">Cancelar</FluentButton>
-                <FluentButton Appearance="Appearance.Accent" OnClick="SubmitPurchaseInvoice" Loading="@isSubmitting">Guardar</FluentButton>
+            <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:10px;">
+                <button class="btn" @onclick="() => showPurchaseForm = false" disabled="@isSubmitting">Cancelar</button>
+                <button class="btn btn-primary" @onclick="SubmitPurchaseInvoice" disabled="@isSubmitting">@(isSubmitting?"Guardando...":"Guardar")</button>
             </div>
         </div>
     </div>
 }
 
 <style>
-    .modal-backdrop {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;
-    }
-    .modal-content {
-        background: white; padding: 20px; border-radius: 8px; width: 600px; max-width: 90%;
-        max-height: 90vh; overflow-y: auto;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .form-group { margin-bottom: 15px; }
-    .items-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 10px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.55); display:flex; justify-content:center; align-items:flex-start; padding-top:4vh; z-index:1000; }
+    .modal-content { background: var(--neutral-layer-1); color: var(--neutral-foreground-rest); padding:20px 22px; border-radius:12px; width:640px; max-width:92%; max-height:90vh; overflow-y:auto; border:1px solid var(--container-border); box-shadow:0 40px 100px rgba(2,6,23,0.55); }
+    .form-group { margin-bottom:14px; display:flex; flex-direction:column; gap:4px; }
+    .items-grid { display:grid; grid-template-columns: 2.2fr 0.8fr 1fr auto; gap:10px; align-items:start; }
+    @@media (max-width:680px){ .items-grid { grid-template-columns: 1fr 1fr 1fr auto; } }
 </style>
 
 @code {
@@ -249,11 +322,13 @@
         await LoadSalesInvoices();
     }
 
-    async Task HandleTabChange(FluentTab tab)
+    void SetTab(string id)
     {
-        activeTabId = tab.Id;
+        activeTabId = id;
         if (activeTabId == "compras" && purchaseInvoices == null)
-            await LoadPurchaseInvoices();
+        {
+            _ = LoadPurchaseInvoices();
+        }
     }
 
     async Task LoadSalesInvoices()
@@ -404,4 +479,11 @@
         public int Cantidad { get; set; } = 1;
         public decimal Precio { get; set; }
     }
+
+    void OnSalesFromChanged(ChangeEventArgs e) { if (DateTime.TryParse(e.Value?.ToString(), out var d)) salesFrom = d; }
+    void OnSalesToChanged(ChangeEventArgs e) { if (DateTime.TryParse(e.Value?.ToString(), out var d)) salesTo = d; }
+    void OnPurchaseFromChanged(ChangeEventArgs e) { if (DateTime.TryParse(e.Value?.ToString(), out var d)) purchaseFrom = d; }
+    void OnPurchaseToChanged(ChangeEventArgs e) { if (DateTime.TryParse(e.Value?.ToString(), out var d)) purchaseTo = d; }
+    void OnSalesFormDateChanged(ChangeEventArgs e) { if (DateTime.TryParse(e.Value?.ToString(), out var d)) salesForm.Fecha = d; }
+    void OnPurchaseFormDateChanged(ChangeEventArgs e) { if (DateTime.TryParse(e.Value?.ToString(), out var d)) purchaseForm.Fecha = d; }
 }

@@ -107,6 +107,12 @@ namespace DataAccess.Repositories
             return id != null ? Convert.ToInt32(id) : 0;
         }
 
+        public async Task<int> GetDefaultSalesStatusIdAsync()
+        {
+            var obj = await ExecuteScalarAsync("SELECT TOP 1 id_estadoVentas FROM EstadoVentas ORDER BY id_estadoVentas ASC", p => { }, CommandType.Text);
+            return obj != null ? Convert.ToInt32(obj) : 0;
+        }
+
         public async Task AddSaleDetailAsync(int saleId, int productId, int quantity, decimal unitPrice)
         {
             await ExecuteNonQueryAsync("sp_AgregarNotaPedido", p =>

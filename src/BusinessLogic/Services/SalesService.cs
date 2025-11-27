@@ -29,7 +29,9 @@ namespace BusinessLogic.Services
 
             // 1. Create Sale Header
             // Default status 1 (assuming 1 is 'Pending' or similar in EstadoVentas)
-            int saleId = await _repository.CreateSaleAsync(request.IdCliente, request.Fecha, request.TipoDocumento, request.Total, 1);
+            // Estado: resolver desde BD el primero disponible (evitar IDs fijos)
+            var statusId = await _repository.GetDefaultSalesStatusIdAsync();
+            int saleId = await _repository.CreateSaleAsync(request.IdCliente, request.Fecha, request.TipoDocumento, request.Total, statusId);
 
             // 2. Create Details
             foreach (var item in request.Items)

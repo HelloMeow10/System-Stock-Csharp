@@ -4,27 +4,37 @@
 
 <section class="panel">
 	<div class="panel-header">Apariencia</div>
-	<div style="display:flex; gap:1rem; align-items:center">
-		<label>Tema:</label>
-		<select class="input" @bind="theme">
-			<option value="auto">Auto</option>
-			<option value="light">Claro</option>
-			<option value="dark">Oscuro</option>
-		</select>
-		<label>Color de acento:</label>
-		<input class="input" type="color" @bind="accent" />
-		<button class="btn btn-primary" @onclick="Aplicar">Aplicar</button>
+	<div class="config-appearance">
+		<div class="config-row">
+			<label>Tema:</label>
+			<select class="input" @bind="theme">
+				<option value="auto">Auto</option>
+				<option value="light">Claro</option>
+				<option value="dark">Oscuro</option>
+			</select>
+		</div>
+		<div class="config-row config-accent">
+			<label>Color de acento:</label>
+			<input class="input" type="color" @bind="accent" />
+		</div>
+		<div class="config-actions">
+			<button class="btn btn-primary" @onclick="Aplicar">Aplicar</button>
+		</div>
 	</div>
 	<p style="margin-top:.5rem; color:var(--neutral-foreground-rest)">Los cambios se guardan en este navegador y se aplican de inmediato.</p>
 </section>
 
 <section class="panel">
 	<div class="panel-header">Notificaciones</div>
-	<label style="display:flex; gap:.5rem; align-items:center">
-		<input type="checkbox" @bind="notifEmail" /> Email
+	<label class="fancy-checkbox">
+		<input type="checkbox" @bind="notifEmail" />
+		<span class="fancy-check" aria-hidden="true"></span>
+		<span class="fancy-label">Email</span>
 	</label>
-	<label style="display:flex; gap:.5rem; align-items:center">
-		<input type="checkbox" @bind="notifToast" /> Toasts en app
+	<label class="fancy-checkbox">
+		<input type="checkbox" @bind="notifToast" />
+		<span class="fancy-check" aria-hidden="true"></span>
+		<span class="fancy-label">Toasts en app</span>
 	</label>
 </section>
 

@@ -14,44 +14,69 @@
         <h1>Proveedores</h1>
         @if (currentUser?.IsAdmin == true)
         {
-            <FluentButton Appearance="Appearance.Accent" OnClick="@AddSupplier">Nuevo Proveedor</FluentButton>
+            <button class="btn btn-primary" @onclick="AddSupplier">Nuevo Proveedor</button>
         }
     </div>
 
-    <FluentTextField @bind-Value="searchTerm" Placeholder="Buscar por nombre o CUIT..." Style="width: 300px; margin-bottom: 20px;" @oninput="@(e => Search(e.Value?.ToString()))" />
+    <input class="search" style="margin-bottom:20px;" placeholder="Buscar por nombre o CUIT..." value="@searchTerm" @oninput="OnSearchInput" />
 
     @if (suppliers == null)
     {
-        <FluentProgressRing />
+        <div class="loading" style="padding:1rem; font-size:.9rem; opacity:.8;">Cargando proveedores...</div>
     }
     else
     {
-        <FluentDataGrid Items="@suppliers.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.5fr 0.8fr 1fr 1fr 0.8fr 0.6fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 1fr 1fr">
-                <PropertyColumn Property="@(p => p.Id)" Sortable="true" />
-                <PropertyColumn Property="@(p => p.Codigo)" Sortable="true" Title="Código" />
-                <PropertyColumn Property="@(p => p.Nombre)" Sortable="true" />
-                <PropertyColumn Property="@(p => p.RazonSocial)" Sortable="true" Title="Razón Social" />
-                <PropertyColumn Property="@(p => p.Cuit)" Sortable="true" Title="CUIT" />
-                <PropertyColumn Property="@(p => p.TiempoEntrega)" Sortable="true" Title="Entrega" />
-                <PropertyColumn Property="@(p => p.Descuento)" Sortable="true" Title="Desc %" />
-                <PropertyColumn Property="@(p => p.PlazoPagoDias)" Sortable="true" Title="Plazo Pago" />
-                <PropertyColumn Property="@(p => p.CondicionIva)" Sortable="true" Title="IVA" />
-                <PropertyColumn Property="@(p => p.Email)" Sortable="true" Title="Email" />
-                <PropertyColumn Property="@(p => p.Telefono)" Sortable="true" Title="Teléfono" />
-                <PropertyColumn Property="@(p => p.Provincia)" Sortable="true" Title="Prov." />
-                <PropertyColumn Property="@(p => p.Ciudad)" Sortable="true" Title="Ciudad" />
-                <TemplateColumn Title="Acciones">
-                @if (currentUser?.IsAdmin == true)
+        <table>
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Razón Social</th>
+                    <th>CUIT</th>
+                    <th>Entrega</th>
+                    <th>Desc %</th>
+                    <th>Plazo Pago</th>
+                    <th>IVA</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Prov.</th>
+                    <th>Ciudad</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in suppliers)
                 {
-                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Edit())" OnClick="@(() => Edit(context))" Appearance="Appearance.Lightweight" />
-                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => Delete(context))" Appearance="Appearance.Lightweight" />
+                    <tr>
+                        <td>@p.Id</td>
+                        <td>@p.Codigo</td>
+                        <td>@p.Nombre</td>
+                        <td>@p.RazonSocial</td>
+                        <td>@p.Cuit</td>
+                        <td>@p.TiempoEntrega</td>
+                        <td>@p.Descuento</td>
+                        <td>@p.PlazoPagoDias</td>
+                        <td>@p.CondicionIva</td>
+                        <td>@p.Email</td>
+                        <td>@p.Telefono</td>
+                        <td>@p.Provincia</td>
+                        <td>@p.Ciudad</td>
+                        <td>
+                            @if (currentUser?.IsAdmin == true)
+                            {
+                                <button class="btn" @onclick="() => Edit(p)">Editar</button>
+                                <button class="btn" @onclick="() => Delete(p)">Eliminar</button>
+                            }
+                            else
+                            {
+                                <span class="muted" style="font-size:12px;">Solo lectura</span>
+                            }
+                        </td>
+                    </tr>
                 }
-                else
-                {
-                    <span class="muted" style="font-size:12px;">Solo lectura</span>
-                }
-            </TemplateColumn>
-        </FluentDataGrid>
+            </tbody>
+        </table>
     }
 </div>
 
@@ -82,6 +107,12 @@
         {
             suppliers = await SupplierService.SearchAsync(searchTerm);
         }
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        await Search(searchTerm);
     }
 
     private async Task AddSupplier()

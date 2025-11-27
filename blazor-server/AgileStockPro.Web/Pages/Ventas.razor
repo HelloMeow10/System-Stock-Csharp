@@ -7,7 +7,9 @@
 @inject IDialogService DialogService
 @inject AgileStockPro.Web.Services.IAuthService AuthService
 @inject NavigationManager Nav
-@inject Microsoft.JSInterop.IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@* JS ya no se requiere: removemos Fluent/shadow-root *@
 
 <PageTitle>Ventas</PageTitle>
 
@@ -16,30 +18,51 @@
         <h1>Ventas</h1>
         @if (currentUser?.IsAdmin == true)
         {
-            <FluentButton Appearance="Appearance.Accent" OnClick="@CreateSale">Nueva Venta</FluentButton>
+            <button class="btn btn-primary" @onclick="CreateSale">Nueva Venta</button>
         }
     </div>
 
     <div class="filters">
-        <FluentDatePicker @bind-Value="startDate" Label="Desde" />
-        <FluentDatePicker @bind-Value="endDate" Label="Hasta" />
-        <FluentButton OnClick="@LoadData">Filtrar</FluentButton>
+        <label for="desde">Desde</label>
+        <InputDate TValue="DateTime?" @bind-Value="startDate" class="input" id="desde" />
+        <label for="hasta">Hasta</label>
+        <InputDate TValue="DateTime?" @bind-Value="endDate" class="input" id="hasta" />
+        <button class="btn" @onclick="LoadData">Filtrar</button>
     </div>
 
     @if (sales == null)
     {
-        <FluentProgressRing />
+        <div class="loading-inline" aria-live="polite">Cargando…</div>
     }
     else
     {
-        <FluentDataGrid Items="@sales.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.5fr 1fr 1fr 1fr 1fr 1fr">
-            <PropertyColumn Property="@(p => p.Id)" Sortable="true" Title="#" />
-            <PropertyColumn Property="@(p => p.Cliente)" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Sortable="true" />
-            <PropertyColumn Property="@(p => p.TipoDocumento)" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Total)" Format="C2" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Estado)" Sortable="true" />
-        </FluentDataGrid>
+        <div class="data-grid">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Tipo Documento</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var p in sales)
+                {
+                    <tr>
+                        <td>@p.Id</td>
+                        <td>@p.Cliente</td>
+                        <td>@p.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td>@p.TipoDocumento</td>
+                        <td>@p.Total.ToString("C2")</td>
+                        <td>@p.Estado</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
     }
 </div>
 
@@ -47,34 +70,13 @@
     private IEnumerable<SaleOrderDto>? sales;
     private DateTime? startDate = DateTime.Today.AddDays(-30);
     private DateTime? endDate = DateTime.Today;
+    
 
     private AgileStockPro.Web.Models.AppUser? currentUser;
     protected override async Task OnInitializedAsync()
     {
         currentUser = await AuthService.GetCurrentUserAsync();
         await LoadData();
-    }
-
-    private IJSObjectReference? _ventasShadowModule;
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            try
-            {
-                _ventasShadowModule = await JS.InvokeAsync<Microsoft.JSInterop.IJSObjectReference>("import", "/js/shadow-styles.js");
-                await _ventasShadowModule.InvokeVoidAsync("applyVentasShadowStyles");
-            }
-            catch { /* ignore failures — non-critical */ }
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_ventasShadowModule != null)
-        {
-            try { await _ventasShadowModule.DisposeAsync(); } catch { }
-        }
     }
 
     private async Task LoadData()
