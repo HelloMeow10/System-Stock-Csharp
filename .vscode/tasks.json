@@ -222,6 +222,84 @@
 			],
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"label": "Build Blazor Server",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"blazor-server/AgileStockPro.Web/AgileStockPro.Web.csproj",
+				"-c",
+				"Debug"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build Services",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"src/Services/Services.csproj",
+				"-c",
+				"Debug"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build Services",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"src/Services/Services.csproj",
+				"-c",
+				"Debug"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build Services",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"src/Services/Services.csproj",
+				"-c",
+				"Debug"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build Blazor Server",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"blazor-server/AgileStockPro.Web/AgileStockPro.Web.csproj",
+				"-c",
+				"Debug"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build Services",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"src/Services/Services.csproj",
+				"-c",
+				"Debug"
+			],
+			"isBackground": false,
+			"group": "build"
 		}
 	]
 }
