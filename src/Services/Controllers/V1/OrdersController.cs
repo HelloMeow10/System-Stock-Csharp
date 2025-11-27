@@ -21,19 +21,24 @@ namespace Services.Controllers.V1
         {
             using var conn = _connectionFactory.CreateConnection();
             await EnsureOpenAsync(conn, HttpContext.RequestAborted);
-            var sql = @"
-                SELECT v.id_venta AS Id,
-                       c.nombre AS Cliente,
-                       v.fecha AS Fecha,
-                       v.montoTotal AS Total,
-                       ISNULL(ev.estado,'Registrado') AS Estado
-                FROM Ventas v
-                INNER JOIN Clientes c ON v.id_cliente = c.id_cliente
-                LEFT JOIN EstadoVentas ev ON v.id_estadoVentas = ev.id_estadoVentas
-                WHERE (@start IS NULL OR v.fecha >= @start)
-                  AND (@end IS NULL OR v.fecha <= @end)
-                  AND (@clientId IS NULL OR v.id_cliente = @clientId)
-                ORDER BY v.fecha DESC";
+                        var sql = @"
+                                SELECT v.id_venta AS Id,
+                                             c.nombre AS Cliente,
+                                             v.fecha AS Fecha,
+                                             v.montoTotal AS Total,
+                                             CASE 
+                                                     WHEN ev.cancelada = 1 THEN 'Cancelada'
+                                                     WHEN ev.entregada = 1 THEN 'Entregada'
+                                                     WHEN ev.facturada = 1 THEN 'Facturada'
+                                                     ELSE 'Registrado'
+                                             END AS Estado
+                                FROM Ventas v
+                                INNER JOIN Clientes c ON v.id_cliente = c.id_cliente
+                                LEFT JOIN EstadoVentas ev ON v.id_estadoVentas = ev.id_estadoVentas
+                                WHERE (@start IS NULL OR v.fecha >= @start)
+                                    AND (@end IS NULL OR v.fecha <= @end)
+                                    AND (@clientId IS NULL OR v.id_cliente = @clientId)
+                                ORDER BY v.fecha DESC";
             using var cmd = new SqlCommand(sql, (SqlConnection)conn);
             cmd.Parameters.AddWithValue("@start", (object?)start ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@end", (object?)end ?? DBNull.Value);
