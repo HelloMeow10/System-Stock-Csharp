@@ -65,7 +65,6 @@
     private async Task LoadData()
     {
         // Load via IAppDataService API-backed service for now
-        var dataSvc = (AgileStockPro.Web.Services.IAppDataService?)AuthService is null ? null : null;
         // Fallback to injected PurchaseService if available
         orders = await PurchaseService.GetOrdersAsync(null);
     }

@@ -135,9 +135,9 @@ public class ApiAppDataService : IAppDataService
     private static OrdenCompra Map(PurchaseOrderDto dto) => new()
     {
         Id = dto.Id,
-        Proveedor = dto.Proveedor,
-        Fecha = dto.Fecha,
+        Supplier = dto.Proveedor ?? string.Empty,
+        Date = dto.Fecha,
         Total = dto.Total,
-        Entregado = dto.Entregado
+        Status = dto.Entregado ? "Recibida" : "Pendiente"
     };
 }
