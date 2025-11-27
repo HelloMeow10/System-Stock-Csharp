@@ -107,3 +107,35 @@ public class PartidoDto { public int IdPartido { get; set; } public string Nombr
 public class LocalidadDto { public int IdLocalidad { get; set; } public string Nombre { get; set; } = string.Empty; }
 public class GeneroDto { public int IdGenero { get; set; } public string Nombre { get; set; } = string.Empty; }
 public class TipoDocDto { public int IdTipoDoc { get; set; } public string Nombre { get; set; } = string.Empty; }
+
+// Dashboard DTOs (expected from backend)
+public class DashboardSummaryDto
+{
+    public string SalesTodayDisplay { get; set; } = string.Empty;
+    public string SalesDeltaDisplay { get; set; } = string.Empty;
+    public string SalesDeltaAria { get; set; } = string.Empty;
+    public string PurchasesTodayDisplay { get; set; } = string.Empty;
+    public string PurchasesDeltaDisplay { get; set; } = string.Empty;
+    public string PurchasesDeltaAria { get; set; } = string.Empty;
+    public string StockAvailableDisplay { get; set; } = string.Empty;
+    public string StockDeltaDisplay { get; set; } = string.Empty;
+    public string StockDeltaAria { get; set; } = string.Empty;
+    public string AlertsActiveDisplay { get; set; } = string.Empty;
+    public string AlertsDeltaDisplay { get; set; } = string.Empty;
+    public string AlertsDeltaAria { get; set; } = string.Empty;
+}
+
+public class RecentActivityDto
+{
+    public DateTime When { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+}
+
+public class TopProductDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public int Sold { get; set; }
+    public int Stock { get; set; }
+}

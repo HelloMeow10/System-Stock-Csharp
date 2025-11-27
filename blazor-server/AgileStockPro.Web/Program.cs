@@ -39,8 +39,10 @@ builder.Services.AddScoped<IAuthService, ApiAuthService>();
 builder.Services.AddScoped<AgileStockPro.Web.Services.IUserStore, AgileStockPro.Web.Services.Api.ApiUserStore>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ISecurityQuestionsAdminService, ApiSecurityQuestionsService>();
-// Sample data service for demo pages like Pedidos
-builder.Services.AddScoped<IAppDataService, AppDataService>();
+// Data services
+builder.Services.AddScoped<AppDataService>(); // fallback sample data
+builder.Services.AddScoped<IAppDataService, ApiAppDataService>(); // API-backed with fallback
+builder.Services.AddScoped<AgileStockPro.Web.Services.Api.IStockApiService, AgileStockPro.Web.Services.Api.StockApiService>();
 
 var app = builder.Build();
 

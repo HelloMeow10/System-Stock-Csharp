@@ -3233,6 +3233,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- CTE para productos + stock
     WITH StockAgg AS (
         SELECT s.id_producto,
                SUM(COALESCE(s.stock,0)) AS StockActual,
@@ -3240,30 +3241,28 @@ BEGIN
                MAX(COALESCE(s.stockMaximo,0)) AS StockMaximo
         FROM Stock s
         GROUP BY s.id_producto
-    ),
-    Filtered AS (
-         SELECT p.id_producto,
-             p.codigo,
-             p.nombre,
-             c.categoria,
-             m.marca,
-             COALESCE(p.precioVenta, 0) AS precioVenta,
-             COALESCE(sa.StockActual, 0) AS StockActual,
-             COALESCE(sa.StockMinimo, 0) AS StockMinimo,
-             COALESCE(sa.StockMaximo, 0) AS StockMaximo,
-             COALESCE(p.unidadMedida,'') AS unidadMedida,
-             COALESCE(p.peso,0) AS peso,
-             COALESCE(p.volumen,0) AS volumen,
-             COALESCE(p.puntoReposicion,0) AS puntoReposicion,
-             COALESCE(p.diasVencimiento,0) AS diasVencimiento,
-             COALESCE(p.loteObligatorio,0) AS loteObligatorio,
-             COALESCE(p.controlVencimiento,0) AS controlVencimiento
+    ), Filtered AS (
+        SELECT p.id_producto,
+               p.codigo,
+               p.nombre,
+               c.categoria,
+               m.marca,
+               COALESCE(p.precioVenta, 0) AS precioVenta,
+               COALESCE(sa.StockActual, 0) AS StockActual,
+               COALESCE(sa.StockMinimo, 0) AS StockMinimo,
+               COALESCE(sa.StockMaximo, 0) AS StockMaximo,
+               COALESCE(p.unidadMedida,'') AS unidadMedida,
+               COALESCE(p.peso,0) AS peso,
+               COALESCE(p.volumen,0) AS volumen,
+               COALESCE(p.puntoReposicion,0) AS puntoReposicion,
+               COALESCE(p.diasVencimiento,0) AS diasVencimiento,
+               COALESCE(p.loteObligatorio,0) AS loteObligatorio,
+               COALESCE(p.controlVencimiento,0) AS controlVencimiento
         FROM Productos p
         LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
         LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
         LEFT JOIN StockAgg sa ON sa.id_producto = p.id_producto
-        WHERE @Search IS NULL
-           OR @Search = ''
+        WHERE (@Search IS NULL OR @Search = '')
            OR p.codigo LIKE '%' + @Search + '%'
            OR p.nombre LIKE '%' + @Search + '%'
            OR c.categoria LIKE '%' + @Search + '%'
@@ -3275,7 +3274,41 @@ BEGIN
     OFFSET (@PageNumber - 1) * @PageSize ROWS
     FETCH NEXT @PageSize ROWS ONLY;
 
-    -- total para paginación
+    -- Repetir CTE para el segundo SELECT (el alcance del CTE es solo la siguiente sentencia)
+    WITH StockAgg AS (
+        SELECT s.id_producto,
+               SUM(COALESCE(s.stock,0)) AS StockActual,
+               MAX(COALESCE(s.stockMinimo,0)) AS StockMinimo,
+               MAX(COALESCE(s.stockMaximo,0)) AS StockMaximo
+        FROM Stock s
+        GROUP BY s.id_producto
+    ), Filtered AS (
+        SELECT p.id_producto,
+               p.codigo,
+               p.nombre,
+               c.categoria,
+               m.marca,
+               COALESCE(p.precioVenta, 0) AS precioVenta,
+               COALESCE(sa.StockActual, 0) AS StockActual,
+               COALESCE(sa.StockMinimo, 0) AS StockMinimo,
+               COALESCE(sa.StockMaximo, 0) AS StockMaximo,
+               COALESCE(p.unidadMedida,'') AS unidadMedida,
+               COALESCE(p.peso,0) AS peso,
+               COALESCE(p.volumen,0) AS volumen,
+               COALESCE(p.puntoReposicion,0) AS puntoReposicion,
+               COALESCE(p.diasVencimiento,0) AS diasVencimiento,
+               COALESCE(p.loteObligatorio,0) AS loteObligatorio,
+               COALESCE(p.controlVencimiento,0) AS controlVencimiento
+        FROM Productos p
+        LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
+        LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
+        LEFT JOIN StockAgg sa ON sa.id_producto = p.id_producto
+        WHERE (@Search IS NULL OR @Search = '')
+           OR p.codigo LIKE '%' + @Search + '%'
+           OR p.nombre LIKE '%' + @Search + '%'
+           OR c.categoria LIKE '%' + @Search + '%'
+           OR m.marca LIKE '%' + @Search + '%'
+    )
     SELECT COUNT(1) AS TotalCount
     FROM Filtered;
 END

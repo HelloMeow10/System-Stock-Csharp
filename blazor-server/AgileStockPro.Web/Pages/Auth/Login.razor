@@ -1,6 +1,7 @@
 @page "/login"
 @inject NavigationManager Nav
 @inject AgileStockPro.Web.Services.IAuthService Auth
+@inject AuthenticationStateProvider AuthStateProvider
 @inject IToastService Toast
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
@@ -59,7 +60,7 @@
             {
                 <div class="lgn-section lgn-section-2fa">
                     <div class="lgn-field">
-                        <input class="lgn-input" placeholder="Código 2FA" aria-label="Código 2FA" @bind-value="twoFactorCode" />
+                        <input class="lgn-input" placeholder="Código 2FA" aria-label="Código 2FA" @bind-value="twoFactorCode" @onkeydown="@Enter2FA" />
                         @if (!string.IsNullOrEmpty(error2FA))
                         {
                             <div class="lgn-alert lgn-alert-error">@error2FA</div>
@@ -69,7 +70,7 @@
                         <button type="button" class="lgn-btn lgn-btn-primary" disabled="@busy2fa" @onclick="VerifyCode">@(busy2fa ? "Verificando…" : "Verificar")</button>
                         <button type="button" class="lgn-btn lgn-btn-secondary" @onclick="()=>{ require2FA=false; twoFactorCode=string.Empty; }">Volver</button>
                     </div>
-                    <div class="lgn-alert lgn-alert-info">Se envió un código al correo (simulado). Revisa la consola.</div>
+                    <div class="lgn-alert lgn-alert-info">Se envió un código al correo. Revisa la consola.</div>
                 </div>
             }
 
@@ -127,6 +128,11 @@
             StateHasChanged();
             return;
         }
+        // Sync Blazor auth state so [Authorize] works
+        if (AuthStateProvider is AgileStockPro.Web.Auth.CustomAuthenticationStateProvider custom)
+        {
+            await custom.LoginAsync(model.Username, model.Password);
+        }
         Toast.ShowSuccess("Sesión iniciada");
         var user = await Auth.GetCurrentUserAsync();
         if (user?.MustChangePassword == true)
@@ -158,6 +164,11 @@
             Toast.ShowError(error2FA);
             return;
         }
+        // After 2FA, ensure auth state reflects logged-in user
+        if (AuthStateProvider is AgileStockPro.Web.Auth.CustomAuthenticationStateProvider custom)
+        {
+            await custom.LoginAsync(model.Username, model.Password);
+        }
         Toast.ShowSuccess("2FA verificado");
         var user = await Auth.GetCurrentUserAsync();
         if (user?.MustChangePassword == true)
@@ -167,6 +178,14 @@
         else
         {
             Nav.NavigateTo("/dashboard", true);
+        }
+    }
+
+    private async Task Enter2FA(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await VerifyCode();
         }
     }
 

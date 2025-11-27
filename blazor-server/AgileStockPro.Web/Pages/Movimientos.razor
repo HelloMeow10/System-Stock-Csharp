@@ -126,7 +126,7 @@ else
 			var user = currentUser;
 			if (user?.BackendIdUsuario is int id && id > 0) userId = id;
 		}
-		catch (Exception ex) { error = ex.Message; }
+		catch (Exception ex) { error = $"Error cargando movimientos: {ex.Message}"; }
 	}
 
 	void ToggleForm() { showForm = !showForm; success = null; error = null; }

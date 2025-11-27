@@ -21,7 +21,11 @@ public class ApiAppDataService : IAppDataService
     public Task<IReadOnlyList<Almacen>> GetWarehousesAsync(CancellationToken ct = default) => _fallback.GetWarehousesAsync(ct);
     public Task<IReadOnlyList<StockItem>> GetStockAsync(CancellationToken ct = default) => _fallback.GetStockAsync(ct);
     public Task<IReadOnlyList<OrdenCompra>> GetPurchaseOrdersAsync(CancellationToken ct = default) => _fallback.GetPurchaseOrdersAsync(ct);
-    public Task<IReadOnlyList<Pedido>> GetOrdersAsync(CancellationToken ct = default) => _fallback.GetOrdersAsync(ct);
+    public async Task<IReadOnlyList<Pedido>> GetOrdersAsync(CancellationToken ct = default)
+    {
+        var items = await _api.GetAsync<List<OrderDto>>("api/v1/orders");
+        return items.Select(Map).ToList();
+    }
     public Task<IReadOnlyList<Factura>> GetInvoicesAsync(CancellationToken ct = default) => _fallback.GetInvoicesAsync(ct);
     public Task<IReadOnlyList<Alerta>> GetAlertsAsync(CancellationToken ct = default) => _fallback.GetAlertsAsync(ct);
 
@@ -61,6 +65,15 @@ public class ApiAppDataService : IAppDataService
         Reason = dto.Motivo
     };
 
+    private static Pedido Map(OrderDto dto) => new()
+    {
+        Id = dto.Id,
+        Customer = dto.Cliente,
+        Date = dto.Fecha,
+        Total = dto.Total,
+        Status = dto.Estado
+    };
+
     // Backend DTOs (mirror backend contracts for this feature)
     public class StockMovementDto
     {
@@ -80,5 +93,14 @@ public class ApiAppDataService : IAppDataService
         public string Producto { get; set; } = string.Empty;
         public string Motivo { get; set; } = string.Empty;
         public int Cantidad { get; set; }
+    }
+
+    public class OrderDto
+    {
+        public int Id { get; set; }
+        public string Cliente { get; set; } = string.Empty;
+        public DateTime Fecha { get; set; }
+        public decimal Total { get; set; }
+        public string Estado { get; set; } = string.Empty;
     }
 }
