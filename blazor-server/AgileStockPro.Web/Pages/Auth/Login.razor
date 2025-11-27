@@ -144,11 +144,11 @@
             var ru = GetReturnUrl();
             if (!string.IsNullOrWhiteSpace(ru))
             {
-                Nav.NavigateTo(ru!, true);
+                Nav.NavigateTo(ru!, false);
             }
             else
             {
-                Nav.NavigateTo("/dashboard", true);
+                Nav.NavigateTo("/dashboard", false);
             }
         }
     }
@@ -167,7 +167,7 @@
         // After 2FA, ensure auth state reflects logged-in user
         if (AuthStateProvider is AgileStockPro.Web.Auth.CustomAuthenticationStateProvider custom)
         {
-            await custom.LoginAsync(model.Username, model.Password);
+            await custom.RefreshAsync();
         }
         Toast.ShowSuccess("2FA verificado");
         var user = await Auth.GetCurrentUserAsync();
@@ -177,7 +177,7 @@
         }
         else
         {
-            Nav.NavigateTo("/dashboard", true);
+            Nav.NavigateTo("/dashboard", false);
         }
     }
 

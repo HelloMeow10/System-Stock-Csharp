@@ -14,9 +14,12 @@ namespace AgileStockPro.Web.Auth
             _authService = authService;
         }
 
-        public override Task<AuthenticationState> GetAuthenticationStateAsync()
+        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            return Task.FromResult(new AuthenticationState(_currentUser));
+            // Build principal from backend user (via token) so state survives reloads
+            var principal = await BuildPrincipalAsync();
+            _currentUser = principal;
+            return new AuthenticationState(_currentUser);
         }
 
         public async Task<bool> LoginAsync(string username, string password)
@@ -27,27 +30,7 @@ namespace AgileStockPro.Web.Auth
                 // Requiere 2FA o error -> no autenticamos aún.
                 return false;
             }
-            var user = await _authService.GetCurrentUserAsync();
-            var claims = new List<Claim>();
-            // Nombre
-            if (!string.IsNullOrWhiteSpace(user?.Username))
-                claims.Add(new Claim(ClaimTypes.Name, user.Username));
-            else
-                claims.Add(new Claim(ClaimTypes.Name, username));
-            // Rol
-            if (user?.IsAdmin == true)
-                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
-            else
-                claims.Add(new Claim(ClaimTypes.Role, "User"));
-            // PersonaId
-            if (user?.BackendIdPersona is int pid)
-                claims.Add(new Claim("PersonaId", pid.ToString()));
-            // Cambio obligatorio
-            if (user?.MustChangePassword == true)
-                claims.Add(new Claim("ForcePasswordChange", "true"));
-            var identity = new ClaimsIdentity(claims, "CustomAuth");
-            _currentUser = new ClaimsPrincipal(identity);
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            await RefreshAsync();
             return true;
         }
 
@@ -55,6 +38,38 @@ namespace AgileStockPro.Web.Auth
         {
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        }
+
+        public async Task RefreshAsync()
+        {
+            _currentUser = await BuildPrincipalAsync();
+            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
+        }
+
+        private async Task<ClaimsPrincipal> BuildPrincipalAsync()
+        {
+            try
+            {
+                var user = await _authService.GetCurrentUserAsync();
+                if (user == null)
+                {
+                    return new ClaimsPrincipal(new ClaimsIdentity());
+                }
+                var claims = new List<Claim>();
+                if (!string.IsNullOrWhiteSpace(user.Username))
+                    claims.Add(new Claim(ClaimTypes.Name, user.Username));
+                claims.Add(new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"));
+                if (user.BackendIdPersona is int pid)
+                    claims.Add(new Claim("PersonaId", pid.ToString()));
+                if (user.MustChangePassword == true)
+                    claims.Add(new Claim("ForcePasswordChange", "true"));
+                var identity = new ClaimsIdentity(claims, "CustomAuth");
+                return new ClaimsPrincipal(identity);
+            }
+            catch
+            {
+                return new ClaimsPrincipal(new ClaimsIdentity());
+            }
         }
     }
 }
