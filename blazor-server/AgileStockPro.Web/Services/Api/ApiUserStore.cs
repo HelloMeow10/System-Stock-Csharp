@@ -135,7 +135,18 @@ public class ApiUserStore : IUserStore
     };
 
     public Task SetCurrentUserAsync(AppUser? user) => Task.CompletedTask;
-    public Task<AppUser?> GetCurrentUserAsync() => Task.FromResult<AppUser?>(null);
+    public async Task<AppUser?> GetCurrentUserAsync()
+    {
+        try
+        {
+            var u = await _api.GetAsync<UserDto>("api/v1/users/me");
+            return Map(u);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     private static string GenerateTemporaryPassword()
     {

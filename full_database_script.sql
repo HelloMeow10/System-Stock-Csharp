@@ -3233,6 +3233,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- CTE para productos + stock
     WITH StockAgg AS (
         SELECT s.id_producto,
                SUM(COALESCE(s.stock,0)) AS StockActual,
@@ -3240,30 +3241,28 @@ BEGIN
                MAX(COALESCE(s.stockMaximo,0)) AS StockMaximo
         FROM Stock s
         GROUP BY s.id_producto
-    ),
-    Filtered AS (
-         SELECT p.id_producto,
-             p.codigo,
-             p.nombre,
-             c.categoria,
-             m.marca,
-             COALESCE(p.precioVenta, 0) AS precioVenta,
-             COALESCE(sa.StockActual, 0) AS StockActual,
-             COALESCE(sa.StockMinimo, 0) AS StockMinimo,
-             COALESCE(sa.StockMaximo, 0) AS StockMaximo,
-             COALESCE(p.unidadMedida,'') AS unidadMedida,
-             COALESCE(p.peso,0) AS peso,
-             COALESCE(p.volumen,0) AS volumen,
-             COALESCE(p.puntoReposicion,0) AS puntoReposicion,
-             COALESCE(p.diasVencimiento,0) AS diasVencimiento,
-             COALESCE(p.loteObligatorio,0) AS loteObligatorio,
-             COALESCE(p.controlVencimiento,0) AS controlVencimiento
+    ), Filtered AS (
+        SELECT p.id_producto,
+               p.codigo,
+               p.nombre,
+               c.categoria,
+               m.marca,
+               COALESCE(p.precioVenta, 0) AS precioVenta,
+               COALESCE(sa.StockActual, 0) AS StockActual,
+               COALESCE(sa.StockMinimo, 0) AS StockMinimo,
+               COALESCE(sa.StockMaximo, 0) AS StockMaximo,
+               COALESCE(p.unidadMedida,'') AS unidadMedida,
+               COALESCE(p.peso,0) AS peso,
+               COALESCE(p.volumen,0) AS volumen,
+               COALESCE(p.puntoReposicion,0) AS puntoReposicion,
+               COALESCE(p.diasVencimiento,0) AS diasVencimiento,
+               COALESCE(p.loteObligatorio,0) AS loteObligatorio,
+               COALESCE(p.controlVencimiento,0) AS controlVencimiento
         FROM Productos p
         LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
         LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
         LEFT JOIN StockAgg sa ON sa.id_producto = p.id_producto
-        WHERE @Search IS NULL
-           OR @Search = ''
+        WHERE (@Search IS NULL OR @Search = '')
            OR p.codigo LIKE '%' + @Search + '%'
            OR p.nombre LIKE '%' + @Search + '%'
            OR c.categoria LIKE '%' + @Search + '%'
@@ -3275,7 +3274,41 @@ BEGIN
     OFFSET (@PageNumber - 1) * @PageSize ROWS
     FETCH NEXT @PageSize ROWS ONLY;
 
-    -- total para paginación
+    -- Repetir CTE para el segundo SELECT (el alcance del CTE es solo la siguiente sentencia)
+    WITH StockAgg AS (
+        SELECT s.id_producto,
+               SUM(COALESCE(s.stock,0)) AS StockActual,
+               MAX(COALESCE(s.stockMinimo,0)) AS StockMinimo,
+               MAX(COALESCE(s.stockMaximo,0)) AS StockMaximo
+        FROM Stock s
+        GROUP BY s.id_producto
+    ), Filtered AS (
+        SELECT p.id_producto,
+               p.codigo,
+               p.nombre,
+               c.categoria,
+               m.marca,
+               COALESCE(p.precioVenta, 0) AS precioVenta,
+               COALESCE(sa.StockActual, 0) AS StockActual,
+               COALESCE(sa.StockMinimo, 0) AS StockMinimo,
+               COALESCE(sa.StockMaximo, 0) AS StockMaximo,
+               COALESCE(p.unidadMedida,'') AS unidadMedida,
+               COALESCE(p.peso,0) AS peso,
+               COALESCE(p.volumen,0) AS volumen,
+               COALESCE(p.puntoReposicion,0) AS puntoReposicion,
+               COALESCE(p.diasVencimiento,0) AS diasVencimiento,
+               COALESCE(p.loteObligatorio,0) AS loteObligatorio,
+               COALESCE(p.controlVencimiento,0) AS controlVencimiento
+        FROM Productos p
+        LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
+        LEFT JOIN MarcasProducto m ON p.id_marca = m.id_marca
+        LEFT JOIN StockAgg sa ON sa.id_producto = p.id_producto
+        WHERE (@Search IS NULL OR @Search = '')
+           OR p.codigo LIKE '%' + @Search + '%'
+           OR p.nombre LIKE '%' + @Search + '%'
+           OR c.categoria LIKE '%' + @Search + '%'
+           OR m.marca LIKE '%' + @Search + '%'
+    )
     SELECT COUNT(1) AS TotalCount
     FROM Filtered;
 END
@@ -3283,6 +3316,148 @@ GO
 
 -- Update sp_get_users to support @RoleId filter
 SET ANSI_NULLS ON
+GO
+
+-- Dashboard summary: ventas/compras de hoy, stock disponible, alertas activas
+IF OBJECT_ID('dbo.sp_dashboard_summary', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_dashboard_summary;
+GO
+CREATE PROCEDURE dbo.sp_dashboard_summary
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @today DATE = CAST(GETDATE() AS DATE);
+    DECLARE @yesterday DATE = DATEADD(DAY, -1, @today);
+
+    -- Ventas hoy y ayer
+    DECLARE @salesToday DECIMAL(18,2) = ISNULL((SELECT SUM(v.montoTotal) FROM Ventas v WHERE CAST(v.fecha AS DATE) = @today), 0);
+    DECLARE @salesYesterday DECIMAL(18,2) = ISNULL((SELECT SUM(v.montoTotal) FROM Ventas v WHERE CAST(v.fecha AS DATE) = @yesterday), 0);
+    DECLARE @salesDeltaPct DECIMAL(18,4) = CASE WHEN @salesYesterday = 0 THEN NULL ELSE ((@salesToday-@salesYesterday)/@salesYesterday)*100 END;
+
+    -- Compras hoy y ayer
+    DECLARE @purchToday DECIMAL(18,2) = ISNULL((SELECT SUM(f.total) FROM FacturaCompra f WHERE CAST(f.fecha AS DATE) = @today), 0);
+    DECLARE @purchYesterday DECIMAL(18,2) = ISNULL((SELECT SUM(f.total) FROM FacturaCompra f WHERE CAST(f.fecha AS DATE) = @yesterday), 0);
+    DECLARE @purchDeltaPct DECIMAL(18,4) = CASE WHEN @purchYesterday = 0 THEN NULL ELSE ((@purchToday-@purchYesterday)/@purchYesterday)*100 END;
+
+    -- Stock disponible (total unidades)
+    DECLARE @stockAvailable INT = ISNULL((SELECT SUM(ISNULL(s.stock,0)) FROM Stock s), 0);
+
+    -- Alertas activas (stock bajo/crítico)
+    DECLARE @alerts INT = ISNULL((
+        SELECT COUNT(1)
+        FROM (
+            SELECT p.id_producto
+            FROM Productos p
+            LEFT JOIN Stock s ON p.id_producto = s.id_producto
+            GROUP BY p.id_producto
+            HAVING SUM(ISNULL(s.stock,0)) <= MAX(ISNULL(s.stockMinimo,0))
+                OR (MAX(ISNULL(p.puntoReposicion,0)) > 0 AND SUM(ISNULL(s.stock,0)) <= MAX(ISNULL(p.puntoReposicion,0)))
+        ) X
+    ), 0);
+
+    SELECT 
+        -- Display strings (client expects strings)
+        FORMAT(@salesToday, 'C2', 'es-AR')        AS SalesTodayDisplay,
+        CASE WHEN @salesDeltaPct IS NULL THEN ''
+             ELSE (CASE WHEN @salesDeltaPct>=0 THEN '+' ELSE '' END) + FORMAT(@salesDeltaPct, 'N1', 'es-AR') + '%'
+        END                                       AS SalesDeltaDisplay,
+        CASE WHEN @salesDeltaPct IS NULL THEN ''
+             WHEN @salesDeltaPct>=0 THEN N'Subió ' + FORMAT(@salesDeltaPct, 'N1', 'es-AR') + N'% comparado a ayer'
+             ELSE N'Bajó ' + FORMAT(ABS(@salesDeltaPct), 'N1', 'es-AR') + N'% comparado a ayer' END AS SalesDeltaAria,
+
+        FORMAT(@purchToday, 'C2', 'es-AR')        AS PurchasesTodayDisplay,
+        CASE WHEN @purchDeltaPct IS NULL THEN ''
+             ELSE (CASE WHEN @purchDeltaPct>=0 THEN '+' ELSE '' END) + FORMAT(@purchDeltaPct, 'N1', 'es-AR') + '%'
+        END                                       AS PurchasesDeltaDisplay,
+        CASE WHEN @purchDeltaPct IS NULL THEN ''
+             WHEN @purchDeltaPct>=0 THEN N'Subió ' + FORMAT(@purchDeltaPct, 'N1', 'es-AR') + N'% comparado a ayer'
+             ELSE N'Bajó ' + FORMAT(ABS(@purchDeltaPct), 'N1', 'es-AR') + N'% comparado a ayer' END AS PurchasesDeltaAria,
+
+        FORMAT(@stockAvailable, 'N0', 'es-AR')    AS StockAvailableDisplay,
+        ''                                        AS StockDeltaDisplay,
+        ''                                        AS StockDeltaAria,
+
+        FORMAT(@alerts, 'N0', 'es-AR')            AS AlertsActiveDisplay,
+        ''                                        AS AlertsDeltaDisplay,
+        ''                                        AS AlertsDeltaAria;
+END
+GO
+
+-- Dashboard recent activity: últimas ventas, compras y (si aplica) movimientos de stock
+IF OBJECT_ID('dbo.sp_dashboard_recent', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_dashboard_recent;
+GO
+CREATE PROCEDURE dbo.sp_dashboard_recent
+    @Top INT = 15
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @recent TABLE([When] DATETIME2, [Description] NVARCHAR(300), [Category] NVARCHAR(50));
+
+    -- Ventas recientes
+    INSERT INTO @recent([When],[Description],[Category])
+    SELECT TOP(@Top)
+        v.fecha,
+        N'Venta #' + CONVERT(NVARCHAR(20), v.id_venta) + N' a ' + ISNULL(c.nombre,'') + N' ($' + CONVERT(NVARCHAR(50), CONVERT(DECIMAL(18,2), v.montoTotal)) + N')',
+        N'sale'
+    FROM Ventas v
+    LEFT JOIN Clientes c ON v.id_cliente = c.id_cliente
+    ORDER BY v.fecha DESC;
+
+    -- Compras recientes
+    INSERT INTO @recent([When],[Description],[Category])
+    SELECT TOP(@Top)
+        f.fecha,
+        N'Compra ' + ISNULL(f.numeroFactura,'') + N' a ' + ISNULL(p.nombre,'') + N' ($' + CONVERT(NVARCHAR(50), CONVERT(DECIMAL(18,2), f.total)) + N')',
+        N'purchase'
+    FROM FacturaCompra f
+    LEFT JOIN Proveedores p ON f.id_proveedor = p.id_proveedor
+    ORDER BY f.fecha DESC;
+
+    SELECT TOP(@Top)
+        [When], [Description], [Category]
+    FROM @recent
+    ORDER BY [When] DESC;
+END
+GO
+
+-- Dashboard top products: top vendidos últimos N días y stock actual
+IF OBJECT_ID('dbo.sp_dashboard_top_products', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_dashboard_top_products;
+GO
+CREATE PROCEDURE dbo.sp_dashboard_top_products
+    @Days INT = 30,
+    @Top INT = 10
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    WITH SalesAgg AS (
+        SELECT 
+            dv.id_producto,
+            SUM(ISNULL(dv.cantidad,0)) AS Sold
+        FROM DetalleVentas dv
+        INNER JOIN Ventas v ON v.id_venta = dv.id_venta
+        WHERE v.fecha >= DATEADD(DAY, -@Days, GETDATE())
+        GROUP BY dv.id_producto
+    ), StockAgg AS (
+        SELECT s.id_producto, SUM(ISNULL(s.stock,0)) AS Stock
+        FROM Stock s
+        GROUP BY s.id_producto
+    )
+    SELECT TOP(@Top)
+        p.nombre AS [Name],
+        ISNULL(c.categoria,'') AS [Category],
+        ISNULL(sa.Sold,0) AS [Sold],
+        ISNULL(st.Stock,0) AS [Stock]
+    FROM SalesAgg sa
+    INNER JOIN Productos p ON sa.id_producto = p.id_producto
+    LEFT JOIN CategoriasProducto c ON p.id_categoria = c.id_categoria
+    LEFT JOIN StockAgg st ON st.id_producto = p.id_producto
+    ORDER BY sa.Sold DESC, p.nombre ASC;
+END
 GO
 SET QUOTED_IDENTIFIER ON
 GO

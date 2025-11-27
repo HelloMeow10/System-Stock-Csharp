@@ -20,6 +20,8 @@ builder.Services.AddApiVersioningServices();
 builder.Services.AddBusinessLogic(builder.Configuration);
 builder.Services.AddDataAccess(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+// DB health validation on startup
+builder.Services.AddHostedService<Services.Infrastructure.DatabaseHealthHostedService>();
 
 builder.Services.AddHealthChecks()
     .AddSqlServer(

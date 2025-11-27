@@ -37,8 +37,8 @@ else if (_allow && _user != null && (!RequireAdmin || _user.IsAdmin) && (!_requi
                 _needsSecuritySetup = hasCount < required;
                 if (_needsSecuritySetup)
                 {
-                    // Force user to setup security questions before proceeding
-                    Nav.NavigateTo($"/seguridad-preguntas?setup=1&returnUrl={Uri.EscapeDataString(Nav.Uri)}", true);
+                    // Redirect user to self-service setup page
+                    Nav.NavigateTo($"/mis-preguntas?setup=1&returnUrl={Uri.EscapeDataString(Nav.Uri)}", true);
                 }
             }
             catch { /* if policy not available, default to 2 */
@@ -46,7 +46,7 @@ else if (_allow && _user != null && (!RequireAdmin || _user.IsAdmin) && (!_requi
                 _needsSecuritySetup = hasCount < 2;
                 if (_needsSecuritySetup)
                 {
-                    Nav.NavigateTo($"/seguridad-preguntas?setup=1&returnUrl={Uri.EscapeDataString(Nav.Uri)}", true);
+                    Nav.NavigateTo($"/mis-preguntas?setup=1&returnUrl={Uri.EscapeDataString(Nav.Uri)}", true);
                 }
             }
         }

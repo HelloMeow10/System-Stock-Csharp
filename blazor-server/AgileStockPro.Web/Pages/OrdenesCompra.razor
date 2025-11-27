@@ -64,13 +64,8 @@
 
     private async Task LoadData()
     {
-        // Toggle logic: if showDelivered is true, we might want to see ALL or just delivered?
-        // The SP param is @entregado. If null, it shows all. If true/false, filters.
-        // Let's assume checkbox "Show Delivered" means "Show ONLY Delivered" or "Include Delivered"?
-        // Usually "Show Delivered" implies a filter.
-        // Let's make it a tri-state or just simple filter.
-        // For now, let's pass null to see all, or specific value.
-        // Let's just show ALL by default (param null).
+        // Load via IAppDataService API-backed service for now
+        // Fallback to injected PurchaseService if available
         orders = await PurchaseService.GetOrdersAsync(null);
     }
 

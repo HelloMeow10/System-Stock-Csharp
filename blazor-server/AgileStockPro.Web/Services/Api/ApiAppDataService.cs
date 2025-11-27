@@ -20,8 +20,31 @@ public class ApiAppDataService : IAppDataService
     public Task<IReadOnlyList<Customer>> GetCustomersAsync(CancellationToken ct = default) => _fallback.GetCustomersAsync(ct);
     public Task<IReadOnlyList<Almacen>> GetWarehousesAsync(CancellationToken ct = default) => _fallback.GetWarehousesAsync(ct);
     public Task<IReadOnlyList<StockItem>> GetStockAsync(CancellationToken ct = default) => _fallback.GetStockAsync(ct);
-    public Task<IReadOnlyList<OrdenCompra>> GetPurchaseOrdersAsync(CancellationToken ct = default) => _fallback.GetPurchaseOrdersAsync(ct);
-    public Task<IReadOnlyList<Pedido>> GetOrdersAsync(CancellationToken ct = default) => _fallback.GetOrdersAsync(ct);
+    public async Task<IReadOnlyList<OrdenCompra>> GetPurchaseOrdersAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var items = await _api.GetAsync<List<PurchaseOrderDto>>("api/v1/purchases/orders");
+            return items.Select(Map).ToList();
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            return await _fallback.GetPurchaseOrdersAsync(ct);
+        }
+    }
+    public async Task<IReadOnlyList<Pedido>> GetOrdersAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var items = await _api.GetAsync<List<OrderDto>>("api/v1/orders");
+            return items.Select(Map).ToList();
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            // Fallback to sample data until endpoint is available
+            return await _fallback.GetOrdersAsync(ct);
+        }
+    }
     public Task<IReadOnlyList<Factura>> GetInvoicesAsync(CancellationToken ct = default) => _fallback.GetInvoicesAsync(ct);
     public Task<IReadOnlyList<Alerta>> GetAlertsAsync(CancellationToken ct = default) => _fallback.GetAlertsAsync(ct);
 
@@ -61,6 +84,15 @@ public class ApiAppDataService : IAppDataService
         Reason = dto.Motivo
     };
 
+    private static Pedido Map(OrderDto dto) => new()
+    {
+        Id = dto.Id,
+        Customer = dto.Cliente,
+        Date = dto.Fecha,
+        Total = dto.Total,
+        Status = dto.Estado
+    };
+
     // Backend DTOs (mirror backend contracts for this feature)
     public class StockMovementDto
     {
@@ -81,4 +113,31 @@ public class ApiAppDataService : IAppDataService
         public string Motivo { get; set; } = string.Empty;
         public int Cantidad { get; set; }
     }
+
+    public class OrderDto
+    {
+        public int Id { get; set; }
+        public string Cliente { get; set; } = string.Empty;
+        public DateTime Fecha { get; set; }
+        public decimal Total { get; set; }
+        public string Estado { get; set; } = string.Empty;
+    }
+
+    public class PurchaseOrderDto
+    {
+        public int Id { get; set; }
+        public string Proveedor { get; set; } = string.Empty;
+        public DateTime Fecha { get; set; }
+        public decimal Total { get; set; }
+        public bool Entregado { get; set; }
+    }
+
+    private static OrdenCompra Map(PurchaseOrderDto dto) => new()
+    {
+        Id = dto.Id,
+        Supplier = dto.Proveedor ?? string.Empty,
+        Date = dto.Fecha,
+        Total = dto.Total,
+        Status = dto.Entregado ? "Recibida" : "Pendiente"
+    };
 }

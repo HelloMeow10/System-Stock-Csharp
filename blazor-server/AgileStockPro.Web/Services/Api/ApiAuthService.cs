@@ -48,7 +48,7 @@ public class ApiAuthService : IAuthService
                 _lastUsername = username;
                 return new LoginResult(true, true, null);
             }
-            _tokens.SetToken(res.Token);
+            await _tokens.SetTokenAsync(res.Token);
             return new LoginResult(true, false, null);
         }
         catch (Exception ex)
@@ -93,7 +93,7 @@ public class ApiAuthService : IAuthService
 
     public async Task LogoutAsync()
     {
-        _tokens.SetToken(null);
+        await _tokens.SetTokenAsync(null);
         // Best-effort backend logout to clear auth cookie
         try { await _api.PostAsync("api/v1/auth/logout", new { }); } catch { }
     }
@@ -150,7 +150,7 @@ public class ApiAuthService : IAuthService
         try
         {
             var res = await _api.PostAsync<LoginResponse>("api/v1/auth/validate-2fa", new Validate2faRequest { Username = _lastUsername, Code = code });
-            _tokens.SetToken(res.Token);
+            await _tokens.SetTokenAsync(res.Token);
             return true;
         }
         catch
