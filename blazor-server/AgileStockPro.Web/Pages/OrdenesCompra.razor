@@ -3,11 +3,15 @@
 @using BusinessLogic.Services
 @using Contracts
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components
 @attribute [Authorize]
 @inject IPurchaseService PurchaseService
 @inject IDialogService DialogService
 @inject AgileStockPro.Web.Services.IAuthService AuthService
 @inject NavigationManager Nav
+@inject ISupplierService SupplierService
+@inject IToastService Toast
 
 <PageTitle>Órdenes de Compra</PageTitle>
 
@@ -16,36 +20,55 @@
         <h1>Órdenes de Compra</h1>
         @if (currentUser?.IsAdmin == true)
         {
-            <FluentButton Appearance="Appearance.Accent" OnClick="@CreateOrder">Nueva Orden</FluentButton>
+            <button class="btn btn-primary" @onclick="CreateOrder">Nueva Orden</button>
         }
     </div>
 
     <div style="margin-bottom: 20px;">
-        <FluentCheckbox @bind-Value="showDelivered" Label="Mostrar Entregadas" @onchange="@(e => LoadData())" />
+        <label class="fancy-checkbox">
+            <input type="checkbox" checked="@showDelivered" @onchange="OnShowDeliveredChanged" />
+            <span class="fancy-label">Mostrar Entregadas</span>
+        </label>
     </div>
 
     @if (orders == null)
     {
-        <FluentProgressRing />
+        <div class="helper-small">Cargando...</div>
     }
     else
     {
-        <FluentDataGrid Items="@orders.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.5fr 1fr 1fr 1fr 1fr">
-            <PropertyColumn Property="@(p => p.Id)" Sortable="true" Title="#" />
-            <PropertyColumn Property="@(p => p.Proveedor)" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Fecha)" Format="dd/MM/yyyy" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Total)" Format="C2" Sortable="true" />
-            <TemplateColumn Title="Entregado">
-                @if (context.Entregado)
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Proveedor</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Entregado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in orders)
                 {
-                    <FluentBadge Appearance="Appearance.Accent">Sí</FluentBadge>
+                    <tr>
+                        <td>@o.Id</td>
+                        <td>@o.Proveedor</td>
+                        <td>@(o.Fecha.ToString("dd/MM/yyyy"))</td>
+                        <td>@(o.Total.ToString("C2"))</td>
+                        <td>
+                            @if (o.Entregado)
+                            {
+                                <span class="badge badge-ok">Sí</span>
+                            }
+                            else
+                            {
+                                <button class="btn" @onclick="@(() => Nav.NavigateTo($"/ordenes-compra/recibir/{o.Id}"))">Recibir</button>
+                            }
+                        </td>
+                    </tr>
                 }
-                else
-                {
-                    <FluentButton Appearance="Appearance.Lightweight" OnClick="@(() => Nav.NavigateTo($"/ordenes-compra/recibir/{context.Id}"))">Recibir</FluentButton>
-                }
-            </TemplateColumn>
-        </FluentDataGrid>
+            </tbody>
+        </table>
     }
     </div>
 
@@ -62,6 +85,13 @@
         await LoadData();
     }
 
+    // Suppliers + Create Order modal state
+    private IEnumerable<SupplierDto>? suppliers;
+    private bool showOrderModal = false;
+    private CreatePurchaseOrderRequest newOrder = new CreatePurchaseOrderRequest { Fecha = DateTime.Today, Total = 0m };
+    private bool isSavingOrder = false;
+    private DateTime orderDate = DateTime.Today;
+
     private async Task LoadData()
     {
         // Load via IAppDataService API-backed service for now
@@ -69,8 +99,106 @@
         orders = await PurchaseService.GetOrdersAsync(null);
     }
 
+    private async Task OnShowDeliveredChanged(ChangeEventArgs e)
+    {
+        if (e?.Value is bool b)
+        {
+            showDelivered = b;
+        }
+        else
+        {
+            // checkbox posts "on" for some browsers, handle that
+            if (e?.Value is string s)
+            {
+                showDelivered = s == "true" || s == "on";
+            }
+        }
+
+        await LoadData();
+    }
+
     private async Task CreateOrder()
     {
-        // TODO: Implement Dialog for creating order
+        if (suppliers == null)
+        {
+            suppliers = await SupplierService.GetAllAsync();
+        }
+
+        newOrder = new CreatePurchaseOrderRequest { Fecha = DateTime.Today, Total = 0m };
+        orderDate = newOrder.Fecha;
+        showOrderModal = true;
     }
+
+    private async Task SaveOrder()
+    {
+        try
+        {
+            if (newOrder.IdProveedor <= 0)
+            {
+                Toast.ShowError("Seleccione un proveedor válido.");
+                return;
+            }
+
+            isSavingOrder = true;
+            // Assign picked date into request
+            newOrder.Fecha = orderDate;
+
+            await PurchaseService.CreateOrderAsync(newOrder);
+            showOrderModal = false;
+            Toast.ShowSuccess("Orden creada correctamente.");
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        finally
+        {
+            isSavingOrder = false;
+        }
+    }
+
+    private void CancelOrder()
+    {
+        showOrderModal = false;
+    }
+
+    
+
+}
+
+@if (showOrderModal)
+{
+    <div class="panel person-modal-panel" style="position:fixed; inset:0; display:grid; place-items:center; background: rgba(0,0,0,0.35); z-index:50;">
+        <div class="panel" style="width:520px; max-width:95%;">
+            <div class="panel-header">
+                <h3>Nueva Orden de Compra</h3>
+            </div>
+            <div class="panel-body">
+                <div class="form-grid">
+                    <label>Proveedor</label>
+                    <select class="input" @bind="newOrder.IdProveedor">
+                        <option value="0">-- Seleccione proveedor --</option>
+                        @if (suppliers != null)
+                        {
+                            @foreach (var s in suppliers)
+                            {
+                                <option value="@s.Id">@s.Nombre (@s.Cuit)</option>
+                            }
+                        }
+                    </select>
+
+                    <label>Fecha</label>
+                    <InputDate TValue="DateTime" class="input" @bind-Value="orderDate" />
+
+                    <label>Total</label>
+                    <input class="input" type="number" step="0.01" @bind="newOrder.Total" />
+                </div>
+                <div class="modal-actions" style="margin-top:1rem;">
+                    <button class="btn" @onclick="CancelOrder">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="SaveOrder" style="margin-left:.5rem;" disabled="@isSavingOrder">@((isSavingOrder) ? "Guardando..." : "Crear Orden")</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }

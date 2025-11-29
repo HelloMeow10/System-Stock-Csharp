@@ -12,72 +12,89 @@
 
 <PageTitle>Nueva Venta</PageTitle>
 
-<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
-    <div style="margin-bottom: 20px;">
-        <FluentBreadcrumb>
-            <FluentBreadcrumbItem Href="/ventas">Ventas</FluentBreadcrumbItem>
-            <FluentBreadcrumbItem Href="#">Nueva Venta</FluentBreadcrumbItem>
-        </FluentBreadcrumb>
-        <h1>Nueva Venta</h1>
+<div class="content" style="padding:20px; max-width:1200px; margin:0 auto;">
+    <div class="page-header" style="margin-bottom:20px;">
+        <div class="title"><h1>Nueva Venta</h1></div>
+            <div class="actions">
+            <button class="btn btn-outline" @onclick="GoToVentas">Volver</button>
+        </div>
     </div>
 
-    <FluentCard Width="100%" Style="padding: 20px; margin-bottom: 20px;">
+    <div class="panel" style="margin-bottom:20px; padding:16px;">
         <h3>Datos del Cliente</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: end;">
-            <FluentSelect Items="@clients" 
-                          OptionText="@(c => $"{c.Nombre} ({c.CuitDni})")"
-                          OptionValue="@(c => c.Id.ToString())"
-                          @bind-Value="@selectedClientId"
-                          Label="Cliente"
-                          Placeholder="Seleccione un cliente..."
-                          Style="width: 100%;" />
-            
+        <div class="form-grid" style="grid-template-columns:1fr 160px; gap:16px; align-items:end;">
+            <select class="input" @bind="selectedClientId">
+                <option value="">-- Seleccione un cliente --</option>
+                @foreach (var c in clients)
+                {
+                    <option value="@c.Id">@c.Nombre (@c.CuitDni)</option>
+                }
+            </select>
+
             <div>
-                <FluentButton Appearance="Appearance.Outline" OnClick="@(() => Nav.NavigateTo("/clientes"))">Gestionar Clientes</FluentButton>
+                <button class="btn" @onclick="GoToClientes">Gestionar Clientes</button>
             </div>
         </div>
-    </FluentCard>
+    </div>
 
-    <FluentCard Width="100%" Style="padding: 20px; margin-bottom: 20px;">
+    <div class="panel" style="margin-bottom:20px; padding:16px;">
         <h3>Agregar Productos</h3>
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; align-items: end;">
-            <FluentSelect Items="@products" 
-                          OptionText="@(p => $"{p.Nombre} (Stock: {p.StockActual}) - {p.Precio:C}")"
-                          OptionValue="@(p => p.Id.ToString())"
-                          @bind-Value="@selectedProductId"
-                          Label="Producto"
-                          Placeholder="Seleccione un producto..."
-                          Style="width: 100%;" />
+        <div style="display:grid; grid-template-columns:2fr 100px 100px auto; gap:12px; align-items:end;">
+            <select class="input" @bind="selectedProductId">
+                <option value="">-- Seleccione producto --</option>
+                @foreach (var p in products)
+                {
+                    <option value="@p.Id">@p.Nombre (Stock: @p.StockActual) - @p.Precio.ToString("C2")</option>
+                }
+            </select>
 
-            <FluentNumberField @bind-Value="quantity" Label="Cantidad" Min="1" />
-            
-            <FluentButton Appearance="Appearance.Accent" OnClick="AddToCart" IconStart="@(new Icons.Regular.Size20.AddCircle())">Agregar</FluentButton>
+            <input class="input" type="number" min="1" @bind="quantity" />
+
+            <div></div>
+
+            <button class="btn btn-primary" @onclick="AddToCart">Agregar</button>
         </div>
         @if (!string.IsNullOrEmpty(addProductError))
         {
-            <div style="color: var(--error); margin-top: 10px;">@addProductError</div>
+            <div class="error-text" style="margin-top:10px;">@addProductError</div>
         }
-    </FluentCard>
+    </div>
 
     @if (cartItems.Any())
     {
-        <FluentCard Width="100%" Style="padding: 20px;">
+        <div class="panel" style="padding:16px;">
             <h3>Detalle de Venta</h3>
-            <FluentDataGrid Items="@cartItems.AsQueryable()" ResizableColumns="true">
-                <PropertyColumn Property="@(i => i.ProductName)" Title="Producto" />
-                <PropertyColumn Property="@(i => i.Quantity)" Title="Cantidad" />
-                <PropertyColumn Property="@(i => i.UnitPrice)" Title="Precio Unit." Format="C2" />
-                <PropertyColumn Property="@(i => i.Subtotal)" Title="Subtotal" Format="C2" />
-                <TemplateColumn Title="Acciones">
-                    <FluentButton Appearance="Appearance.Lightweight" IconStart="@(new Icons.Regular.Size20.Delete())" OnClick="@(() => RemoveFromCart(context))" />
-                </TemplateColumn>
-            </FluentDataGrid>
-
-            <div style="margin-top: 20px; text-align: right;">
-                <h3>Total: @cartItems.Sum(i => i.Subtotal).ToString("C2")</h3>
-                <FluentButton Appearance="Appearance.Accent" OnClick="ConfirmSale" Loading="@isSubmitting" Style="margin-top: 10px;">Confirmar Venta</FluentButton>
+            <div class="data-grid">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unit.</th>
+                            <th>Subtotal</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in cartItems)
+                        {
+                            <tr>
+                                <td>@item.ProductName</td>
+                                <td>@item.Quantity</td>
+                                <td>@item.UnitPrice.ToString("C2")</td>
+                                <td>@item.Subtotal.ToString("C2")</td>
+                                <td><button class="btn" @onclick="() => RemoveFromCart(item)">Eliminar</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-        </FluentCard>
+
+            <div style="margin-top:20px; text-align:right;">
+                <h3>Total: @cartItems.Sum(i => i.Subtotal).ToString("C2")</h3>
+                <button class="btn btn-primary" @onclick="ConfirmSale" disabled="@isSubmitting">@((isSubmitting) ? "Procesando..." : "Confirmar Venta")</button>
+            </div>
+        </div>
     }
 </div>
 
@@ -205,6 +222,16 @@
         {
             isSubmitting = false;
         }
+    }
+
+    private void GoToVentas()
+    {
+        Nav.NavigateTo("/ventas");
+    }
+
+    private void GoToClientes()
+    {
+        Nav.NavigateTo("/clientes");
     }
 
     class CartItem

@@ -15,38 +15,57 @@
         <h1>Clientes</h1>
         @if (currentUser?.IsAdmin == true)
         {
-            <FluentButton Appearance="Appearance.Accent" OnClick="@AddClient">Nuevo Cliente</FluentButton>
+            <button class="btn btn-primary" @onclick="AddClient">Nuevo Cliente</button>
         }
     </div>
 
-    <FluentTextField @bind-Value="searchTerm" Placeholder="Buscar por nombre o CUIT..." Style="width: 300px; margin-bottom: 20px;" @oninput="@(e => Search(e.Value?.ToString()))" />
+    <input class="input search" placeholder="Buscar por nombre o CUIT..." value="@searchTerm" style="width: 300px; margin-bottom: 20px;" @oninput="@(e => Search(e.Value?.ToString()))" />
 
     @if (clients == null)
     {
-        <FluentProgressRing />
+        <div class="helper-small">Cargando...</div>
     }
     else
     {
-        <FluentDataGrid Items="@clients.AsQueryable()" ResizableColumns="true" GridTemplateColumns="0.5fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr">
-            <PropertyColumn Property="@(p => p.Id)" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Codigo)" Sortable="true" Title="Código" />
-            <PropertyColumn Property="@(p => p.Nombre)" Sortable="true" />
-            <PropertyColumn Property="@(p => p.RazonSocial)" Sortable="true" Title="Razón Social" />
-            <PropertyColumn Property="@(p => p.CuitDni)" Sortable="true" Title="CUIT/DNI" />
-            <PropertyColumn Property="@(p => p.LimiteCredito)" Sortable="true" Title="Límite Crédito" />
-            <PropertyColumn Property="@(p => p.Descuento)" Sortable="true" Title="Descuento %" />
-            <TemplateColumn Title="Acciones">
-                @if (currentUser?.IsAdmin == true)
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Razón Social</th>
+                    <th>CUIT/DNI</th>
+                    <th>Límite Crédito</th>
+                    <th>Descuento %</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in clients)
                 {
-                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Edit())" OnClick="@(() => Edit(context))" Appearance="Appearance.Lightweight" />
-                    <FluentButton IconEnd="@(new Icons.Regular.Size16.Delete())" OnClick="@(() => Delete(context))" Appearance="Appearance.Lightweight" />
+                    <tr>
+                        <td>@c.Id</td>
+                        <td>@c.Codigo</td>
+                        <td>@c.Nombre</td>
+                        <td>@c.RazonSocial</td>
+                        <td>@c.CuitDni</td>
+                        <td>@(c.LimiteCredito.ToString("C2"))</td>
+                        <td>@(c.Descuento.ToString("P0"))</td>
+                        <td>
+                            @if (currentUser?.IsAdmin == true)
+                            {
+                                <button class="btn" @onclick="() => Edit(c)">Editar</button>
+                                <button class="btn" style="margin-left:.5rem;" @onclick="() => Delete(c)">Eliminar</button>
+                            }
+                            else
+                            {
+                                <span class="helper-small" style="font-size:12px;">Solo lectura</span>
+                            }
+                        </td>
+                    </tr>
                 }
-                else
-                {
-                    <span class="muted" style="font-size:12px;">Solo lectura</span>
-                }
-            </TemplateColumn>
-        </FluentDataGrid>
+            </tbody>
+        </table>
     }
 </div>
 
@@ -81,19 +100,145 @@
         }
     }
 
-    private async Task AddClient()
+    
+
+    // Delete with confirmation
+    private ClientDto? clientToDelete;
+    private bool showConfirmDelete = false;
+
+    private void Delete(ClientDto client)
     {
-        // TODO: Implement Dialog
+        clientToDelete = client;
+        showConfirmDelete = true;
     }
 
-    private async Task Edit(ClientDto client)
+    private async Task ConfirmDelete()
     {
-        // TODO: Implement Dialog
-    }
-
-    private async Task Delete(ClientDto client)
-    {
-        await ClientService.DeleteAsync(client.Id);
+        if (clientToDelete == null) return;
+        await ClientService.DeleteAsync(clientToDelete.Id);
+        clientToDelete = null;
+        showConfirmDelete = false;
         await LoadData();
     }
+
+    private void CancelDelete()
+    {
+        clientToDelete = null;
+        showConfirmDelete = false;
+    }
+
+    // Modal / inline form state
+    private bool showClientModal = false;
+    private CreateClientRequest editingModel = new CreateClientRequest();
+    private bool isEditMode = false;
+    private string modalTitle = "";
+
+    private void AddClient()
+    {
+        isEditMode = false;
+        editingModel = new CreateClientRequest();
+        modalTitle = "Nuevo Cliente";
+        showClientModal = true;
+    }
+
+    private void Edit(ClientDto client)
+    {
+        isEditMode = true;
+        editingModel = new UpdateClientRequest
+        {
+            Id = client.Id,
+            Codigo = client.Codigo,
+            Nombre = client.Nombre,
+            RazonSocial = client.RazonSocial,
+            CuitDni = client.CuitDni,
+            IdFormaPago = client.IdFormaPago,
+            LimiteCredito = client.LimiteCredito,
+            Descuento = client.Descuento,
+            Estado = client.Estado
+        };
+        modalTitle = "Editar Cliente";
+        showClientModal = true;
+    }
+
+    private async Task SaveClient()
+    {
+        try
+        {
+            if (isEditMode && editingModel is UpdateClientRequest upd)
+            {
+                await ClientService.UpdateAsync(upd);
+            }
+            else
+            {
+                await ClientService.CreateAsync(editingModel);
+            }
+
+            showClientModal = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            // Prefer toast/dialog service; fallback to console for now
+            Console.WriteLine("Error saving client: " + ex.Message);
+        }
+    }
+
+    private void CancelEdit()
+    {
+        showClientModal = false;
+    }
+}
+
+@if (showClientModal)
+{
+    <div class="panel person-modal-panel" style="position:fixed; inset:0; display:grid; place-items:center; background: rgba(0,0,0,0.35); z-index:50;">
+        <div class="panel" style="width:720px; max-width:95%;">
+            <div class="panel-header">
+                <h3>@modalTitle</h3>
+            </div>
+            <div class="panel-body">
+                <div class="form-grid">
+                    <label>Código</label>
+                    <input class="input" @bind="editingModel.Codigo" />
+
+                    <label>Nombre</label>
+                    <input class="input" @bind="editingModel.Nombre" />
+
+                    <label>Razón Social</label>
+                    <input class="input" @bind="editingModel.RazonSocial" />
+
+                    <label>CUIT/DNI</label>
+                    <input class="input" @bind="editingModel.CuitDni" />
+
+                    <label>Límite Crédito</label>
+                    <input class="input" type="number" step="0.01" @bind="editingModel.LimiteCredito" />
+
+                    <label>Descuento %</label>
+                    <input class="input" type="number" step="0.01" @bind="editingModel.Descuento" />
+                </div>
+                <div class="modal-actions" style="margin-top:1rem;">
+                    <button class="btn" @onclick="CancelEdit">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="SaveClient" style="margin-left:.5rem;">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showConfirmDelete && clientToDelete != null)
+{
+    <div class="panel person-modal-panel" style="position:fixed; inset:0; display:grid; place-items:center; background: rgba(0,0,0,0.35); z-index:50;">
+        <div class="panel" style="width:420px; max-width:95%;">
+            <div class="panel-header">
+                <h3>Confirmar eliminación</h3>
+            </div>
+            <div class="panel-body">
+                <p>¿Seguro que deseas eliminar al cliente <strong>@clientToDelete.Nombre</strong> (Código: @clientToDelete.Codigo)? Esta acción no se puede deshacer.</p>
+                <div class="modal-actions" style="margin-top:1rem;">
+                    <button class="btn" @onclick="CancelDelete">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="ConfirmDelete" style="margin-left:.5rem;">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }

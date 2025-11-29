@@ -1,34 +1,82 @@
 @page "/stock"
-@using Microsoft.FluentUI.AspNetCore.Components
 @inject BusinessLogic.Services.IStockService StockService
 
 <PageTitle>Stock</PageTitle>
 
-<div style="padding: 20px;">
+<div class="content" style="padding:20px;">
     <h1>Stock Actual</h1>
+
+    <div class="panel" style="margin-bottom:1rem;padding:0.75rem;display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;">
+        <label class="form-label" style="margin:0;display:flex;gap:0.5rem;align-items:center;">
+            <span style="font-weight:600;color:var(--text-muted-color);">Buscar</span>
+            <input class="input search" placeholder="Producto..." @bind="search" @oninput="OnSearchChanged" />
+        </label>
+
+        <label class="form-label" style="margin:0;display:flex;gap:0.5rem;align-items:center;">
+            <span style="font-weight:600;color:var(--text-muted-color);">Items / página</span>
+            <select class="input" @bind="pageSize">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </label>
+    </div>
 
     @if (stockItems == null)
     {
-        <FluentProgressRing />
+        <div class="spinner" aria-hidden="true"></div>
     }
-    else if (!stockItems.Any())
+    else if (!FilteredItems.Any())
     {
         <p>No hay items en stock.</p>
     }
     else
     {
-        <FluentDataGrid Items="@stockItems.AsQueryable()" ResizableColumns="true" Pagination="@pagination">
-            <PropertyColumn Property="@(p => p.Product)" Title="Producto" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Warehouse)" Title="Almacén" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Quantity)" Title="Cantidad" Sortable="true" />
-        </FluentDataGrid>
-        <FluentPaginator State="@pagination" />
+        <div class="table-responsive panel" style="padding:0.5rem;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Almacén</th>
+                        <th style="width:120px;text-align:right;">Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in PagedItems)
+                    {
+                        <tr>
+                            <td>@item.Product</td>
+                            <td>@item.Warehouse</td>
+                            <td style="text-align:right;">@item.Quantity</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem;flex-wrap:wrap;gap:0.5rem;">
+            <div class="helper-small">Mostrando @((currentPage-1)*pageSize + 1) - @Math.Min(currentPage*pageSize, TotalItems) de @TotalItems</div>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+                <button class="btn" @onclick="PrevPage" disabled="@(currentPage == 1)">Anterior</button>
+                <button class="btn" @onclick="NextPage" disabled="@(currentPage >= TotalPages)">Siguiente</button>
+            </div>
+        </div>
     }
 </div>
 
 @code {
     private IEnumerable<Contracts.StockItemDto>? stockItems;
-    private PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
+    private string search = string.Empty;
+    private int currentPage = 1;
+    private int pageSize = 20;
+
+    private IEnumerable<Contracts.StockItemDto> FilteredItems =>
+        (stockItems ?? Enumerable.Empty<Contracts.StockItemDto>())
+            .Where(s => string.IsNullOrWhiteSpace(search) || (s.Product ?? string.Empty).Contains(search, StringComparison.OrdinalIgnoreCase));
+
+    private int TotalItems => FilteredItems.Count();
+    private int TotalPages => (int)Math.Ceiling(TotalItems / (double)pageSize);
+    private IEnumerable<Contracts.StockItemDto> PagedItems => FilteredItems.Skip((currentPage - 1) * pageSize).Take(pageSize);
 
     protected override async Task OnInitializedAsync()
     {
@@ -39,6 +87,36 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading stock: {ex.Message}");
+            stockItems = Enumerable.Empty<Contracts.StockItemDto>();
         }
     }
+
+    private void OnSearchChanged(ChangeEventArgs _) {
+        currentPage = 1;
+    }
+
+    private void PrevPage()
+    {
+        if (currentPage > 1) currentPage--;
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < TotalPages) currentPage++;
+    }
 }
+
+<style>
+/* Spinner */
+.spinner { width:40px; height:40px; border:4px solid rgba(255,255,255,0.08); border-left-color: var(--accent); border-radius:50%; animation:spin 1s linear infinite; margin:18px auto; }
+@@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Responsive tweaks for small screens */
+@@media (max-width: 720px) {
+    .table thead { display:none; }
+    .table tbody td { display:block; width:100%; box-sizing:border-box; }
+    .table tbody tr { display:block; margin-bottom:0.75rem; border-bottom:1px solid var(--stroke-color); padding-bottom:0.5rem; }
+    .table tbody td { padding:0.35rem 0.5rem; }
+    .table tbody td::before { content: attr(data-label); display:block; font-weight:600; color:var(--text-muted-color); }
+}
+</style>
