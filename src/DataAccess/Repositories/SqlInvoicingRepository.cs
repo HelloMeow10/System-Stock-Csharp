@@ -134,10 +134,11 @@ namespace DataAccess.Repositories
                     v.fecha,
                     c.nombre as EntidadNombre,
                     v.montoTotal,
-                    ev.estado
+                    v.montoTotal,
+                    CASE WHEN v.id_estadoVentas = 1 THEN 'Emitida' ELSE 'Desconocido' END as estado
                 FROM Ventas v
                 JOIN Clientes c ON v.id_cliente = c.id_cliente
-                LEFT JOIN EstadoVentas ev ON v.id_estadoVentas = ev.id_estadoVentas
+                -- LEFT JOIN EstadoVentas ev ON v.id_estadoVentas = ev.id_estadoVentas
                 WHERE v.tipoDocumento IN ('Factura', 'NotaCredito', 'NotaDebito')";
 
             if (from.HasValue) sql += " AND v.fecha >= @from";

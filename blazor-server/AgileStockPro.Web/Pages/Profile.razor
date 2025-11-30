@@ -1,0 +1,66 @@
+@page "/profile"
+@using AgileStockPro.Web.Models
+@using AgileStockPro.Web.Services
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Mi Perfil</PageTitle>
+
+<div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <h1>Mi Perfil</h1>
+
+    @if (currentUser == null)
+    {
+        <div class="loading">Cargando perfil...</div>
+    }
+    else
+    {
+        <div class="card" style="padding: 2rem; border: 1px solid var(--container-border); border-radius: 8px; background: var(--neutral-layer-1);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="profile-field">
+                    <label>Usuario</label>
+                    <div class="value">@currentUser.Username</div>
+                </div>
+                <div class="profile-field">
+                    <label>Email</label>
+                    <div class="value">@currentUser.Email</div>
+                </div>
+                <div class="profile-field">
+                    <label>Nombre</label>
+                    <div class="value">@currentUser.Name</div>
+                </div>
+                <div class="profile-field">
+                    <label>Apellido</label>
+                    <div class="value">@currentUser.LastName</div>
+                </div>
+                <div class="profile-field">
+                    <label>Rol</label>
+                    <div class="value">@(currentUser.IsAdmin ? "Administrador" : "Usuario")</div>
+                </div>
+                <div class="profile-field">
+                    <label>Fecha de Nacimiento</label>
+                    <div class="value">@(currentUser.Birthdate?.ToString("dd/MM/yyyy") ?? "-")</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; display: flex; gap: 10px;">
+                <a href="/change-password" class="btn">Cambiar Contraseña</a>
+                <a href="/configurar-seguridad" class="btn">Configurar Preguntas de Seguridad</a>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .profile-field label { display: block; font-size: 0.85rem; color: var(--neutral-foreground-rest); opacity: 0.8; margin-bottom: 4px; }
+    .profile-field .value { font-size: 1.1rem; font-weight: 500; }
+</style>
+
+@code {
+    private AppUser? currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+    }
+}

@@ -12,4 +12,5 @@ public interface IUserStore
     Task SavePolicyAsync(SecurityPolicy policy);
     Task SetCurrentUserAsync(AppUser? user);
     Task<AppUser?> GetCurrentUserAsync();
+    Task<IEnumerable<SecurityQuestion>> GetSecurityQuestionsAsync(string username);
 }

@@ -10,6 +10,7 @@
 @inject AgileStockPro.Web.Services.Api.ITokenProvider Tokens
 @inject IToastService Toast
 @inject NavigationManager Navigation
+@inject AgileStockPro.Web.Services.IUserStore UserStore
 
 @{
     var relative = Navigation.ToBaseRelativePath(Navigation.Uri) ?? string.Empty;
@@ -29,11 +30,10 @@
                 @if (currentUser is not null)
                 {
                     <div class="user-area" style="display:flex; gap:.5rem; align-items:center;">
-                        <div class="user-badge btn" title="Usuario">
+                        <a href="/profile" class="user-badge btn" title="Mi Perfil" style="text-decoration:none; display:flex; align-items:center; gap:5px;">
                             <FluentIcon Icon="@(Icons.Regular.Size16.Person)" />
                             <span class="username">@currentUser.Username</span>
-                        </div>
-                        <a class="btn" href="/change-password">Cambiar contraseña</a>
+                        </a>
                         <button class="btn" @onclick="Logout">Salir</button>
                     </div>
                 }
@@ -81,6 +81,64 @@
     {
         currentUser = await Auth.GetCurrentUserAsync();
         SetupAutoLogout();
+        // Check security questions enforcement
+        await CheckSecurityRequirements();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Re-check on navigation if needed, but OnInitialized is usually enough for layout unless user changes.
+        // However, if user navigates, layout might not re-initialize if it's the same layout.
+        // But Blazor Server re-renders layout on navigation? No, it stays.
+        // So we should hook into navigation events or check here.
+        // Let's rely on OnInitialized for now, but if we want strict enforcement on every page load:
+        // We can't easily do async work in OnParametersSet without careful state management.
+        // But we can check currentUser state.
+    }
+
+    private async Task CheckSecurityRequirements()
+    {
+        if (currentUser == null) return;
+
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri) ?? string.Empty;
+        var relLower = relative.ToLowerInvariant();
+
+        // Allow access to config page, logout, and static assets (if any)
+        if (relLower.StartsWith("configurar-seguridad") || relLower.StartsWith("logout") || relLower.StartsWith("login"))
+        {
+            return;
+        }
+
+        try
+        {
+            // Check if user has security questions configured.
+            // We might need to fetch this from UserStore if not in currentUser object.
+            // currentUser.SecurityQuestions might be empty if not loaded.
+            // Let's assume we need to check via API or Store.
+            // But wait, currentUser is loaded from Auth.GetCurrentUserAsync().
+            // Does that include SecurityQuestions?
+            // If not, we might need to call an endpoint.
+            // Let's check if we can get the policy status.
+            
+            // Optimization: Only check if we suspect they aren't set.
+            // Or just check every time?
+            // Let's try to get the user's security questions status.
+            // Since we don't have a direct "HasSecurityQuestions" property on AppUser that is guaranteed populated,
+            // we might need to fetch it.
+            // However, to avoid performance hit on every layout load, maybe we can store a flag in session/claim?
+            // For now, let's fetch it.
+            
+            var questions = await UserStore.GetSecurityQuestionsAsync(currentUser.Username);
+            if (questions == null || !questions.Any())
+            {
+                // No questions configured!
+                // Redirect to configuration page
+                Navigation.NavigateTo("/configurar-seguridad");
+                Toast.ShowWarning("Debes configurar tus preguntas de seguridad para continuar.");
+            }
+        }
+        catch { /* Ignore errors here to avoid blocking app if API fails, or log them */ }
+
         EnforcePasswordChange();
     }
 

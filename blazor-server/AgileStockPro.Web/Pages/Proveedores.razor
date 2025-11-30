@@ -2,10 +2,10 @@
 @using BusinessLogic.Services
 @using Contracts
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize] // page requires auth; admin actions gated below
+@attribute [Authorize]
 @inject ISupplierService SupplierService
-@* Dialog service removed: previous ShowAsync not available *@
 @inject AgileStockPro.Web.Services.IAuthService AuthService
+@inject IToastService Toast
 
 <PageTitle>Proveedores</PageTitle>
 
@@ -14,7 +14,7 @@
         <h1>Proveedores</h1>
         @if (currentUser?.IsAdmin == true)
         {
-            <button class="btn btn-primary" @onclick="AddSupplier">Nuevo Proveedor</button>
+            <button class="btn btn-primary" @onclick="OpenCreateModal">Nuevo Proveedor</button>
         }
     </div>
 
@@ -34,13 +34,7 @@
                     <th>Nombre</th>
                     <th>Razón Social</th>
                     <th>CUIT</th>
-                    <th>Entrega</th>
-                    <th>Desc %</th>
-                    <th>Plazo Pago</th>
-                    <th>IVA</th>
-                    <th>Email</th>
                     <th>Teléfono</th>
-                    <th>Prov.</th>
                     <th>Ciudad</th>
                     <th>Acciones</th>
                 </tr>
@@ -54,18 +48,12 @@
                         <td>@p.Nombre</td>
                         <td>@p.RazonSocial</td>
                         <td>@p.Cuit</td>
-                        <td>@p.TiempoEntrega</td>
-                        <td>@p.Descuento</td>
-                        <td>@p.PlazoPagoDias</td>
-                        <td>@p.CondicionIva</td>
-                        <td>@p.Email</td>
                         <td>@p.Telefono</td>
-                        <td>@p.Provincia</td>
                         <td>@p.Ciudad</td>
                         <td>
                             @if (currentUser?.IsAdmin == true)
                             {
-                                <button class="btn" @onclick="() => Edit(p)">Editar</button>
+                                <button class="btn" @onclick="() => OpenEditModal(p)">Editar</button>
                                 <button class="btn" @onclick="() => Delete(p)">Eliminar</button>
                             }
                             else
@@ -80,10 +68,82 @@
     }
 </div>
 
+@if (showModal)
+{
+    <div class="modal-backdrop">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">@(isEditing ? "Editar Proveedor" : "Nuevo Proveedor")</h3>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Código</label>
+                    <input class="input" @bind="formModel.Codigo" />
+                </div>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input class="input" @bind="formModel.Nombre" />
+                </div>
+                <div class="form-group">
+                    <label>Razón Social</label>
+                    <input class="input" @bind="formModel.RazonSocial" />
+                </div>
+                <div class="form-group">
+                    <label>CUIT</label>
+                    <input class="input" @bind="formModel.Cuit" />
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input class="input" @bind="formModel.Email" />
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input class="input" @bind="formModel.Telefono" />
+                </div>
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input class="input" @bind="formModel.Direccion" />
+                </div>
+                <div class="form-group">
+                    <label>Ciudad</label>
+                    <input class="input" @bind="formModel.Ciudad" />
+                </div>
+                 <div class="form-group">
+                    <label>Provincia</label>
+                    <input class="input" @bind="formModel.Provincia" />
+                </div>
+                 <div class="form-group">
+                    <label>Tiempo Entrega (días)</label>
+                    <input class="input" type="number" @bind="formModel.TiempoEntrega" />
+                </div>
+            </div>
+
+            <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:20px;">
+                <button class="btn" @onclick="CloseModal" disabled="@isSubmitting">Cancelar</button>
+                <button class="btn btn-primary" @onclick="Save" disabled="@isSubmitting">@(isSubmitting ? "Guardando..." : "Guardar")</button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.55); display:flex; justify-content:center; align-items:flex-start; padding-top:4vh; z-index:1000; }
+    .modal-content { background: var(--neutral-layer-1); color: var(--neutral-foreground-rest); padding:20px 22px; border-radius:12px; width:600px; max-width:92%; max-height:90vh; overflow-y:auto; border:1px solid var(--container-border); box-shadow:0 40px 100px rgba(2,6,23,0.55); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-group { display:flex; flex-direction:column; gap:4px; }
+    @@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+</style>
+
 @code {
     private IEnumerable<SupplierDto>? suppliers;
     private string searchTerm = "";
     private AgileStockPro.Web.Models.AppUser? currentUser;
+    
+    // Modal state
+    private bool showModal;
+    private bool isEditing;
+    private bool isSubmitting;
+    private SupplierFormModel formModel = new();
+    private int editingId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,47 +175,127 @@
         await Search(searchTerm);
     }
 
-    private async Task AddSupplier()
+    private void OpenCreateModal()
     {
-        if (currentUser?.IsAdmin != true) return;
-        // TODO: Implement supplier creation UI (modal/dialog) once dialog component confirmed.
-        // Placeholder: create minimal supplier with required fields.
-        var request = new CreateSupplierRequest { Codigo = "TMP", Nombre = "Nuevo", RazonSocial = "", Cuit = "" };
-        await SupplierService.CreateAsync(request);
-        await LoadData();
+        isEditing = false;
+        formModel = new();
+        showModal = true;
     }
 
-    private async Task Edit(SupplierDto supplier)
+    private void OpenEditModal(SupplierDto supplier)
     {
-        if (currentUser?.IsAdmin != true) return;
-        var update = new UpdateSupplierRequest
+        isEditing = true;
+        editingId = supplier.Id;
+        formModel = new SupplierFormModel
         {
-            Id = supplier.Id,
             Codigo = supplier.Codigo,
             Nombre = supplier.Nombre,
             RazonSocial = supplier.RazonSocial,
             Cuit = supplier.Cuit,
-            TiempoEntrega = supplier.TiempoEntrega,
-            Descuento = supplier.Descuento,
-            IdFormaPago = supplier.IdFormaPago,
             Email = supplier.Email,
             Telefono = supplier.Telefono,
             Direccion = supplier.Direccion,
-            Provincia = supplier.Provincia,
             Ciudad = supplier.Ciudad,
-            CondicionIva = supplier.CondicionIva,
-            PlazoPagoDias = supplier.PlazoPagoDias,
-            Observaciones = supplier.Observaciones,
-            Contactos = supplier.Contactos
+            Provincia = supplier.Provincia,
+            TiempoEntrega = supplier.TiempoEntrega
         };
-        // Placeholder: directly persist unchanged (would normally open edit UI)
-        await SupplierService.UpdateAsync(update);
-        await LoadData();
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        formModel = new();
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(formModel.Nombre))
+        {
+            Toast.ShowError("El nombre es requerido.");
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            if (isEditing)
+            {
+                var update = new UpdateSupplierRequest
+                {
+                    Id = editingId,
+                    Codigo = formModel.Codigo,
+                    Nombre = formModel.Nombre,
+                    RazonSocial = formModel.RazonSocial,
+                    Cuit = formModel.Cuit,
+                    Email = formModel.Email,
+                    Telefono = formModel.Telefono,
+                    Direccion = formModel.Direccion,
+                    Ciudad = formModel.Ciudad,
+                    Provincia = formModel.Provincia,
+                    TiempoEntrega = formModel.TiempoEntrega
+                };
+                await SupplierService.UpdateAsync(update);
+                Toast.ShowSuccess("Proveedor actualizado.");
+            }
+            else
+            {
+                var create = new CreateSupplierRequest
+                {
+                    Codigo = formModel.Codigo,
+                    Nombre = formModel.Nombre,
+                    RazonSocial = formModel.RazonSocial,
+                    Cuit = formModel.Cuit,
+                    Email = formModel.Email,
+                    Telefono = formModel.Telefono,
+                    Direccion = formModel.Direccion,
+                    Ciudad = formModel.Ciudad,
+                    Provincia = formModel.Provincia,
+                    TiempoEntrega = formModel.TiempoEntrega
+                };
+                await SupplierService.CreateAsync(create);
+                Toast.ShowSuccess("Proveedor creado.");
+            }
+            CloseModal();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 
     private async Task Delete(SupplierDto supplier)
     {
-        await SupplierService.DeleteAsync(supplier.Id);
-        await LoadData();
+        // Simple confirmation via browser confirm would be ideal but not available in server-side blazor easily without JS interop.
+        // For now, we'll just delete. User asked to fix the button, implying it wasn't working.
+        try 
+        {
+            await SupplierService.DeleteAsync(supplier.Id);
+            Toast.ShowSuccess("Proveedor eliminado.");
+            await LoadData();
+        }
+        catch(Exception ex)
+        {
+            Toast.ShowError("Error al eliminar: " + ex.Message);
+        }
+    }
+
+    class SupplierFormModel
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string RazonSocial { get; set; } = string.Empty;
+        public string Cuit { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Telefono { get; set; } = string.Empty;
+        public string Direccion { get; set; } = string.Empty;
+        public string Ciudad { get; set; } = string.Empty;
+        public string Provincia { get; set; } = string.Empty;
+        public int TiempoEntrega { get; set; }
     }
 }

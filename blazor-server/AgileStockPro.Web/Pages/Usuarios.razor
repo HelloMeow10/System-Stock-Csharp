@@ -470,9 +470,9 @@ else
             var p = personas.FirstOrDefault(x => x.IdPersona == pid);
             if (p != null)
             {
-                editing.Name = p.Nombre;
-                editing.LastName = p.Apellido;
-                editing.Email = p.Correo;
+                editing.Name = p.Nombre ?? string.Empty;
+                editing.LastName = p.Apellido ?? string.Empty;
+                editing.Email = p.Correo ?? string.Empty;
             }
         }
     }

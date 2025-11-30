@@ -58,7 +58,7 @@
     private bool loading;
     private string? error;
     private string? csvDataUrl;
-    private ElementReference csvLinkRef;
+    private ElementReference csvLinkRef = default;
 
     protected override async Task OnInitializedAsync() => await Reload();
 

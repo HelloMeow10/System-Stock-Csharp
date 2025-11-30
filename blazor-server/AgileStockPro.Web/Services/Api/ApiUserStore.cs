@@ -148,6 +148,20 @@ public class ApiUserStore : IUserStore
         }
     }
 
+    public async Task<IEnumerable<SecurityQuestion>> GetSecurityQuestionsAsync(string username)
+    {
+        try
+        {
+            var dtos = await _api.GetAsync<IEnumerable<PreguntaSeguridadDto>>($"api/v1/securityquestions/{username}");
+            if (dtos == null) return Enumerable.Empty<SecurityQuestion>();
+            return dtos.Select(d => new SecurityQuestion { Question = d.Pregunta, AnswerHash = "HIDDEN" });
+        }
+        catch
+        {
+            return Enumerable.Empty<SecurityQuestion>();
+        }
+    }
+
     private static string GenerateTemporaryPassword()
     {
         // Simple strong password generator: Upper, lower, digit, special + length 12

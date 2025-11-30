@@ -97,4 +97,9 @@ public class LocalUserStore : IUserStore
         if (string.IsNullOrWhiteSpace(json)) return null;
         return JsonSerializer.Deserialize<AppUser>(json!);
     }
+    public async Task<IEnumerable<SecurityQuestion>> GetSecurityQuestionsAsync(string username)
+    {
+        var user = await FindByUsernameAsync(username);
+        return user?.SecurityQuestions ?? Enumerable.Empty<SecurityQuestion>();
+    }
 }

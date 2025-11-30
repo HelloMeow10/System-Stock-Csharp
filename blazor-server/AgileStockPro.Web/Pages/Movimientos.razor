@@ -69,9 +69,13 @@
 {
 	<div class="error">@error</div>
 }
+else if (isLoading)
+{
+    <div class="loading" style="padding:1rem; font-size:.9rem; opacity:.8;">Cargando movimientos...</div>
+}
 else if (items is null)
 {
-	<p>Cargando...</p>
+	<p>No se han cargado datos.</p>
 }
 else
 {
@@ -110,6 +114,7 @@ else
 	private string? success;
 	private bool showForm = false;
 	private bool isSubmitting = false;
+    private bool isLoading = false;
 	private List<AgileStockPro.Web.Services.Api.ProductPickVm> products = new();
 	private IngresoForm ingreso = new();
 	private DateOnly? fechaVenc;
@@ -169,12 +174,14 @@ else
 
 	async Task Reload()
 	{
+        isLoading = true;
 		try
 		{
 			error = null;
 			items = await StockApi.GetMovementsAsync(fromDate, toDate);
 		}
 		catch (Exception ex) { error = ex.Message; }
+        finally { isLoading = false; }
 	}
 
 	class IngresoForm { public int ProductoId { get; set; } public int Cantidad { get; set; } = 1; public string? Lote { get; set; } }

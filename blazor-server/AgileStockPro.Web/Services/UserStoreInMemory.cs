@@ -66,4 +66,9 @@ public class UserStoreInMemory : IUserStore
     public Task SetCurrentUserAsync(AppUser? user)
     { _current = user; return Task.CompletedTask; }
     public Task<AppUser?> GetCurrentUserAsync() => Task.FromResult(_current);
+    public Task<IEnumerable<SecurityQuestion>> GetSecurityQuestionsAsync(string username)
+    {
+        var user = _users.FirstOrDefault(u => u.Username == username);
+        return Task.FromResult<IEnumerable<SecurityQuestion>>(user?.SecurityQuestions ?? Enumerable.Empty<SecurityQuestion>());
+    }
 }
