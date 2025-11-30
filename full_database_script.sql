@@ -11,23 +11,6 @@ BEGIN
 END
 GO
 
--- Seed EstadoVentas básico para evitar FK inválida al crear ventas
-IF NOT EXISTS (SELECT 1 FROM EstadoVentas)
-BEGIN
-    INSERT INTO EstadoVentas (facturada, entregada, cancelada) VALUES (0, 0, 0);
-END
-GO
-
--- Asegurar que exista id_estadoVentas = 1
-IF NOT EXISTS (SELECT 1 FROM EstadoVentas WHERE id_estadoVentas = 1)
-BEGIN
-    SET IDENTITY_INSERT EstadoVentas ON;
-    INSERT INTO EstadoVentas (id_estadoVentas, facturada, entregada, cancelada)
-    VALUES (1, 0, 0, 0);
-    SET IDENTITY_INSERT EstadoVentas OFF;
-END
-GO
-
 -- Actualizar item de presupuesto de compra (cantidad / precio)
 IF OBJECT_ID('sp_ActualizarItemPresupuestoCompra', 'P') IS NOT NULL
     DROP PROCEDURE sp_ActualizarItemPresupuestoCompra;
@@ -126,7 +109,7 @@ CREATE TABLE tipo_doc (
     tipo_doc VARCHAR(30) NOT NULL
 );
 
--- 5. GÃ©neros
+-- 5. Géneros
 CREATE TABLE generos (
     id_genero INT PRIMARY KEY IDENTITY(1,1),
     genero VARCHAR(25) NOT NULL
@@ -160,7 +143,7 @@ CREATE TABLE roles (
     rol VARCHAR(50) NOT NULL
 );
 
--- 8. PolÃ­ticas de Seguridad (was 9)
+-- 8. Políticas de Seguridad (was 9)
 CREATE TABLE politicas_seguridad (
     id_politica INT PRIMARY KEY IDENTITY(1,1),
     min_caracteres INT,
@@ -224,7 +207,7 @@ CREATE TABLE permisos_usuarios (
     FOREIGN KEY (id_permiso) REFERENCES permisos(id_permiso)
 );
 
--- 13. Historial de ContraseÃ±as (was 14)
+-- 13. Historial de Contraseñas (was 14)
 CREATE TABLE historial_contrasena (
     id INT PRIMARY KEY IDENTITY(1,1),
     id_usuario INT NOT NULL,
@@ -843,7 +826,7 @@ EXEC sp_insert_tipo_doc @tipo_doc = 'DNI';
 EXEC sp_insert_tipo_doc @tipo_doc = 'Pasaporte';
 GO
 
--- gÃ©neros
+-- géneros
 EXEC sp_insert_genero @genero = 'Masculino';
 EXEC sp_insert_genero @genero = 'Femenino';
 GO
@@ -854,17 +837,17 @@ EXEC sp_insert_prov @provincia = 'Buenos Aires';
 EXEC sp_insert_prov @provincia = 'Catamarca';
 EXEC sp_insert_prov @provincia = 'Chaco';
 EXEC sp_insert_prov @provincia = 'Chubut';
-EXEC sp_insert_prov @provincia = 'CÃ³rdoba';
+EXEC sp_insert_prov @provincia = 'Córdoba';
 EXEC sp_insert_prov @provincia = 'Corrientes';
-EXEC sp_insert_prov @provincia = 'Entre RÃ­os';
+EXEC sp_insert_prov @provincia = 'Entre Ríos';
 EXEC sp_insert_prov @provincia = 'Formosa';
 EXEC sp_insert_prov @provincia = 'Jujuy';
 EXEC sp_insert_prov @provincia = 'La Pampa';
 EXEC sp_insert_prov @provincia = 'La Rioja';
 EXEC sp_insert_prov @provincia = 'Mendoza';
 EXEC sp_insert_prov @provincia = 'Misiones';
-EXEC sp_insert_prov @provincia = 'NeuquÃ©n';
-EXEC sp_insert_prov @provincia = 'RÃ­o Negro';
+EXEC sp_insert_prov @provincia = 'Neuquén';
+EXEC sp_insert_prov @provincia = 'Río Negro';
 EXEC sp_insert_prov @provincia = 'Salta';
 EXEC sp_insert_prov @provincia = 'San Juan';
 EXEC sp_insert_prov @provincia = 'San Luis';
@@ -872,7 +855,7 @@ EXEC sp_insert_prov @provincia = 'Santa Cruz';
 EXEC sp_insert_prov @provincia = 'Santa Fe';
 EXEC sp_insert_prov @provincia = 'Santiago del Estero';
 EXEC sp_insert_prov @provincia = 'Tierra del Fuego';
-EXEC sp_insert_prov @provincia = 'TucumÃ¡n';
+EXEC sp_insert_prov @provincia = 'Tucumán';
 GO
 
 -- Partidos
@@ -883,12 +866,12 @@ BEGIN
     EXEC sp_insert_partido @partido = 'Almirante Brown', @id_provincia = @id_provincia;
     EXEC sp_insert_partido @partido = 'Avellaneda', @id_provincia = @id_provincia;
     EXEC sp_insert_partido @partido = 'Berazategui', @id_provincia = @id_provincia;
-    EXEC sp_insert_partido @partido = 'Esteban EcheverrÃ­a', @id_provincia = @id_provincia;
+    EXEC sp_insert_partido @partido = 'Esteban Echeverría', @id_provincia = @id_provincia;
     EXEC sp_insert_partido @partido = 'Ezeiza', @id_provincia = @id_provincia;
     EXEC sp_insert_partido @partido = 'Florencio Varela', @id_provincia = @id_provincia;
-    EXEC sp_insert_partido @partido = 'LanÃºs', @id_provincia = @id_provincia;
+    EXEC sp_insert_partido @partido = 'Lanús', @id_provincia = @id_provincia;
     EXEC sp_insert_partido @partido = 'Lomas de Zamora', @id_provincia = @id_provincia;
-    EXEC sp_insert_partido @partido = 'Presidente PerÃ³n', @id_provincia = @id_provincia;
+    EXEC sp_insert_partido @partido = 'Presidente Perón', @id_provincia = @id_provincia;
     EXEC sp_insert_partido @partido = 'Quilmes', @id_provincia = @id_provincia;
 END
 ELSE
@@ -898,19 +881,19 @@ END
 GO
 
 -- Localidades
--- LanÃºs
+-- Lanús
 DECLARE @id_partido INT;
-SELECT @id_partido = id_partido FROM partidos WHERE partido = 'LanÃºs';
+SELECT @id_partido = id_partido FROM partidos WHERE partido = 'Lanús';
 IF @id_partido IS NOT NULL
 BEGIN
-    EXEC sp_insert_localidad @localidad = 'LanÃºs Este', @id_partido = @id_partido;
-    EXEC sp_insert_localidad @localidad = 'LanÃºs Oeste', @id_partido = @id_partido;
+    EXEC sp_insert_localidad @localidad = 'Lanús Este', @id_partido = @id_partido;
+    EXEC sp_insert_localidad @localidad = 'Lanús Oeste', @id_partido = @id_partido;
     EXEC sp_insert_localidad @localidad = 'Villa Caraza', @id_partido = @id_partido;
     EXEC sp_insert_localidad @localidad = 'Remedios de Escalada', @id_partido = @id_partido;
 END
 ELSE
 BEGIN
-    RAISERROR ('Partido "LanÃºs" not found.', 16, 1);
+    RAISERROR ('Partido "Lanús" not found.', 16, 1);
 END
 GO
 
@@ -921,8 +904,8 @@ IF @id_partido IS NOT NULL
 BEGIN
     EXEC sp_insert_localidad @localidad = 'Avellaneda', @id_partido = @id_partido;
     EXEC sp_insert_localidad @localidad = 'Dock Sud', @id_partido = @id_partido;
-    EXEC sp_insert_localidad @localidad = 'SarandÃ­', @id_partido = @id_partido;
-    EXEC sp_insert_localidad @localidad = 'Villa DomÃ­nico', @id_partido = @id_partido;
+    EXEC sp_insert_localidad @localidad = 'Sarandí', @id_partido = @id_partido;
+    EXEC sp_insert_localidad @localidad = 'Villa Domínico', @id_partido = @id_partido;
 END
 ELSE
 BEGIN
@@ -967,7 +950,7 @@ DECLARE @id_partido INT;
 SELECT @id_partido = id_partido FROM partidos WHERE partido = 'Almirante Brown';
 IF @id_partido IS NOT NULL
 BEGIN
-    EXEC sp_insert_localidad @localidad = 'AdroguÃ©', @id_partido = @id_partido;
+    EXEC sp_insert_localidad @localidad = 'Adrogué', @id_partido = @id_partido;
     EXEC sp_insert_localidad @localidad = 'Burzaco', @id_partido = @id_partido;
     EXEC sp_insert_localidad @localidad = 'Claypole', @id_partido = @id_partido;
     EXEC sp_insert_localidad @localidad = 'Glew', @id_partido = @id_partido;
@@ -978,18 +961,18 @@ BEGIN
 END
 GO
 
--- Esteban EcheverrÃ­a
+-- Esteban Echeverría
 DECLARE @id_partido INT;
-SELECT @id_partido = id_partido FROM partidos WHERE partido = 'Esteban EcheverrÃ­a';
+SELECT @id_partido = id_partido FROM partidos WHERE partido = 'Esteban Echeverría';
 IF @id_partido IS NOT NULL
 BEGIN
     EXEC sp_insert_localidad @localidad = 'Monte Grande', @id_partido = @id_partido;
-    EXEC sp_insert_localidad @localidad = 'El JagÃ¼el', @id_partido = @id_partido;
+    EXEC sp_insert_localidad @localidad = 'El Jagüel', @id_partido = @id_partido;
     EXEC sp_insert_localidad @localidad = 'Canning', @id_partido = @id_partido;
 END
 ELSE
 BEGIN
-    RAISERROR ('Partido "Esteban EcheverrÃ­a" not found.', 16, 1);
+    RAISERROR ('Partido "Esteban Echeverría" not found.', 16, 1);
 END
 GO
 
@@ -999,7 +982,7 @@ SELECT @id_partido = id_partido FROM partidos WHERE partido = 'Ezeiza';
 IF @id_partido IS NOT NULL
 BEGIN
     EXEC sp_insert_localidad @localidad = 'Ezeiza', @id_partido = @id_partido;
-    EXEC sp_insert_localidad @localidad = 'TristÃ¡n SuÃ¡rez', @id_partido = @id_partido;
+    EXEC sp_insert_localidad @localidad = 'Tristán Suárez', @id_partido = @id_partido;
     EXEC sp_insert_localidad @localidad = 'Carlos Spegazzini', @id_partido = @id_partido;
 END
 ELSE
@@ -1023,16 +1006,16 @@ BEGIN
 END
 GO
 
--- Presidente PerÃ³n
+-- Presidente Perón
 DECLARE @id_partido INT;
-SELECT @id_partido = id_partido FROM partidos WHERE partido = 'Presidente PerÃ³n';
+SELECT @id_partido = id_partido FROM partidos WHERE partido = 'Presidente Perón';
 IF @id_partido IS NOT NULL
 BEGIN
     EXEC sp_insert_localidad @localidad = 'Guernica', @id_partido = @id_partido;
 END
 ELSE
 BEGIN
-    RAISERROR ('Partido "Presidente PerÃ³n" not found.', 16, 1);
+    RAISERROR ('Partido "Presidente Perón" not found.', 16, 1);
 END
 GO
 
@@ -1058,17 +1041,17 @@ EXEC sp_insert_rol @rol = 'Usuario';
 GO
 
 -- Insert Preguntas de Seguridad
-EXEC sp_insert_pregunta_seguridad @pregunta = 'Â¿CuÃ¡l era el nombre de tu primera mascota?';
-EXEC sp_insert_pregunta_seguridad @pregunta = 'Â¿CuÃ¡l es el apellido de soltera de tu madre?';
-EXEC sp_insert_pregunta_seguridad @pregunta = 'Â¿CÃ³mo se llamaba tu escuela primaria?';
-EXEC sp_insert_pregunta_seguridad @pregunta = 'Â¿En quÃ© ciudad naciste?';
-EXEC sp_insert_pregunta_seguridad @pregunta = 'Â¿CuÃ¡l es tu libro favorito?';
+EXEC sp_insert_pregunta_seguridad @pregunta = '¿Cuál era el nombre de tu primera mascota?';
+EXEC sp_insert_pregunta_seguridad @pregunta = '¿Cuál es el apellido de soltera de tu madre?';
+EXEC sp_insert_pregunta_seguridad @pregunta = '¿Cómo se llamaba tu escuela primaria?';
+EXEC sp_insert_pregunta_seguridad @pregunta = '¿En qué ciudad naciste?';
+EXEC sp_insert_pregunta_seguridad @pregunta = '¿Cuál es tu libro favorito?';
 GO
 
 -- Insert Persona for Admin
 DECLARE @id_tipo_doc INT, @id_localidad INT, @id_genero INT;
 SELECT @id_tipo_doc = id_tipo_doc FROM tipo_doc WHERE tipo_doc = 'DNI';
-SELECT @id_localidad = id_localidad FROM localidades WHERE localidad = 'LanÃºs Este';
+SELECT @id_localidad = id_localidad FROM localidades WHERE localidad = 'Lanús Este';
 SELECT @id_genero = id_genero FROM generos WHERE genero = 'Masculino';
 
 IF @id_tipo_doc IS NOT NULL AND @id_localidad IS NOT NULL AND @id_genero IS NOT NULL
@@ -1103,7 +1086,7 @@ SET @fecha_ultimo_cambio = GETDATE();
 
 IF @id_persona IS NOT NULL AND @id_rol IS NOT NULL
 BEGIN
-    -- ContraseÃ±a "admin123" encriptada with Argon2id (salt=username)
+    -- Contraseña "admin123" encriptada with Argon2id (salt=username)
     DECLARE @password VARBINARY(512) = 0xA6CD645C57030D00EB8F8CB4A2B21BBEDC54181871ACE4BB6E578D67337F4C05;
     EXEC sp_insert_usuario
         @usuario = 'admin',
@@ -1245,7 +1228,7 @@ END
 GO
 
 -- ============================================
--- ðŸ”¹ LIMPIEZA AUTOMÃTICA DE OBJETOS EXISTENTES
+-- 🔹 LIMPIEZA AUTOMÁTICA DE OBJETOS EXISTENTES
 -- ============================================
 
 /* Solo dropeo procedures listados (si existen) para evitar conflicto al recrearlos */
@@ -1354,6 +1337,23 @@ CREATE TABLE EstadoVentas (
     entregada BIT DEFAULT 0,  
     cancelada BIT DEFAULT 0
 );
+END
+GO
+
+-- Seed EstadoVentas básico para evitar FK inválida al crear ventas
+IF NOT EXISTS (SELECT 1 FROM EstadoVentas)
+BEGIN
+    INSERT INTO EstadoVentas (facturada, entregada, cancelada) VALUES (0, 0, 0);
+END
+GO
+
+-- Asegurar que exista id_estadoVentas = 1
+IF NOT EXISTS (SELECT 1 FROM EstadoVentas WHERE id_estadoVentas = 1)
+BEGIN
+    SET IDENTITY_INSERT EstadoVentas ON;
+    INSERT INTO EstadoVentas (id_estadoVentas, facturada, entregada, cancelada)
+    VALUES (1, 0, 0, 0);
+    SET IDENTITY_INSERT EstadoVentas OFF;
 END
 GO
 
@@ -1675,7 +1675,6 @@ GO
 -- ============================================
 -- MISSING TABLES FOR PURCHASING MODULE
 -- ============================================
-
 IF OBJECT_ID('dbo.PresupuestoCompra','U') IS NULL
 BEGIN
 CREATE TABLE PresupuestoCompra (
@@ -2802,7 +2801,7 @@ GO
 -- =============================================
 -- sp_tablas auxiliares
 -- =============================================
--- CategorÃ­as Producto
+-- Categorías Producto
 CREATE PROCEDURE sp_AgregarCategoria
     @categoria VARCHAR(100),
     @descripcion VARCHAR(100)
@@ -2972,7 +2971,7 @@ AS
 BEGIN
     INSERT INTO DetalleVentas (id_venta, id_producto, cantidad, precioUnitario, subtotal)
     VALUES (@id_venta, @id_producto, @cantidad, @precioUnitario, @subtotal)
-    
+   
     UPDATE Stock
     SET stock = stock - @cantidad
     WHERE id_producto = @id_producto
@@ -3592,7 +3591,7 @@ SELECT @id_localidad = id_localidad FROM localidades ORDER BY id_localidad;
 
 IF @id_tipo_doc IS NULL OR @id_genero_m IS NULL OR @id_localidad IS NULL
 BEGIN
-    RAISERROR('CatÃ¡logo mÃ­nimo faltante (tipo_doc/generos/localidades). Ejecuta el script de creaciÃ³n base primero.', 16, 1);
+    RAISERROR('Catálogo mínimo faltante (tipo_doc/generos/localidades). Ejecuta el script de creación base primero.', 16, 1);
     RETURN;
 END
 
