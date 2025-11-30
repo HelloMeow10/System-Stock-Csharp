@@ -93,8 +93,21 @@ a:hover { text-decoration: underline; }
 .sidebar.is-collapsed .nav-link { justify-content: center; }
 .sidebar.is-collapsed .nav-icon { margin: 0; }
 .sidebar-header { display: flex; align-items: center; gap: .75rem; padding: 1rem 1rem .75rem; border-bottom: 1px solid var(--stroke-color); }
-.sidebar-header .logo { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-weight: 800; letter-spacing: .5px; }
+.sidebar-header .logo { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 6px; background: transparent; color: inherit; font-weight: 800; letter-spacing: .5px; }
 .sidebar-header .title { font-weight: 800; }
+
+/* Logo image inside the sidebar header */
+.sidebar-header .logo img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 4px; background: transparent; }
+
+/* Slightly smaller logo when the sidebar is collapsed */
+.sidebar.is-collapsed .sidebar-header .logo { width: 34px; height: 34px; background: transparent; }
+.sidebar.is-collapsed .sidebar-header .logo img { width: 100%; height: 100%; }
+
+/* If the image is too large on small screens, constrain it */
+@media (max-width: 600px) {
+	.sidebar-header .logo { width: 32px; height: 32px; }
+	.sidebar-header .logo img { border-radius: 6px; }
+}
 .sidebar-nav { display: flex; flex-direction: column; padding: .75rem; gap: 2px; }
 .nav-section { opacity: .8; font-size: .75rem; padding: .85rem .6rem .35rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted-color); }
 .nav-link { display:flex; align-items:center; gap:.6rem; padding: .55rem .6rem; border-radius: 10px; color: inherit; text-decoration: none; border: 1px solid transparent; }
@@ -313,6 +326,11 @@ input.search:focus { outline: 2px solid var(--focus-ring); outline-offset: 2px; 
 .btn-primary:hover { background: var(--accent-600); border-color: var(--accent-700); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 .btn-primary:active { background: var(--accent-700); }
 
+/* User badge in header: icon left, username right, border like .btn */
+.user-badge { display:inline-flex; align-items:center; gap:.5rem; padding: .35rem .6rem; border-radius: 8px; border: 1px solid var(--stroke-color); background: var(--neutral-layer-2); color: var(--neutral-foreground-rest); }
+.user-badge .username { font-weight: 600; }
+.user-badge svg { width: 16px; height: 16px; display: block; }
+
 /* Form validation helpers */
 .req { color: var(--palette-red-foreground-2, #ef4444); }
 .error { border: 1px solid color-mix(in srgb, #ef4444 35%, transparent); background: color-mix(in srgb, #ef4444 6%, transparent); color: inherit; border-radius: 8px; padding: .5rem .75rem; }
@@ -426,9 +444,40 @@ input.search:focus { outline: 2px solid var(--focus-ring); outline-offset: 2px; 
 }
 
 /* Adjust spacing inside panels */
-.panel { padding: .5rem; }
-.panel .panel-header { padding: 12px 14px; }
-.panel .form-group.mb-3 { margin-bottom: .75rem; }
+.panel { padding: 1rem; margin-bottom: 1rem; }
+.panel .panel-header { padding: 14px 16px; font-weight: 700; color: var(--neutral-foreground-rest); border-bottom: 1px solid var(--neutral-stroke-layer-rest); }
+.panel .form-group.mb-3 { margin-bottom: 1rem; }
+
+/* Configuración: mejor separación y alineación */
+.config-appearance { padding: .75rem 0; display:flex; flex-direction:column; gap:1rem; }
+.config-row { display:flex; gap:1rem; align-items:center; width:100%; }
+.config-row label { min-width:120px; font-weight:600; color:var(--neutral-foreground-rest); }
+.config-row .input, .config-row input[type="color"] { max-width:360px; }
+.config-accent { align-items:center; }
+.config-actions { margin-top: .5rem; display:flex; gap:.5rem; justify-content:flex-end; }
+
+/* Make panel content breathe and separate sections clearly */
+.panel > .panel-body, .panel > .config-appearance { padding: 12px 14px; }
+.panel + .panel { margin-top: .75rem; }
+
+/* Fancy checkbox spacing and readability */
+.fancy-checkbox { gap:.75rem; padding:.35rem 0; }
+.fancy-checkbox .fancy-label { font-weight:600; color:var(--neutral-foreground-rest); }
+
+/* Ensure checkboxes are clearly separated and readable inside panels */
+.panel .fancy-checkbox { display:flex; gap:.9rem; align-items:center; padding:.5rem 0; margin: .25rem 0; }
+.panel .fancy-checkbox + .fancy-checkbox { margin-top: .5rem; }
+.panel .fancy-check { min-width:20px; min-height:20px; }
+
+/* Give the small note under appearance a bit more breathing room */
+.panel > p { margin-top: 1rem; color: var(--neutral-foreground-rest); }
+
+/* Responsive tweaks for small screens */
+@media (max-width: 780px) {
+	.config-row { flex-direction:column; align-items:stretch; }
+	.config-row label { min-width:0; }
+	.config-actions { justify-content:flex-start; }
+}
 
 /* Small helper text */
 .helper-small { color: var(--text-muted-color); font-size: .9rem; }
@@ -484,4 +533,57 @@ input.search:focus { outline: 2px solid var(--focus-ring); outline-offset: 2px; 
 @media (max-width: 1100px) {
 	.dashboard .cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
 	.dashboard .grid-two { grid-template-columns: 1fr; }
+}
+
+/* Toasts: professional look + bottom-right positioning */
+/* Cover both Fluent/FAST tag names and provide fallbacks for class-based outputs */
+fluent-toast, fast-toast, .fluent-toast, .fast-toast {
+	position: fixed;
+	right: 1.25rem;
+	bottom: 1.25rem;
+	max-width: 360px;
+	z-index: 9999;
+	margin: 0;
+	padding: 0; /* actual padding applied to inner part */
+	box-sizing: border-box;
+}
+
+/* Preferred: style Shadow DOM parts if available */
+fluent-toast::part(root), fast-toast::part(root) {
+	background: var(--neutral-layer-2);
+	color: var(--neutral-foreground-rest);
+	border: 1px solid var(--container-border);
+	border-radius: 10px;
+	box-shadow: 0 12px 36px rgba(2,6,23,0.55);
+	padding: .8rem 1rem;
+}
+
+/* Fallback: style common classes when parts are not available */
+.fluent-toast, .fast-toast, .fluent-toast-root {
+	background: var(--neutral-layer-2) !important;
+	color: var(--neutral-foreground-rest) !important;
+	border: 1px solid var(--container-border) !important;
+	border-radius: 10px !important;
+	padding: .8rem 1rem !important;
+	box-shadow: 0 12px 36px rgba(2,6,23,0.55) !important;
+}
+
+/* Title/text styles fallback */
+.fluent-toast-title, .fast-toast-title {
+	color: var(--neutral-foreground-rest) !important;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+/* Stacking — provide offsets for up to 6 toasts (most UIs won't exceed this) */
+fluent-toast:nth-last-of-type(1), fast-toast:nth-last-of-type(1), .fluent-toast:nth-last-of-type(1) { bottom: 1.25rem; }
+fluent-toast:nth-last-of-type(2), fast-toast:nth-last-of-type(2), .fluent-toast:nth-last-of-type(2) { bottom: calc(1.25rem + 4.6rem); }
+fluent-toast:nth-last-of-type(3), fast-toast:nth-last-of-type(3), .fluent-toast:nth-last-of-type(3) { bottom: calc(1.25rem + 9.2rem); }
+fluent-toast:nth-last-of-type(4), fast-toast:nth-last-of-type(4), .fluent-toast:nth-last-of-type(4) { bottom: calc(1.25rem + 13.8rem); }
+fluent-toast:nth-last-of-type(5), fast-toast:nth-last-of-type(5), .fluent-toast:nth-last-of-type(5) { bottom: calc(1.25rem + 18.4rem); }
+fluent-toast:nth-last-of-type(6), fast-toast:nth-last-of-type(6), .fluent-toast:nth-last-of-type(6) { bottom: calc(1.25rem + 23rem); }
+
+/* Make toasts responsive (narrower on small screens) */
+@media (max-width: 520px) {
+	fluent-toast, fast-toast, .fluent-toast, .fast-toast { right: .6rem; left: .6rem; max-width: calc(100% - 1.2rem); }
 }

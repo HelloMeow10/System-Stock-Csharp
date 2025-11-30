@@ -10,12 +10,12 @@
     <h1>Alertas de Stock</h1>
 
     <div style="margin-bottom: 20px;">
-        <FluentButton Appearance="Appearance.Accent" OnClick="LoadAlerts">Actualizar</FluentButton>
+        <button class="btn btn-primary" @onclick="LoadAlerts">Actualizar</button>
     </div>
 
     @if (isLoading)
     {
-        <FluentProgressRing />
+        <div class="loading-inline" aria-live="polite">Cargando…</div>
     }
     else if (alerts == null || !alerts.Any())
     {
@@ -23,20 +23,37 @@
     }
     else
     {
-        <FluentDataGrid Items="@alerts.AsQueryable()" ResizableColumns="true">
-            <PropertyColumn Property="@(p => p.Codigo)" Title="Código" Sortable="true" />
-            <PropertyColumn Property="@(p => p.Producto)" Title="Producto" Sortable="true" />
-            <PropertyColumn Property="@(p => p.StockActual)" Title="Stock Actual" Sortable="true" />
-            <PropertyColumn Property="@(p => p.StockMinimo)" Title="Stock Mínimo" />
-            <PropertyColumn Property="@(p => p.PuntoReposicion)" Title="Punto Reposición" />
-            <PropertyColumn Property="@(p => p.Lote)" Title="Lote" />
-            <PropertyColumn Property="@(p => p.FechaVencimiento)" Format="dd/MM/yyyy" Title="Vencimiento" Sortable="true" />
-            <TemplateColumn Title="Tipo Alerta" Sortable="true" SortBy="@sortByType">
-                <FluentBadge Appearance="@GetBadgeAppearance(context.Severidad)">
-                    @context.TipoAlerta
-                </FluentBadge>
-            </TemplateColumn>
-        </FluentDataGrid>
+        <div class="data-grid">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Producto</th>
+                        <th>Stock Actual</th>
+                        <th>Stock Mínimo</th>
+                        <th>Punto Reposición</th>
+                        <th>Lote</th>
+                        <th>Vencimiento</th>
+                        <th>Tipo Alerta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in alerts)
+                    {
+                        <tr>
+                            <td>@p.Codigo</td>
+                            <td>@p.Producto</td>
+                            <td>@p.StockActual</td>
+                            <td>@p.StockMinimo</td>
+                            <td>@p.PuntoReposicion</td>
+                            <td>@p.Lote</td>
+                            <td>@(p.FechaVencimiento?.ToString("dd/MM/yyyy") ?? "-")</td>
+                            <td><span class="badge @GetBadgeClass(p.Severidad)">@p.TipoAlerta</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
 </div>
 
@@ -66,16 +83,13 @@
         }
     }
 
-    private Appearance GetBadgeAppearance(string severity)
+    private string GetBadgeClass(string severity)
     {
         return severity switch
         {
-            "danger" => Appearance.Accent, // Red-ish usually, or use custom style
-            "warning" => Appearance.Neutral, // Orange-ish
-            _ => Appearance.Neutral
+            "danger" => "badge badge-critical",
+            "warning" => "badge badge-low",
+            _ => "badge"
         };
     }
-
-    GridSort<StockAlertDto> sortByType = GridSort<StockAlertDto>
-        .ByAscending(p => p.TipoAlerta);
 }

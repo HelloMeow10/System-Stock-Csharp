@@ -3,6 +3,8 @@
 <PageTitle>AgileStockPro</PageTitle>
 
 @using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@using Microsoft.AspNetCore.WebUtilities
 
 @inject AgileStockPro.Web.Services.IAuthService Auth
 @inject AgileStockPro.Web.Services.Api.ITokenProvider Tokens
@@ -22,14 +24,18 @@
     {
         <header class="site-header">
             <button class="btn" title="Contraer/Expandir menú" @onclick="ToggleSidebar">≡</button>
-            <div class="brand">AgileStockPro</div>
             <input class="search" placeholder="Buscar..." />
             <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
                 @if (currentUser is not null)
                 {
-                    <span class="muted">@currentUser.Username (@(currentUser.IsAdmin ? "Admin" : "Usuario"))</span>
-                    <a class="btn" href="/change-password">Cambiar contraseña</a>
-                    <button class="btn" @onclick="Logout">Salir</button>
+                    <div class="user-area" style="display:flex; gap:.5rem; align-items:center;">
+                        <div class="user-badge btn" title="Usuario">
+                            <FluentIcon Icon="@(Icons.Regular.Size16.Person)" />
+                            <span class="username">@currentUser.Username</span>
+                        </div>
+                        <a class="btn" href="/change-password">Cambiar contraseña</a>
+                        <button class="btn" @onclick="Logout">Salir</button>
+                    </div>
                 }
                 else
                 {

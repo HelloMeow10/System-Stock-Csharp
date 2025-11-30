@@ -3,7 +3,14 @@
 
 <aside class="sidebar @(Collapsed ? "is-collapsed" : null)">
   <div class="sidebar-header">
-    <div class="logo">AS</div>
+    <div class="logo">
+      <picture>
+        <!-- PNG uploaded to wwwroot root: serve as /logo-sistema-gestion.png -->
+        <source srcset="/logo-sistema-gestion.png" type="image/png" />
+        <!-- Fallback to the svg placeholder in /images if PNG missing -->
+        <img src="/images/logo-sistema-gestion.svg" alt="AgileStockPro" />
+      </picture>
+    </div>
     <div class="title">AgileStockPro</div>
   </div>
   <nav class="sidebar-nav">

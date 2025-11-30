@@ -14,7 +14,7 @@
 
     @if (loading)
     {
-        <FluentProgressRing />
+        <div class="loading-inline" aria-live="polite">Cargando…</div>
     }
     else if (!needsSetup && answers.Count >= requiredCount && !editing)
     {
@@ -26,7 +26,7 @@
                     <li>@NormalizeMojibake(a.Pregunta)</li>
                 }
             </ol>
-            <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => BeginEdit(true))">Cambiar respuestas</FluentButton>
+            <button class="btn" @onclick="() => BeginEdit(true)">Cambiar respuestas</button>
         </div>
     }
     else
@@ -40,14 +40,19 @@
                     var entry = editEntries[i];
                     <div class="panel" style="padding:10px; display:grid; gap:6px;">
                         <label style="font-weight:600;">Pregunta @(i+1)</label>
-                        <FluentSelect @bind-Value="entry.SelectedId" Items="catalog" OptionText="@((PreguntaSeguridadDto q) => NormalizeMojibake(q.Pregunta))" OptionValue="@((PreguntaSeguridadDto q) => q.IdPregunta.ToString())" Disabled="@entry.Locked" />
-                        <FluentTextField @bind-Value="entry.Answer" Placeholder="Respuesta" Type="" />
+                        <select class="input" @bind="entry.SelectedId" disabled="@entry.Locked">
+                            @foreach (var q in catalog)
+                            {
+                                <option value="@q.IdPregunta.ToString()">@NormalizeMojibake(q.Pregunta)</option>
+                            }
+                        </select>
+                        <input class="input" @bind="entry.Answer" placeholder="Respuesta" />
                     </div>
                 }
             </div>
             <div style="margin-top:14px; display:flex; gap:8px;">
-                <FluentButton OnClick="Cancel" Appearance="Appearance.Outline">Cancelar</FluentButton>
-                <FluentButton OnClick="Save" Appearance="Appearance.Accent" Disabled="@(!CanSave)" Loading="@saving">Guardar</FluentButton>
+                <button class="btn btn-outline" @onclick="Cancel">Cancelar</button>
+                <button class="btn btn-primary" @onclick="Save" disabled="@(!CanSave)">@((saving) ? "Guardando..." : "Guardar")</button>
             </div>
         </div>
     }
