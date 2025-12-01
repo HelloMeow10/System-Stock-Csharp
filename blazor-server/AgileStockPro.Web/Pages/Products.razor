@@ -1,10 +1,11 @@
 @page "/products"
 @inject AgileStockPro.Web.Services.IProductService ProductService
+@inject AgileStockPro.Web.Services.Api.ApiProductService ProductApi
 @inject Microsoft.JSInterop.IJSRuntime JS
 
 <PageHeader Title="Productos">
     <Actions>
-        <button class="btn btn-primary">Nuevo</button>
+        <button class="btn btn-primary" @onclick="ShowNew">Nuevo</button>
         <button class="btn" @onclick="ExportCsv" disabled="@(TotalCount == 0)">Exportar CSV</button>
     </Actions>
 </PageHeader>
@@ -16,6 +17,69 @@
 else
 {
     <section style="margin-top:1rem">
+        @if (showNew)
+        {
+            <div class="modal-backdrop">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>Nuevo producto</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-grid">
+                            <label>Código *</label>
+                            <input @bind="newCodigo" />
+
+                            <label>Nombre *</label>
+                            <input @bind="newNombre" />
+
+                            <label>Descripción</label>
+                            <input @bind="newDescripcion" />
+
+                            <label>Precio Compra</label>
+                            <input type="number" step="0.01" @bind="newPrecioCompra" />
+
+                            <label>Precio Venta</label>
+                            <input type="number" step="0.01" @bind="newPrecioVenta" />
+
+                            <label>Categoría</label>
+                            <select @bind="newIdCategoria">
+                                <option value="">Selecciona categoría</option>
+                                @foreach (var c in categories)
+                                {
+                                    <option value="@c.Id">@c.Nombre</option>
+                                }
+                            </select>
+
+                            <label>Marca</label>
+                            <select @bind="newIdMarca">
+                                <option value="">Selecciona marca</option>
+                                @foreach (var b in brands)
+                                {
+                                    <option value="@b.Id">@b.Nombre</option>
+                                }
+                            </select>
+
+                            <label>Unidad de medida</label>
+                            <input @bind="newUnidadMedida" />
+
+                            <label>Punto de reposición</label>
+                            <input type="number" @bind="newPuntoReposicion" />
+
+                            <label>Habilitado</label>
+                            <input type="checkbox" @bind="newHabilitado" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(errorMsg))
+                        {
+                            <div class="error">@errorMsg</div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn" @onclick="HideNew">Cancelar</button>
+                        <button class="btn btn-primary" @onclick="CreateNew" disabled="@creating">@(creating ? "Creando..." : "Crear")</button>
+                    </div>
+                </div>
+            </div>
+        }
         <div class="toolbar" style="display:flex; flex-wrap:wrap; gap:.5rem; justify-content:flex-start; align-items:center; margin-bottom:.75rem;">
             <input class="search" placeholder="Buscar por nombre o categoría..." @bind-value="search" @bind-value:event="oninput" />
             <select class="select" style="min-width:180px" @bind="selectedCategory">
@@ -137,6 +201,18 @@ else
     protected override async Task OnInitializedAsync()
     {
         products = await ProductService.GetProductsAsync();
+        // cargar catálogos
+        try
+        {
+            categories = await ProductApi.GetCategoriesAsync();
+            brands = await ProductApi.GetBrandsAsync();
+        }
+        catch
+        {
+            // Si falla, dejar listas vacías; el form sigue funcionando sin selects
+            categories = Array.Empty<Contracts.CategoryDto>();
+            brands = Array.Empty<Contracts.BrandDto>();
+        }
     }
 
     IEnumerable<AgileStockPro.Web.Models.Product> ApplySearch(IEnumerable<AgileStockPro.Web.Models.Product> source)
@@ -221,5 +297,81 @@ else
         }
         var csv = sb.ToString();
         await JS.InvokeVoidAsync("app.downloadFile", "productos.csv", csv, "text/csv;charset=utf-8");
+    }
+
+    // Nuevo producto
+    bool showNew;
+    bool creating;
+    string? errorMsg;
+    string newCodigo = string.Empty;
+    string newNombre = string.Empty;
+    string? newDescripcion;
+    decimal? newPrecioCompra;
+    decimal? newPrecioVenta;
+    int? newIdCategoria;
+    int? newIdMarca;
+    string? newUnidadMedida;
+    int? newPuntoReposicion;
+    bool? newHabilitado = true;
+    IReadOnlyList<Contracts.CategoryDto> categories = Array.Empty<Contracts.CategoryDto>();
+    IReadOnlyList<Contracts.BrandDto> brands = Array.Empty<Contracts.BrandDto>();
+
+    void ShowNew()
+    {
+        showNew = true;
+        errorMsg = null;
+        creating = false;
+    }
+
+    void HideNew()
+    {
+        showNew = false;
+    }
+
+    async Task CreateNew()
+    {
+        errorMsg = null;
+        if (string.IsNullOrWhiteSpace(newCodigo) || string.IsNullOrWhiteSpace(newNombre))
+        {
+            errorMsg = "Completa Código y Nombre.";
+            return;
+        }
+        creating = true;
+        try
+        {
+            var req = new Contracts.CreateProductRequest(
+                Codigo: newCodigo.Trim(),
+                CodBarras: null,
+                Nombre: newNombre.Trim(),
+                Descripcion: string.IsNullOrWhiteSpace(newDescripcion) ? null : newDescripcion!.Trim(),
+                IdMarca: newIdMarca,
+                PrecioCompra: newPrecioCompra,
+                PrecioVenta: newPrecioVenta,
+                Estado: null,
+                Ubicacion: null,
+                Habilitado: newHabilitado,
+                IdCategoria: newIdCategoria,
+                UnidadMedida: string.IsNullOrWhiteSpace(newUnidadMedida) ? null : newUnidadMedida!.Trim(),
+                Peso: null,
+                Volumen: null,
+                PuntoReposicion: newPuntoReposicion,
+                DiasVencimiento: null,
+                LoteObligatorio: null,
+                ControlVencimiento: null
+            );
+
+            await ProductApi.CreateAsync(req);
+            // refrescar lista
+            products = await ProductService.GetProductsAsync();
+            HideNew();
+        }
+        catch (Exception ex)
+        {
+            errorMsg = ex.Message;
+        }
+        finally
+        {
+            creating = false;
+        }
     }
 }

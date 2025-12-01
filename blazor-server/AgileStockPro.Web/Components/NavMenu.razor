@@ -40,6 +40,15 @@
       <FluentTooltip Anchor="nav-stock">Stock</FluentTooltip>
     }
 
+    <NavLink href="/products" class="nav-link">
+      <span class="nav-icon"><FluentIcon Id="nav-products" Icon="@(Icons.Regular.Size20.BoxMultiple)" /></span>
+      <span class="nav-text">Productos</span>
+    </NavLink>
+    @if (Collapsed)
+    {
+      <FluentTooltip Anchor="nav-products">Productos</FluentTooltip>
+    }
+
     <NavLink href="/movimientos" class="nav-link">
       <span class="nav-icon"><FluentIcon Id="nav-movimientos" Icon="@(Icons.Regular.Size20.ArrowSwap)" /></span>
       <span class="nav-text">Movimientos</span>

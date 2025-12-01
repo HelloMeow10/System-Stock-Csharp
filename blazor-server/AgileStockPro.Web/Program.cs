@@ -43,6 +43,9 @@ builder.Services.AddScoped<ISecurityQuestionsAdminService, ApiSecurityQuestionsS
 builder.Services.AddScoped<AppDataService>(); // fallback sample data
 builder.Services.AddScoped<IAppDataService, ApiAppDataService>(); // API-backed with fallback
 builder.Services.AddScoped<AgileStockPro.Web.Services.Api.IStockApiService, AgileStockPro.Web.Services.Api.StockApiService>();
+// Products
+builder.Services.AddScoped<AgileStockPro.Web.Services.IProductService, AgileStockPro.Web.Services.Api.ApiProductService>();
+builder.Services.AddScoped<AgileStockPro.Web.Services.Api.ApiProductService>();
 
 var app = builder.Build();
 

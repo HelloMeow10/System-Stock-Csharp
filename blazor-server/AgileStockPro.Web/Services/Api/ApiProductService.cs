@@ -18,6 +18,12 @@ public class ApiProductService : IProductService
     public Task CreateAsync(Contracts.CreateProductRequest req)
         => _api.PostAsync("api/v1/products", req);
 
+    public async Task<IReadOnlyList<Contracts.BrandDto>> GetBrandsAsync(CancellationToken ct = default)
+        => await _api.GetAsync<IReadOnlyList<Contracts.BrandDto>>("api/v1/brands");
+
+    public async Task<IReadOnlyList<Contracts.CategoryDto>> GetCategoriesAsync(CancellationToken ct = default)
+        => await _api.GetAsync<IReadOnlyList<Contracts.CategoryDto>>("api/v1/categories");
+
     private static Product Map(ProductDto dto)
     {
         var status = "ok";
