@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject ISupplierService SupplierService
+@inject IInvoicingService InvoicingService
 @inject AgileStockPro.Web.Services.IAuthService AuthService
 @inject IToastService Toast
 
@@ -115,6 +116,16 @@
                     <label>Tiempo Entrega (días)</label>
                     <input class="input" type="number" @bind="formModel.TiempoEntrega" />
                 </div>
+                <div class="form-group">
+                    <label>Forma de Pago</label>
+                    <select class="select" @bind="formModel.IdFormaPago">
+                        <option value="0">Seleccione...</option>
+                        @foreach(var pm in paymentMethods)
+                        {
+                            <option value="@pm.Id">@pm.Nombre</option>
+                        }
+                    </select>
+                </div>
             </div>
 
             <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:20px;">
@@ -135,6 +146,7 @@
 
 @code {
     private IEnumerable<SupplierDto>? suppliers;
+    private IEnumerable<PaymentMethodDto> paymentMethods = new List<PaymentMethodDto>();
     private string searchTerm = "";
     private AgileStockPro.Web.Models.AppUser? currentUser;
     
@@ -153,7 +165,11 @@
 
     private async Task LoadData()
     {
-        suppliers = await SupplierService.GetAllAsync();
+        var t1 = SupplierService.GetAllAsync();
+        var t2 = InvoicingService.GetPaymentMethodsAsync();
+        await Task.WhenAll(t1, t2);
+        suppliers = await t1;
+        paymentMethods = await t2;
     }
 
     private async Task Search(string? term)
@@ -197,7 +213,8 @@
             Direccion = supplier.Direccion,
             Ciudad = supplier.Ciudad,
             Provincia = supplier.Provincia,
-            TiempoEntrega = supplier.TiempoEntrega
+            TiempoEntrega = supplier.TiempoEntrega,
+            IdFormaPago = supplier.IdFormaPago
         };
         showModal = true;
     }
@@ -233,7 +250,8 @@
                     Direccion = formModel.Direccion,
                     Ciudad = formModel.Ciudad,
                     Provincia = formModel.Provincia,
-                    TiempoEntrega = formModel.TiempoEntrega
+                    TiempoEntrega = formModel.TiempoEntrega,
+                    IdFormaPago = formModel.IdFormaPago
                 };
                 await SupplierService.UpdateAsync(update);
                 Toast.ShowSuccess("Proveedor actualizado.");
@@ -251,7 +269,8 @@
                     Direccion = formModel.Direccion,
                     Ciudad = formModel.Ciudad,
                     Provincia = formModel.Provincia,
-                    TiempoEntrega = formModel.TiempoEntrega
+                    TiempoEntrega = formModel.TiempoEntrega,
+                    IdFormaPago = formModel.IdFormaPago
                 };
                 await SupplierService.CreateAsync(create);
                 Toast.ShowSuccess("Proveedor creado.");
@@ -297,5 +316,6 @@
         public string Ciudad { get; set; } = string.Empty;
         public string Provincia { get; set; } = string.Empty;
         public int TiempoEntrega { get; set; }
+        public int IdFormaPago { get; set; }
     }
 }

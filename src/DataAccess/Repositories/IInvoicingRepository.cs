@@ -9,5 +9,6 @@ namespace DataAccess.Repositories
         
         Task<IEnumerable<InvoiceDto>> GetSalesInvoicesAsync(DateTime? from, DateTime? to, int? customerId, CancellationToken ct = default);
         Task CreateSalesInvoiceAsync(CreateSalesInvoiceRequest request, CancellationToken ct = default);
+        Task<IEnumerable<PaymentMethodDto>> GetPaymentMethodsAsync(CancellationToken ct = default);
     }
 }

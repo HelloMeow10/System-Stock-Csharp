@@ -23,5 +23,8 @@ namespace BusinessLogic.Services
 
         public Task CreateSalesInvoiceAsync(CreateSalesInvoiceRequest request, CancellationToken ct = default)
             => _repo.CreateSalesInvoiceAsync(request, ct);
+
+        public Task<IEnumerable<PaymentMethodDto>> GetPaymentMethodsAsync(CancellationToken ct = default)
+            => _repo.GetPaymentMethodsAsync(ct);
     }
 }

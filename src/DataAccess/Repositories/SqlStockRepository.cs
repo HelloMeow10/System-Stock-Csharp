@@ -13,12 +13,24 @@ public class SqlStockRepository : IStockRepository
     {
         using var conn = _connectionFactory.CreateConnection();
         await EnsureOpenAsync(conn, ct);
-        using var cmd = new SqlCommand("sp_ReporteMovimientosStock", (SqlConnection)conn)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-        cmd.Parameters.Add(new SqlParameter("@fechaDesde", SqlDbType.Date) { Value = from.ToDateTime(TimeOnly.MinValue) });
-        cmd.Parameters.Add(new SqlParameter("@fechaHasta", SqlDbType.Date) { Value = to.ToDateTime(TimeOnly.MinValue) });
+        
+        // Use raw SQL to ensure LEFT JOINs and avoid missing data if relations are broken
+        var sql = @"
+            SELECT ms.id_movimientosStock,
+                   ms.fecha,
+                   ISNULL(u.usuario, 'Desconocido') AS Usuario,
+                   ISNULL(p.nombre, 'Producto Eliminado') AS Producto,
+                   ms.tipoMovimiento,
+                   ms.cantidad
+            FROM MovimientosStock ms
+            LEFT JOIN Usuarios u ON ms.id_usuario = u.id_usuario
+            LEFT JOIN Productos p ON ms.id_producto = p.id_producto
+            WHERE ms.fecha >= @fechaDesde AND ms.fecha <= @fechaHasta
+            ORDER BY ms.fecha DESC";
+
+        using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+        cmd.Parameters.Add(new SqlParameter("@fechaDesde", SqlDbType.DateTime) { Value = from.ToDateTime(TimeOnly.MinValue) });
+        cmd.Parameters.Add(new SqlParameter("@fechaHasta", SqlDbType.DateTime) { Value = to.ToDateTime(TimeOnly.MaxValue) });
 
         var list = new List<StockMovementDto>();
         using var reader = await cmd.ExecuteReaderAsync(ct);
@@ -40,24 +52,53 @@ public class SqlStockRepository : IStockRepository
     {
         using var conn = _connectionFactory.CreateConnection();
         await EnsureOpenAsync(conn, ct);
-        using var cmd = new SqlCommand("sp_IngresoMercaderia", (SqlConnection)conn)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-        cmd.Parameters.Add(new SqlParameter("@id_producto", SqlDbType.Int) { Value = request.ProductoId });
-        cmd.Parameters.Add(new SqlParameter("@id_usuario", SqlDbType.Int) { Value = request.UsuarioId });
-        cmd.Parameters.Add(new SqlParameter("@lote", SqlDbType.VarChar, 50) { Value = (object?)request.Lote ?? DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@cantidad", SqlDbType.Int) { Value = request.Cantidad });
-        cmd.Parameters.Add(new SqlParameter("@stockMinimo", SqlDbType.Int) { Value = (object?)request.StockMinimo ?? DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@stockIdeal", SqlDbType.Int) { Value = (object?)request.StockIdeal ?? DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@stockMaximo", SqlDbType.Int) { Value = (object?)request.StockMaximo ?? DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@tipoStock", SqlDbType.VarChar, 20) { Value = (object?)request.TipoStock ?? DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@puntoReposicion", SqlDbType.Int) { Value = (object?)request.PuntoReposicion ?? DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@fechaVencimiento", SqlDbType.Date) { Value = request.FechaVencimiento.HasValue ? request.FechaVencimiento.Value : DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@estadoHabilitaciones", SqlDbType.VarChar, 50) { Value = (object?)request.EstadoHabilitaciones ?? DBNull.Value });
-        cmd.Parameters.Add(new SqlParameter("@id_movimientosStock", SqlDbType.Int) { Value = (object?)request.MovimientoStockId ?? DBNull.Value });
+        using var transaction = (SqlTransaction)await ((SqlConnection)conn).BeginTransactionAsync(ct);
 
-        await cmd.ExecuteNonQueryAsync(ct);
+        try
+        {
+            // 1. Insert into MovimientosStock to get ID
+            int movimientoId;
+            var sqlMov = @"
+                INSERT INTO MovimientosStock (fecha, id_usuario, id_producto, tipoMovimiento, cantidad)
+                VALUES (@fecha, @id_usuario, @id_producto, 'Ingreso', @cantidad);
+                SELECT SCOPE_IDENTITY();";
+
+            using (var cmdMov = new SqlCommand(sqlMov, (SqlConnection)conn, transaction))
+            {
+                cmdMov.Parameters.AddWithValue("@fecha", DateTime.Now);
+                cmdMov.Parameters.AddWithValue("@id_usuario", request.UsuarioId);
+                cmdMov.Parameters.AddWithValue("@id_producto", request.ProductoId);
+                cmdMov.Parameters.AddWithValue("@cantidad", request.Cantidad);
+                movimientoId = Convert.ToInt32(await cmdMov.ExecuteScalarAsync(ct));
+            }
+
+            // 2. Call SP for Stock update (passing the new movimientoId)
+            using var cmd = new SqlCommand("sp_IngresoMercaderia", (SqlConnection)conn, transaction)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.Add(new SqlParameter("@id_producto", SqlDbType.Int) { Value = request.ProductoId });
+            cmd.Parameters.Add(new SqlParameter("@id_usuario", SqlDbType.Int) { Value = request.UsuarioId });
+            cmd.Parameters.Add(new SqlParameter("@lote", SqlDbType.VarChar, 50) { Value = (object?)request.Lote ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@cantidad", SqlDbType.Int) { Value = request.Cantidad });
+            cmd.Parameters.Add(new SqlParameter("@stockMinimo", SqlDbType.Int) { Value = (object?)request.StockMinimo ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@stockIdeal", SqlDbType.Int) { Value = (object?)request.StockIdeal ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@stockMaximo", SqlDbType.Int) { Value = (object?)request.StockMaximo ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@tipoStock", SqlDbType.VarChar, 20) { Value = (object?)request.TipoStock ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@puntoReposicion", SqlDbType.Int) { Value = (object?)request.PuntoReposicion ?? DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@fechaVencimiento", SqlDbType.Date) { Value = request.FechaVencimiento.HasValue ? request.FechaVencimiento.Value : DBNull.Value });
+            cmd.Parameters.Add(new SqlParameter("@estadoHabilitaciones", SqlDbType.VarChar, 50) { Value = (object?)request.EstadoHabilitaciones ?? DBNull.Value });
+            // Use the generated ID
+            cmd.Parameters.Add(new SqlParameter("@id_movimientosStock", SqlDbType.Int) { Value = movimientoId });
+
+            await cmd.ExecuteNonQueryAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     public async Task CreateScrapAsync(CreateScrapRequest request, CancellationToken ct = default)

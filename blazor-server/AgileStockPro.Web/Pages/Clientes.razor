@@ -4,8 +4,10 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IClientService ClientService
+@inject IInvoicingService InvoicingService
 @inject IDialogService DialogService
 @inject AgileStockPro.Web.Services.IAuthService AuthService
+@inject IToastService Toast
 
 <AuthGuard>
 <PageTitle>Clientes</PageTitle>
@@ -73,6 +75,7 @@
 
 @code {
     private IEnumerable<ClientDto>? clients;
+    private IEnumerable<PaymentMethodDto> paymentMethods = new List<PaymentMethodDto>();
     private string searchTerm = "";
 
     private AgileStockPro.Web.Models.AppUser? currentUser;
@@ -84,7 +87,11 @@
 
     private async Task LoadData()
     {
-        clients = await ClientService.GetAllAsync();
+        var t1 = ClientService.GetAllAsync();
+        var t2 = InvoicingService.GetPaymentMethodsAsync();
+        await Task.WhenAll(t1, t2);
+        clients = await t1;
+        paymentMethods = await t2;
     }
 
     private async Task Search(string? term)
@@ -115,10 +122,18 @@
     private async Task ConfirmDelete()
     {
         if (clientToDelete == null) return;
-        await ClientService.DeleteAsync(clientToDelete.Id);
-        clientToDelete = null;
-        showConfirmDelete = false;
-        await LoadData();
+        try
+        {
+            await ClientService.DeleteAsync(clientToDelete.Id);
+            Toast.ShowSuccess("Cliente eliminado.");
+            clientToDelete = null;
+            showConfirmDelete = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError("Error al eliminar: " + ex.Message);
+        }
     }
 
     private void CancelDelete()
@@ -167,10 +182,12 @@
             if (isEditMode && editingModel is UpdateClientRequest upd)
             {
                 await ClientService.UpdateAsync(upd);
+                Toast.ShowSuccess("Cliente actualizado.");
             }
             else
             {
                 await ClientService.CreateAsync(editingModel);
+                Toast.ShowSuccess("Cliente creado.");
             }
 
             showClientModal = false;
@@ -178,8 +195,8 @@
         }
         catch (Exception ex)
         {
-            // Prefer toast/dialog service; fallback to console for now
             Console.WriteLine("Error saving client: " + ex.Message);
+            Toast.ShowError("Error al guardar: " + ex.Message);
         }
     }
 
@@ -209,6 +226,15 @@
 
                     <label>CUIT/DNI</label>
                     <input class="input" @bind="editingModel.CuitDni" />
+
+                    <label>Forma de Pago</label>
+                    <select class="select" @bind="editingModel.IdFormaPago">
+                        <option value="0">Seleccione...</option>
+                        @foreach(var pm in paymentMethods)
+                        {
+                            <option value="@pm.Id">@pm.Nombre</option>
+                        }
+                    </select>
 
                     <label>Límite Crédito</label>
                     <input class="input" type="number" step="0.01" @bind="editingModel.LimiteCredito" />

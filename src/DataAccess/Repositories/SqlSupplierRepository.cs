@@ -190,10 +190,10 @@ namespace DataAccess.Repositories
 
         public async Task DeleteAsync(int id)
         {
-            await ExecuteNonQueryAsync("sp_EliminarProveedorExtended", p =>
+            await ExecuteNonQueryAsync("DELETE FROM Proveedores WHERE id_proveedor = @id_proveedor", p =>
             {
                 p.AddWithValue("@id_proveedor", id);
-            });
+            }, CommandType.Text);
         }
 
         public async Task AddPhoneAsync(int supplierId, string phone, string sector, string schedule, string email)

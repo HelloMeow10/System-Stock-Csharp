@@ -113,7 +113,9 @@ namespace DataAccess.Repositories
 
         public async Task AddAsync(CreateClientRequest client)
         {
-            await ExecuteNonQueryAsync("sp_AgregarCliente", p =>
+            var sql = @"INSERT INTO Clientes (codigo, nombre, razonSocial, CUIT_DNI, id_formaPago, limiteCredito, descuento, estado) 
+                        VALUES (@codigo, @nombre, @razonSocial, @cuitDni, @id_formaPago, @limiteCredito, @descuento, @estado)";
+            await ExecuteNonQueryAsync(sql, p =>
             {
                 p.AddWithValue("@codigo", client.Codigo);
                 p.AddWithValue("@nombre", client.Nombre);
@@ -123,12 +125,22 @@ namespace DataAccess.Repositories
                 p.AddWithValue("@limiteCredito", client.LimiteCredito);
                 p.AddWithValue("@descuento", client.Descuento);
                 p.AddWithValue("@estado", client.Estado);
-            });
+            }, CommandType.Text);
         }
 
         public async Task UpdateAsync(UpdateClientRequest client)
         {
-            await ExecuteNonQueryAsync("sp_ModificarCliente", p =>
+            var sql = @"UPDATE Clientes SET 
+                        codigo = @codigo, 
+                        nombre = @nombre, 
+                        razonSocial = @razonSocial, 
+                        CUIT_DNI = @cuitDni, 
+                        id_formaPago = @id_formaPago, 
+                        limiteCredito = @limiteCredito, 
+                        descuento = @descuento, 
+                        estado = @estado 
+                        WHERE id_cliente = @id_cliente";
+            await ExecuteNonQueryAsync(sql, p =>
             {
                 p.AddWithValue("@id_cliente", client.Id);
                 p.AddWithValue("@codigo", client.Codigo);
@@ -139,15 +151,15 @@ namespace DataAccess.Repositories
                 p.AddWithValue("@limiteCredito", client.LimiteCredito);
                 p.AddWithValue("@descuento", client.Descuento);
                 p.AddWithValue("@estado", client.Estado);
-            });
+            }, CommandType.Text);
         }
 
         public async Task DeleteAsync(int id)
         {
-            await ExecuteNonQueryAsync("sp_EliminarCliente", p =>
+            await ExecuteNonQueryAsync("DELETE FROM Clientes WHERE id_cliente = @id_cliente", p =>
             {
                 p.AddWithValue("@id_cliente", id);
-            });
+            }, CommandType.Text);
         }
 
         public async Task AddContactAsync(int clientId, string phone, string sector, string schedule, string email)

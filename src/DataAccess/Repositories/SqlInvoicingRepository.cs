@@ -134,7 +134,6 @@ namespace DataAccess.Repositories
                     v.fecha,
                     c.nombre as EntidadNombre,
                     v.montoTotal,
-                    v.montoTotal,
                     CASE WHEN v.id_estadoVentas = 1 THEN 'Emitida' ELSE 'Desconocido' END as estado
                 FROM Ventas v
                 JOIN Clientes c ON v.id_cliente = c.id_cliente
@@ -222,6 +221,19 @@ namespace DataAccess.Repositories
                 await transaction.RollbackAsync(ct);
                 throw;
             }
+        }
+        public async Task<IEnumerable<PaymentMethodDto>> GetPaymentMethodsAsync(CancellationToken ct = default)
+        {
+            using var conn = _connectionFactory.CreateConnection();
+            await EnsureOpenAsync(conn, ct);
+            using var cmd = new SqlCommand("SELECT id_formaPago, descripcion FROM FormaPago", (SqlConnection)conn);
+            var list = new List<PaymentMethodDto>();
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                list.Add(new PaymentMethodDto(reader.GetInt32(0), reader.GetString(1)));
+            }
+            return list;
         }
     }
 }
